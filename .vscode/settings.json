@@ -1,0 +1,9 @@
+{
+  "files.associations": {
+    ".env": "properties",
+    "*.env": "properties",
+    ".env.sample": "properties",
+    "functional": "c"
+  },
+  "C_Cpp.default.defines": ["MAP_ANONYMOUS"]
+}
