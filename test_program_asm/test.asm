@@ -4,6 +4,8 @@ SYS_WRITE equ 0x01
 SYS_EXIT equ 0x3c
 STDOUT equ 0x01
 
+; %idefine rip rel $
+
 _start:
     ; print inline
     ; mov rax, 0x6363636363636363
@@ -16,12 +18,20 @@ _start:
     ; mov rdx, 8
     ; syscall
 
-    ; print msg
-    mov rax, SYS_WRITE
-    mov rdi, STDOUT
-    mov rsi, msg
-    mov rdx, msg_len
-    syscall
+    ; jump test
+    mov rax, 0xaa
+    ; jmp -0x6
+    ; jmp rip
+    ; jmp [rel $]
+    mov eax, [rel $]
+
+    mov rax, 0xbb
+    ; ; print msg
+    ; mov rax, SYS_WRITE
+    ; mov rdi, STDOUT
+    ; mov rsi, msg
+    ; mov rdx, msg_len
+    ; syscall
 
     ; ; print msg_two
     ; mov rax, SYS_WRITE
