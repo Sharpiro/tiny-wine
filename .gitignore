@@ -2,6 +2,6 @@
 *.lst
 *.exe
 *.bin
-.gdb*
+.gdb_history
 *.cpy
 *.dump

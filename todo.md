@@ -8,6 +8,7 @@
   - ~~execute write syscall with inline data~~
   - ~~execute write syscall with hacked static memory~~
   - figure out how to rewrite memory locations in test program
+  - run a relocated nasm write program
   - provide alternative printf dynamically linked c function
 - Windows
   - tbd...

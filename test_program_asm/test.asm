@@ -8,24 +8,26 @@ STDOUT equ 0x01
 
 _start:
     ; print inline
-    ; mov rax, 0x6363636363636363
-    ; push rax
-    ; mov rax, SYS_WRITE
-    ; mov rdi, STDOUT
-    ; ; dereferences?
-    ; ; mov rsi, [rsp-4]
-    ; mov rsi, rsp
-    ; mov rdx, 8
-    ; syscall
+    mov rax, 0x6363636363636363
+    push rax
+    mov rax, SYS_WRITE
+    mov rdi, STDOUT
+    mov rsi, rsp
+    mov rdx, 8
+    syscall
 
-    ; jump test
-    mov rax, 0xaa
+    ; ; jmp test_func
+    ; mov rax, test_func
+    ; push test_func ; 0x40100e
+    ; push 0xff
+    ; jmp [rsp+8]
+    ; mov rax, 0xaa
     ; jmp -0x6
     ; jmp rip
     ; jmp [rel $]
-    mov eax, [rel $]
+    ; mov eax, [rel $]
+    ; mov rax, 0xbb
 
-    mov rax, 0xbb
     ; ; print msg
     ; mov rax, SYS_WRITE
     ; mov rdi, STDOUT
@@ -40,9 +42,17 @@ _start:
     ; mov rdx, msg_two_len
     ; syscall
 
-    mov rax, SYS_EXIT
-    mov rdi, 0
-    syscall
+  ; exit
+  mov rbx, 0xaa
+  mov rax, SYS_EXIT
+  mov rdi, 0
+  syscall
+
+test_func:
+  mov rbx, 0xaa
+  mov rax, SYS_EXIT
+  mov rdi, 0
+  syscall
 
 section .text
     global _start

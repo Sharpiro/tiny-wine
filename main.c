@@ -10,7 +10,7 @@ typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
-#define PROGRAM "test_program/test.exe"
+#define PROGRAM "test_program_asm/test.exe"
 
 void do_asm(u64 value);
 
@@ -35,6 +35,11 @@ int main() {
     printf("mmap success\n");
 
     FILE *file = fopen(PROGRAM, "r");
+    if (!file) {
+        printf("file not found\n");
+        return 1;
+    }
+
     fread(buffer, 1, file_stat.st_size, file);
     printf("read success\n");
     fclose(file);
@@ -45,11 +50,11 @@ int main() {
     }
     printf("\n");
 
-    char *data_buffer = buffer + 0x2000;
-    u64 *instruction_buffer = (u64 *)(code_buffer + 12);
-    *instruction_buffer = (u64)data_buffer;
+    // char *data_buffer = buffer + 0x2000;
+    // u64 *instruction_buffer = (u64 *)(code_buffer + 12);
+    // *instruction_buffer = (u64)data_buffer;
 
-    printf("data start: %s\n", data_buffer);
+    // printf("data start: %s\n", data_buffer);
 
     printf("starting child program...\n");
     u64 value = (u64)code_buffer;
