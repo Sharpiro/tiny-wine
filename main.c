@@ -10,13 +10,14 @@ typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
-// #define PROGRAM "test_program_asm/test.exe"
-#define PROGRAM "test_program_c_linux/test.exe"
-// #define PROGRAM_SPACE_SIZE 0x3000
-#define PROGRAM_SPACE_SIZE 900000
+#define PROGRAM "test_program_asm/test.exe"
+// #define PROGRAM "test_program_c_linux/test.exe"
+#define PROGRAM_SPACE_SIZE 0x3000
+// #define PROGRAM_SPACE_SIZE 900000
 #define PROGRAM_ADDRESS_START 0x400000
 // #define CODE_START_OFFSET 0x1000
-#define CODE_START_OFFSET 0x1500
+#define CODE_START_OFFSET 0x1010
+// #define CODE_START_OFFSET 0x1500
 
 void run_asm(u64 value);
 
@@ -64,6 +65,11 @@ int main() {
 
     // printf("data start: %s\n", data_buffer);
 
+    // printf("sleeping...\n");
+    // bool run = true;
+    // while (run) {
+    //     sleep(1);
+    // }
     printf("starting child program...\n");
     u64 value = (u64)code_buffer;
     run_asm(value);
@@ -77,24 +83,28 @@ int main() {
 }
 
 void run_asm(u64 value) {
-    asm volatile("mov rbx, 0x00;"
-                 "mov rcx, 0x00;"
-                 "mov rdx, 0x00;"
-                 "mov rsi, 0x00;"
-                 "mov rdi, 0x00;"
-                 "mov rbp, 0x00;"
-                 "mov rsp, 0x00007fffffffda20;"
-                 "mov r8, 0x00;"
-                 "mov r9, 0x00;"
-                 "mov r10, 0x00;"
-                 "mov r11, 0x00;"
-                 "mov r12, 0x00;"
-                 "mov r13, 0x00;"
-                 "mov r14, 0x00;"
-                 "mov r15, 0x00;"
-                 "jmp %0;"
-                 "mov rax, 0x00;"
+    asm volatile("jmp %0;"
                  :            // output %1
                  : "r"(value) // input %0
     );
+    // asm volatile("mov rbx, 0x00;"
+    //              "mov rcx, 0x00;"
+    //              "mov rdx, 0x00;"
+    //              "mov rsi, 0x00;"
+    //              "mov rdi, 0x00;"
+    //              "mov rbp, 0x00;"
+    //              "mov rsp, 0x00007fffffffda20;"
+    //              "mov r8, 0x00;"
+    //              "mov r9, 0x00;"
+    //              "mov r10, 0x00;"
+    //              "mov r11, 0x00;"
+    //              "mov r12, 0x00;"
+    //              "mov r13, 0x00;"
+    //              "mov r14, 0x00;"
+    //              "mov r15, 0x00;"
+    //              "jmp %0;"
+    //              "mov rax, 0x00;"
+    //              :            // output %1
+    //              : "r"(value) // input %0
+    // );
 }

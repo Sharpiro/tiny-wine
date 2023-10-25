@@ -6,6 +6,8 @@ STDOUT equ 0x01
 
 ; %idefine rip rel $
 
+extern add_num
+
 _start:
     ; ; print inline
     ; mov rax, 0x6363636363636363
@@ -35,16 +37,20 @@ _start:
     ; mov rdx, msg_len
     ; syscall
     call print_message
+    mov rdi, 0x08
+    mov rsi, 0x04
+    call add_num
 
-    ; print msg_two
-    mov rax, SYS_WRITE
-    mov rdi, STDOUT
-    mov rsi, msg_two
-    mov rdx, msg_two_len
-    syscall
+    ; ; print msg_two
+    ; mov rax, SYS_WRITE
+    ; mov rdi, STDOUT
+    ; mov rsi, msg_two
+    ; mov rdx, msg_two_len
+    ; syscall
 
   ; exit
   mov rbx, 0xaa
+  ; mov rdi, rax
   mov rax, SYS_EXIT
   mov rdi, 0
   syscall
