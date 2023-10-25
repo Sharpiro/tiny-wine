@@ -20,7 +20,8 @@ int main() {
     printf("size: %ld\n", file_stat.st_size);
 
     size_t MMAP_LEN = 0x3000;
-    void *buffer = mmap(NULL, MMAP_LEN, PROT_READ | PROT_WRITE | PROT_EXEC,
+    void *start = (void *)0x400000;
+    void *buffer = mmap(start, MMAP_LEN, PROT_READ | PROT_WRITE | PROT_EXEC,
                         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     printf("mmap ptr %p\n", buffer);
 
