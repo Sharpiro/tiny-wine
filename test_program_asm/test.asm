@@ -7,14 +7,14 @@ STDOUT equ 0x01
 ; %idefine rip rel $
 
 _start:
-    ; print inline
-    mov rax, 0x6363636363636363
-    push rax
-    mov rax, SYS_WRITE
-    mov rdi, STDOUT
-    mov rsi, rsp
-    mov rdx, 8
-    syscall
+    ; ; print inline
+    ; mov rax, 0x6363636363636363
+    ; push rax
+    ; mov rax, SYS_WRITE
+    ; mov rdi, STDOUT
+    ; mov rsi, rsp
+    ; mov rdx, 8
+    ; syscall
 
     ; ; jmp test_func
     ; mov rax, test_func
@@ -35,12 +35,12 @@ _start:
     ; mov rdx, msg_len
     ; syscall
 
-    ; ; print msg_two
-    ; mov rax, SYS_WRITE
-    ; mov rdi, STDOUT
-    ; mov rsi, msg_two
-    ; mov rdx, msg_two_len
-    ; syscall
+    ; print msg_two
+    mov rax, SYS_WRITE
+    mov rdi, STDOUT
+    mov rsi, msg_two
+    mov rdx, msg_two_len
+    syscall
 
   ; exit
   mov rbx, 0xaa
