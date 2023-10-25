@@ -34,6 +34,7 @@ _start:
     ; mov rsi, msg
     ; mov rdx, msg_len
     ; syscall
+    call print_message
 
     ; print msg_two
     mov rax, SYS_WRITE
@@ -48,16 +49,18 @@ _start:
   mov rdi, 0
   syscall
 
-test_func:
-  mov rbx, 0xaa
-  mov rax, SYS_EXIT
-  mov rdi, 0
+print_message:
+  mov rax, SYS_WRITE
+  mov rdi, STDOUT
+  mov rsi, msg
+  mov rdx, msg_len
   syscall
+  ret
 
 section .text
     global _start
 section .data
-    msg db `aaaaaaaaaaaaaaa\0`
+    msg db `aaaaaaaaaaaaaaa\n`
     msg_len equ $ - msg
-    msg_two db `bbbbbbbbbbbbbbb\0`
+    msg_two db `bbbbbbbbbbbbbbb\n`
     msg_two_len equ $ - msg_two
