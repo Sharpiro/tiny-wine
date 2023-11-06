@@ -1,5 +1,7 @@
 BITS 64
 
+%include "macros.asm"
+
 SYS_WRITE equ 0x01
 SYS_EXIT equ 0x3c
 STDOUT equ 0x01
@@ -36,10 +38,10 @@ _start:
     ; mov rsi, msg
     ; mov rdx, msg_len
     ; syscall
-    call print_message
-    mov rdi, 0x08
-    mov rsi, 0x04
-    call add_num
+    ; call print_message
+    ; mov rdi, 0x08
+    ; mov rsi, 0x04
+    ; call add_num
 
     ; ; print msg_two
     ; mov rax, SYS_WRITE
@@ -47,6 +49,16 @@ _start:
     ; mov rsi, msg_two
     ; mov rdx, msg_two_len
     ; syscall
+
+    ; print arg count
+    ; mov r10, [rsp]
+    ; print_small_number r10
+
+    ; print program name
+    mov r10, [rsp + 8]
+    ; print_small_number r10
+    puts [r10], 50
+
 
   ; exit
   mov rbx, 0xaa

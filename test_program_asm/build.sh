@@ -9,4 +9,4 @@ nasm -o test.o -l test.lst -f elf64 test.asm
 ld -o test.exe lib.o test.o
 # ld -o test.exe test.o
 cp test.exe test.exe.cpy
-./test.exe
+./test.exe hello_sailor
