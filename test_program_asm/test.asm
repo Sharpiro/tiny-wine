@@ -54,10 +54,19 @@ _start:
     ; mov r10, [rsp]
     ; print_small_number r10
 
-    ; print program name
-    mov r10, [rsp + 8]
-    ; print_small_number r10
-    puts [r10], 50
+    ; print args
+    ; mov r10, [rsp + 16]
+    ; puts_func r10
+    mov r12, 0
+    mov r13, [rsp]
+.temp_label:
+    mov rdi, [rsp + ((r12 + 1) * 8)]
+    call puts
+    add r12, 1
+    cmp r12, r13
+    jl .temp_label
+    ; mov rdi, [rsp + 16]
+    ; call puts
 
 
   ; exit
@@ -82,3 +91,4 @@ section .data
     msg_len equ $ - msg
     msg_two db `bbbbbbbbbbbbbbb\n`
     msg_two_len equ $ - msg_two
+    new_line db 0x0a

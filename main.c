@@ -110,8 +110,11 @@ void run_asm(u64 value) {
 
                  // set stack pointer
                  //  "mov rsp, 0x00007fffffffda20;"
-                 "mov rsp, 0x7fffffffca98;"
+                 //  "mov rsp, 0x7fffffffca98;"
+                 "push 0x00;"
 
+                 // jump to program
+                 // @todo: only works with constants
                  "jmp %[start_address];"
                  :                                         // output %1
                  : [start_address] "i"(PROGRAM_CODE_START) // input %0
