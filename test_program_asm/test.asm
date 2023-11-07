@@ -55,23 +55,29 @@ _start:
     ; print_small_number r10
 
     ; print args
-    ; mov r10, [rsp + 16]
-    ; puts_func r10
-    mov r12, 0
-    mov r13, [rsp]
-.temp_label:
-    mov rdi, [rsp + ((r12 + 1) * 8)]
+    lea r13, [rsp + 8]
+.loop:
+    cmp qword[r13], 0
+    je .done
+    mov rdi, [r13]
     call puts
-    add r12, 1
-    cmp r12, r13
-    jl .temp_label
-    ; mov rdi, [rsp + 16]
-    ; call puts
+    add r13, 8
+    jmp .loop
+.done:
+
+    ; print env vars
+    mov r12, [rsp]
+    lea r13, [rsp + 8 + r12 * 8 + 8]
+.loop2:
+    mov rdi, [r13]
+    call puts
+    add r13, 8
+    cmp qword [r13], 0
+    jne .loop2
 
 
   ; exit
   mov rbx, 0xaa
-  ; mov rdi, rax
   mov rax, SYS_EXIT
   mov rdi, 0
   syscall
