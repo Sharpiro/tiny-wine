@@ -1,14 +1,12 @@
 BITS 64
 
+%include "std_lib.inc"
 %include "macros.asm"
-
-SYS_WRITE equ 0x01
-SYS_EXIT equ 0x3c
-STDOUT equ 0x01
 
 ; %idefine rip rel $
 
-extern add_num
+; extern add_num
+extern print_string_array
 
 _start:
     ; ; print inline
@@ -54,26 +52,34 @@ _start:
     ; mov r10, [rsp]
     ; print_small_number r10
 
-    ; print args
-    lea r13, [rsp + 8]
-.loop:
-    cmp qword[r13], 0
-    je .done
-    mov rdi, [r13]
-    call puts
-    add r13, 8
-    jmp .loop
-.done:
+    ; ; print args
+    ; lea rdi, [rsp + 8]
+    ; push rdi
+    ; call print_string_array
+    ; pop rdi
+    ; ; print env vars
+    ; add rdi, rax
+    ; push rdi
+    ; call print_string_array
+    ; pop rdi
+    ; print anciliary vector
+    ; add rdi, rax
+    ; mov rdi, 0x40
+    print_small_number 0x0a
+; .loop:
+;     mov rdi, [r13]
+;     call puts
+;     add r13, 8
+;     cmp qword [r13], 0
+;     jne .loop
 
-    ; print env vars
-    mov r12, [rsp]
-    lea r13, [rsp + 8 + r12 * 8 + 8]
-.loop2:
-    mov rdi, [r13]
-    call puts
-    add r13, 8
-    cmp qword [r13], 0
-    jne .loop2
+;     add r13, 8
+; .loop2:
+;     mov rdi, [r13]
+;     call puts
+;     add r13, 8
+;     cmp qword [r13], 0
+;     jne .loop2
 
 
   ; exit
@@ -97,4 +103,3 @@ section .data
     msg_len equ $ - msg
     msg_two db `bbbbbbbbbbbbbbb\n`
     msg_two_len equ $ - msg_two
-    new_line db 0x0a
