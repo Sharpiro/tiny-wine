@@ -5,9 +5,6 @@ BITS 64
 
 ; %idefine rip rel $
 
-; extern add_num
-extern print_string_array
-
 _start:
     ; ; print inline
     ; mov rax, 0x6363636363636363
@@ -64,8 +61,12 @@ _start:
     ; pop rdi
     ; print anciliary vector
     ; add rdi, rax
-    ; mov rdi, 0x40
-    print_small_number 0x0a
+    ; mov rdi, 0x09
+    ; call print_small_number 
+    mov rdi, 0x000000ab
+    call print_number
+    ; mov rdi, 0x10
+    ; call print_number
 ; .loop:
 ;     mov rdi, [r13]
 ;     call puts
