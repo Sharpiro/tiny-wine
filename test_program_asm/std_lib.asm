@@ -1,4 +1,5 @@
 %include "std_lib.inc"
+%include "macros.asm"
 
 puts:
     mov rsi, rdi
@@ -52,55 +53,58 @@ print_small_number:
     retn
 
 print_number:
-    mov r8, rdi
+    mov r8d, edi
     mov r12, 0
-    mov r13, 0x10
+    mov r13, 0x10000000
 .calc_byte:
-    ; push r8
     mov rax, r8
     mov rdx, 0
     mov rbx, r13
-    div bx
+    div rbx
     mov r14, rax
     mov r9, rax
-    ; pop r8
-    ; mov r9b, r8b
     cmp r9b, 0x0a
     mov r10, 0x30
     mov r11, 0x57
     cmovge r10, r11
     add r9, r10
-
-    ; print digit
     push r9
-    lea rsi, [rsp]
-    mov rdx, 1
-    mov rax, SYS_WRITE
-    mov rdi, STDOUT
-    syscall
+    puts_len rsp, 1
     pop r9
 
-
-.check_loop:
     ; while
     add r12, 1
     mov rax, r14
     mul r13
     sub r8, rax
     shr r13, 0x04
-    cmp r12, 2
+    cmp r12, 0x08
     jl .calc_byte
 
-    ; print newline
-    lea rsi, new_line
-    mov rdx, 1
-    mov rax, SYS_WRITE
-    mov rdi, STDOUT
-    syscall
-    retn
+    ret
+
+print_auxiliary_vector:
+    mov r8, rdi
+.aux_loop:
+    mov rdi, [r8]
+    push r8
+    call print_number 
+    puts_len space, 1
+    pop r8
+    mov rdi, [r8+8]
+    push r8
+    call print_number 
+    pop r8
+    add r8, 16
+    puts_len new_line, 1
+    mov r9, [r8]
+    cmp r9, 0x00
+    jne .aux_loop
+    ret
 
 section .data
     new_line db 0x0a
+    space db " "
 section .text
   global puts
   global print_string_array
