@@ -10,19 +10,20 @@ typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
-// #define PROGRAM "test_program_asm/test.exe"
-#define PROGRAM "test_program_c_linux/test.exe"
+#define PROGRAM "test_program_asm/test.exe"
+// #define PROGRAM "test_program_c_linux/test.exe"
 #define PROGRAM_SPACE_SIZE 0x200000
 // #define PROGRAM_SPACE_SIZE 900000
 #define PROGRAM_ADDRESS_START (void *)0x400000
 // #define CODE_START_OFFSET 0x1000
 // #define CODE_START_OFFSET 0x1010
-#define CODE_START_OFFSET 0x1500
+// #define CODE_START_OFFSET 0x1500
+#define CODE_START_OFFSET 0x1160
 #define PROGRAM_CODE_START PROGRAM_ADDRESS_START + CODE_START_OFFSET
 
 void run_asm(u64 value);
 
-int main() {
+int main(int argc, char *argv[]) {
     struct stat file_stat;
     stat(PROGRAM, &file_stat);
     printf("size: %ld\n", file_stat.st_size);
@@ -57,11 +58,11 @@ int main() {
     printf("read success\n");
     fclose(file);
 
-    u8 *code_buffer = program_map_buffer + CODE_START_OFFSET;
-    for (int i = 0; i < 0x25; i++) {
-        printf("0x%02X, ", code_buffer[i]);
-    }
-    printf("\n");
+    // u8 *code_buffer = program_map_buffer + CODE_START_OFFSET;
+    // for (int i = 0; i < 0x25; i++) {
+    //     printf("0x%02X, ", code_buffer[i]);
+    // }
+    // printf("\n");
 
     // char *data_buffer = buffer + 0x2000;
     // u64 *instruction_buffer = (u64 *)(code_buffer + 12);
@@ -74,9 +75,12 @@ int main() {
     // while (run) {
     //     sleep(1);
     // }
+    uint64_t stack_start = (uint64_t)argv - 8;
+    printf("stack_start: %lx\n", stack_start);
     printf("starting child program...\n");
-    u64 value = (u64)code_buffer;
-    run_asm(value);
+    // u64 value = (u64)code_buffer;
+    // uint64_t stack_start = (uint64_t)&argc;
+    run_asm(stack_start);
     printf("child program complete\n");
 
     int error = munmap(program_map_buffer, MMAP_LEN);
@@ -86,14 +90,14 @@ int main() {
     }
 }
 
-void run_asm(u64 value) {
+void run_asm(uint64_t stack_start) {
     asm volatile("mov rbx, 0x00;"
                  //  clear 'PF' flag
                  "mov r15, 0xff;"
                  "xor r15, 1;"
 
                  // clear registers
-                 "mov rax, 0x00;"
+                 //  "mov rax, 0x00;"
                  "mov rcx, 0x00;"
                  "mov rdx, 0x00;"
                  "mov rsi, 0x00;"
@@ -110,15 +114,17 @@ void run_asm(u64 value) {
 
                  // set stack pointer
                  //  "mov rsp, 0x00007fffffffda20;"
-                 //  "mov rsp, 0x7fffffffca98;"
-                 "push 0x00;"
+                 //  "leave;"
+                 //  "mov rsp, 0x7fffffffd6e0;"
+                 "mov rsp, %[stack_start];"
+                 //  "push 0x00;"
 
                  // jump to program
                  // @todo: only works with constants
                  "jmp %[start_address];"
-                 :                                         // output %1
-                 : [start_address] "i"(PROGRAM_CODE_START) // input %0
-    );
+                 :
+                 : [start_address] "i"(PROGRAM_CODE_START), [stack_start] "r"(
+                                                                stack_start));
 
     // asm("jmp %[start_address]"
     //     : // Output operands would be here.
