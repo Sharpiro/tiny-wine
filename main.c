@@ -10,15 +10,15 @@ typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
-#define PROGRAM "test_program_asm/test.exe"
-// #define PROGRAM "test_program_c_linux/test.exe"
+// #define PROGRAM "test_program_asm/test.exe"
+#define PROGRAM "test_program_c_linux/test.exe"
 #define PROGRAM_SPACE_SIZE 0x200000
 // #define PROGRAM_SPACE_SIZE 900000
 #define PROGRAM_ADDRESS_START (void *)0x400000
 // #define CODE_START_OFFSET 0x1000
 // #define CODE_START_OFFSET 0x1010
-// #define CODE_START_OFFSET 0x1500
-#define CODE_START_OFFSET 0x1160
+#define CODE_START_OFFSET 0x1500
+// #define CODE_START_OFFSET 0x1160
 #define PROGRAM_CODE_START PROGRAM_ADDRESS_START + CODE_START_OFFSET
 
 void run_asm(u64 value);
@@ -92,12 +92,15 @@ int main(int argc, char *argv[]) {
 
 void run_asm(uint64_t stack_start) {
     asm volatile("mov rbx, 0x00;"
+                 // set stack pointer
+                 "mov rsp, %[stack_start];"
+
                  //  clear 'PF' flag
                  "mov r15, 0xff;"
                  "xor r15, 1;"
 
                  // clear registers
-                 //  "mov rax, 0x00;"
+                 "mov rax, 0x00;"
                  "mov rcx, 0x00;"
                  "mov rdx, 0x00;"
                  "mov rsi, 0x00;"
@@ -111,13 +114,6 @@ void run_asm(uint64_t stack_start) {
                  "mov r13, 0x00;"
                  "mov r14, 0x00;"
                  "mov r15, 0x00;"
-
-                 // set stack pointer
-                 //  "mov rsp, 0x00007fffffffda20;"
-                 //  "leave;"
-                 //  "mov rsp, 0x7fffffffd6e0;"
-                 "mov rsp, %[stack_start];"
-                 //  "push 0x00;"
 
                  // jump to program
                  // @todo: only works with constants
