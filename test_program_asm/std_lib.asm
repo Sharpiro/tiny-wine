@@ -1,6 +1,8 @@
 %include "std_lib.inc"
 %include "macros.asm"
 
+DEFAULT REL
+
 puts:
     mov rsi, rdi
     mov rax, SYS_WRITE
@@ -17,7 +19,8 @@ puts:
     ; new line
     mov rax, SYS_WRITE
     mov rdi, STDOUT
-    mov rsi, new_line
+    lea rsi, [rel new_line]
+    ; mov rsi, new_line
     mov rdx, 1
     syscall
     ret
@@ -69,7 +72,7 @@ print_number:
     cmovge r10, r11
     add r9, r10
     push r9
-    puts_len rsp, 1
+    puts_len_reg rsp, 1
     pop r9
 
     ; while
@@ -85,21 +88,24 @@ print_number:
 
 print_auxiliary_vector:
     mov r8, rdi
-.aux_loop:
+.loop:
     mov rdi, [r8]
     push r8
     call print_number 
-    puts_len space, 1
+    puts_len [rel space], 1
+    ; puts_len space, 1
     pop r8
     mov rdi, [r8+8]
     push r8
     call print_number 
     pop r8
     add r8, 16
-    puts_len new_line, 1
+    ; puts_len new_line, 1
+    puts_len [rel new_line], 1
+    ; puts_line
     mov r9, [r8]
     cmp r9, 0x00
-    jne .aux_loop
+    jne .loop
     ret
 
 section .data

@@ -23,7 +23,13 @@ typedef uint64_t u64;
 
 void run_asm(u64 value);
 
-int main(int argc, char *argv[]) {
+int main(int, char *argv[]) {
+    uint8_t *buffer = malloc(1024);
+    if (buffer == NULL) {
+        printf("malloc broke\n");
+    }
+    printf("malloc still works\n");
+
     struct stat file_stat;
     stat(PROGRAM, &file_stat);
     printf("size: %ld\n", file_stat.st_size);
