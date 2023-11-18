@@ -6,3 +6,4 @@
 *.cpy
 *.dump
 *.so
+linker

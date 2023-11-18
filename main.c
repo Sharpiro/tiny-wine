@@ -1,48 +1,41 @@
+#include <elf.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
-// #define PROGRAM "test_program_asm/test.exe"
-#define PROGRAM "test_program_c_linux/test.exe"
 #define PROGRAM_SPACE_SIZE 0x200000
-// #define PROGRAM_SPACE_SIZE 900000
-#define PROGRAM_ADDRESS_START (void *)0x400000
-// #define CODE_START_OFFSET 0x1000
-// #define CODE_START_OFFSET 0x1010
-#define CODE_START_OFFSET 0x1500
-// #define CODE_START_OFFSET 0x1160
-#define PROGRAM_CODE_START PROGRAM_ADDRESS_START + CODE_START_OFFSET
+#define PROGRAM_ADDRESS_START 0x400000
 
-void run_asm(u64 value);
+void run_asm(u64 value, uint64_t program_entry);
+void init_signals();
+void init_process_control();
 
-int main(int, char *argv[]) {
-    uint8_t *buffer = malloc(1024);
-    if (buffer == NULL) {
-        printf("malloc broke\n");
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: linker <filename>\n");
+        exit(EXIT_FAILURE);
     }
-    printf("malloc still works\n");
 
+    char *program_path = argv[1];
     struct stat file_stat;
-    stat(PROGRAM, &file_stat);
+    stat(program_path, &file_stat);
     printf("size: %ld\n", file_stat.st_size);
 
-    size_t MMAP_LEN = PROGRAM_SPACE_SIZE;
-    void *program_map_buffer = mmap(PROGRAM_ADDRESS_START, MMAP_LEN,
-                                    PROT_READ | PROT_WRITE | PROT_EXEC,
-                                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    void *program_map_buffer = mmap(
+        (void *)PROGRAM_ADDRESS_START, PROGRAM_SPACE_SIZE,
+        PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     printf("mmap ptr %p\n", program_map_buffer);
-
-    // void *stack_buffer = mmap(NULL, 0x22000, PROT_READ | PROT_WRITE |
-    // PROT_EXEC,
-    //                           MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     if (program_map_buffer == NULL) {
         printf("map NULL\n");
@@ -54,7 +47,7 @@ int main(int, char *argv[]) {
     }
     printf("mmap success\n");
 
-    FILE *file = fopen(PROGRAM, "r");
+    FILE *file = fopen(program_path, "r");
     if (!file) {
         printf("file not found\n");
         return 1;
@@ -64,72 +57,85 @@ int main(int, char *argv[]) {
     printf("read success\n");
     fclose(file);
 
-    // u8 *code_buffer = program_map_buffer + CODE_START_OFFSET;
-    // for (int i = 0; i < 0x25; i++) {
-    //     printf("0x%02X, ", code_buffer[i]);
-    // }
-    // printf("\n");
+    Elf64_Ehdr *header = program_map_buffer;
+    printf("program entry: %lx\n", header->e_entry);
 
-    // char *data_buffer = buffer + 0x2000;
-    // u64 *instruction_buffer = (u64 *)(code_buffer + 12);
-    // *instruction_buffer = (u64)data_buffer;
-
-    // printf("data start: %s\n", data_buffer);
-
-    // printf("sleeping...\n");
-    // bool run = true;
-    // while (run) {
-    //     sleep(1);
-    // }
     uint64_t stack_start = (uint64_t)argv - 8;
     printf("stack_start: %lx\n", stack_start);
-    printf("starting child program...\n");
-    // u64 value = (u64)code_buffer;
-    // uint64_t stack_start = (uint64_t)&argc;
-    run_asm(stack_start);
+
+    init_signals();
+    init_process_control();
+
+    // while (true) {
+    //     sleep(1);
+    // }
+
+    printf("starting child program...\n\n");
+    run_asm(stack_start, header->e_entry);
     printf("child program complete\n");
 
-    int error = munmap(program_map_buffer, MMAP_LEN);
+    int error = munmap(program_map_buffer, PROGRAM_SPACE_SIZE);
     if (error) {
         printf("munmap failed\n");
         return error;
     }
 }
 
-void run_asm(uint64_t stack_start) {
-    asm volatile("mov rbx, 0x00;"
-                 // set stack pointer
-                 "mov rsp, %[stack_start];"
+void handle_sig_int(int signum) {
+    printf("sig int received\n");
+    exit(signum);
+}
 
-                 //  clear 'PF' flag
-                 "mov r15, 0xff;"
-                 "xor r15, 1;"
+void handle_sig_sys() {
+    printf("sig sys received\n");
+}
 
-                 // clear registers
-                 "mov rax, 0x00;"
-                 "mov rcx, 0x00;"
-                 "mov rdx, 0x00;"
-                 "mov rsi, 0x00;"
-                 "mov rdi, 0x00;"
-                 "mov rbp, 0x00;"
-                 "mov r8, 0x00;"
-                 "mov r9, 0x00;"
-                 "mov r10, 0x00;"
-                 "mov r11, 0x00;"
-                 "mov r12, 0x00;"
-                 "mov r13, 0x00;"
-                 "mov r14, 0x00;"
-                 "mov r15, 0x00;"
+void init_signals() {
+    struct sigaction sig_int_action = {.sa_handler = handle_sig_int};
+    sigaction(SIGINT, &sig_int_action, NULL);
 
-                 // jump to program
-                 // @todo: only works with constants
-                 "jmp %[start_address];"
-                 :
-                 : [start_address] "i"(PROGRAM_CODE_START), [stack_start] "r"(
-                                                                stack_start));
+    struct sigaction sys_action = {.sa_handler = handle_sig_sys};
+    sigaction(SIGSYS, &sys_action, NULL);
+}
 
-    // asm("jmp %[start_address]"
-    //     : // Output operands would be here.
-    //     : // Input operands are here.
-    //     [start_address] "i"(PROGRAM_CODE_START));
+void init_process_control() {
+    printf("no idea...\n");
+    // prctl(PR_SET_SYSCALL_USER_DISPATCH, <op>, <offset>, <length>, [selector])
+    // prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON,
+    //       PROGRAM_ADDRESS_START, PROGRAM_SPACE_SIZE, NULL);
+    prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON,
+          PROGRAM_ADDRESS_START, PROGRAM_SPACE_SIZE,
+          SYSCALL_DISPATCH_FILTER_ALLOW);
+}
+
+void run_asm(uint64_t stack_start, uint64_t program_entry) {
+    asm volatile(
+        "mov rbx, 0x00;"
+        // set stack pointer
+        "mov rsp, %[stack_start];"
+
+        //  clear 'PF' flag
+        "mov r15, 0xff;"
+        "xor r15, 1;"
+
+        // clear registers
+        //  "mov rax, 0x00;"
+        "mov rcx, 0x00;"
+        "mov rdx, 0x00;"
+        "mov rsi, 0x00;"
+        "mov rdi, 0x00;"
+        "mov rbp, 0x00;"
+        "mov r8, 0x00;"
+        "mov r9, 0x00;"
+        "mov r10, 0x00;"
+        "mov r11, 0x00;"
+        "mov r12, 0x00;"
+        "mov r13, 0x00;"
+        "mov r14, 0x00;"
+        "mov r15, 0x00;"
+
+        // jump to program
+        "jmp %[program_entry];"
+        :
+        : [program_entry] "r"(program_entry), [stack_start] "r"(stack_start));
 }
