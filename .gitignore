@@ -5,3 +5,4 @@
 .gdb*
 *.cpy
 *.dump
+*.so

@@ -9,7 +9,7 @@ _start:
     ; print arg count
     mov rdi, [rsp]
     call print_number
-    puts_len new_line, 1
+    puts_line
 
     ; print args
     lea rdi, [rsp + 8]
@@ -28,7 +28,8 @@ _start:
     push rdi
     call print_auxiliary_vector
 
-    exit 0
+    mov rdi, 0
+    call libc_exit
 
 section .text
     global _start

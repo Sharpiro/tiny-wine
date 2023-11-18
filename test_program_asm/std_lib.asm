@@ -5,8 +5,6 @@ DEFAULT REL
 
 puts:
     mov rsi, rdi
-    mov rax, SYS_WRITE
-    mov rdi, STDOUT
     mov r8, -0x01
 .seek_char:
     add r8, 1
@@ -14,15 +12,11 @@ puts:
     cmp r9b, 0x00
     jne .seek_char
     mov rdx, r8
-    syscall
-
-    ; new line
     mov rax, SYS_WRITE
     mov rdi, STDOUT
-    lea rsi, [rel new_line]
-    ; mov rsi, new_line
-    mov rdx, 1
     syscall
+
+    puts_line
     ret
 
 print_string_array:
@@ -72,7 +66,7 @@ print_number:
     cmovge r10, r11
     add r9, r10
     push r9
-    puts_len_reg rsp, 1
+    puts_len [rsp], 1
     pop r9
 
     ; while
@@ -92,21 +86,22 @@ print_auxiliary_vector:
     mov rdi, [r8]
     push r8
     call print_number 
-    puts_len [rel space], 1
-    ; puts_len space, 1
+    puts_len space, 1
     pop r8
     mov rdi, [r8+8]
     push r8
     call print_number 
     pop r8
     add r8, 16
-    ; puts_len new_line, 1
-    puts_len [rel new_line], 1
-    ; puts_line
+    puts_line
     mov r9, [r8]
     cmp r9, 0x00
     jne .loop
     ret
+
+libc_exit:
+    mov rax, SYS_EXIT
+    syscall
 
 section .data
     new_line db 0x0a
@@ -114,3 +109,4 @@ section .data
 section .text
   global puts
   global print_string_array
+  global libc_exit

@@ -7,3 +7,4 @@ extern print_string_array
 extern print_small_number
 extern print_number
 extern print_auxiliary_vector
+extern libc_exit
