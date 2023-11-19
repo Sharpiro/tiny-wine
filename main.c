@@ -8,6 +8,8 @@
 #include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <syscall.h>
+#include <ucontext.h>
 #include <unistd.h>
 
 typedef uint8_t u8;
@@ -19,7 +21,23 @@ typedef uint64_t u64;
 
 void run_asm(u64 value, uint64_t program_entry);
 void init_signals();
-void init_process_control();
+
+uint8_t block_status = SYSCALL_DISPATCH_FILTER_BLOCK;
+
+void init_process_control_64_bit() {
+    printf("try init prctl\n");
+
+    if (prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON, 0x7ffff7def000,
+              0x156000, &block_status)) {
+        perror("prctl failed for libc");
+        exit(-1);
+    };
+    printf("init prctl success\n");
+
+    // asm volatile("mov rax, 0xff00;"
+    //              "syscall");
+    printf("inline asm done\n");
+}
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -64,7 +82,7 @@ int main(int argc, char *argv[]) {
     printf("stack_start: %lx\n", stack_start);
 
     init_signals();
-    init_process_control();
+    init_process_control_64_bit();
 
     // while (true) {
     //     sleep(1);
@@ -81,31 +99,39 @@ int main(int argc, char *argv[]) {
     }
 }
 
-void handle_sig_int(int signum) {
-    printf("sig int received\n");
-    exit(signum);
-}
+// void handle_sig_int(int sig, siginfo_t *info, void *ucontext) {
+//     printf("SIGINT received, %d, %d, %d\n", sig, info->si_signo,
+//     info->si_code); exit(0);
+// }
 
-void handle_sig_sys() {
-    printf("sig sys received\n");
+void handle_sig_sys(int sig, siginfo_t *info, void *ucontext) {
+    //    0x401153:    mov    eax,0x3c
+    printf("SIGSYS received, code: %d, signo: %d (%d), sys: %x\n",
+           info->si_code, info->si_signo, sig,
+           info->_sifields._sigsys._syscall);
+
+    if (info->_sifields._sigsys._syscall == SYS_exit) {
+        printf("intercepted exit\n");
+        exit(0);
+    }
+
+    // int x = getcontext(ucontext);
+    ucontext_t *ucontext_typed = ucontext;
+    // int64_t x = ucontext_typed->uc_mcontext.gregs[REG_R14];
+    printf("try passing syscall through...\n");
+    syscall(info->_sifields._sigsys._syscall);
+    // printf("sig sys received\n");
 }
 
 void init_signals() {
-    struct sigaction sig_int_action = {.sa_handler = handle_sig_int};
-    sigaction(SIGINT, &sig_int_action, NULL);
+    // struct sigaction sig_int_action = {.sa_sigaction = handle_sig_int};
+    // sigaction(SIGINT, &sig_int_action, NULL);
 
-    struct sigaction sys_action = {.sa_handler = handle_sig_sys};
+    struct sigaction sys_action = {
+        .sa_sigaction = handle_sig_sys,
+        .sa_flags = SA_SIGINFO,
+    };
     sigaction(SIGSYS, &sys_action, NULL);
-}
-
-void init_process_control() {
-    printf("no idea...\n");
-    // prctl(PR_SET_SYSCALL_USER_DISPATCH, <op>, <offset>, <length>, [selector])
-    // prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON,
-    //       PROGRAM_ADDRESS_START, PROGRAM_SPACE_SIZE, NULL);
-    prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON,
-          PROGRAM_ADDRESS_START, PROGRAM_SPACE_SIZE,
-          SYSCALL_DISPATCH_FILTER_ALLOW);
 }
 
 void run_asm(uint64_t stack_start, uint64_t program_entry) {
