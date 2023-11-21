@@ -1,3 +1,8 @@
 CompileFlags:
   Add:
+    - -Wall
+    - -Wextra
+    - -Wpedantic
     - -Wno-c2x-extensions
+    - -Wno-gnu-empty-initializer
+    - -Wno-language-extension-token

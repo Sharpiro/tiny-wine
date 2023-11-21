@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <elf.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -12,32 +14,23 @@
 #include <ucontext.h>
 #include <unistd.h>
 
-typedef uint8_t u8;
-typedef uint32_t u32;
-typedef uint64_t u64;
+const char *SYS_CALL_NAMES[61] = {
+    [1] = "WRITE",
+    [60] = "EXIT",
+};
+const size_t SYS_CALL_TABLE_SIZE = sizeof(SYS_CALL_NAMES) / sizeof(char *);
+
+char SYS_CALL_NUM_DISPLAY[16] = {};
 
 #define PROGRAM_SPACE_SIZE 0x200000
 #define PROGRAM_ADDRESS_START 0x400000
+#define LOG_SIGSYS 0x00
 
-void run_asm(u64 value, uint64_t program_entry);
-void init_signals();
+static void init_process_control_64_bit(void);
+static void handle_sig_sys(int sig, siginfo_t *info, void *ucontext_void);
+static void run_asm(u_int64_t value, uint64_t program_entry);
 
 uint8_t block_status = SYSCALL_DISPATCH_FILTER_BLOCK;
-
-void init_process_control_64_bit() {
-    printf("try init prctl\n");
-
-    if (prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON, 0x7ffff7def000,
-              0x156000, &block_status)) {
-        perror("prctl failed for libc");
-        exit(-1);
-    };
-    printf("init prctl success\n");
-
-    // asm volatile("mov rax, 0xff00;"
-    //              "syscall");
-    printf("inline asm done\n");
-}
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -81,12 +74,13 @@ int main(int argc, char *argv[]) {
     uint64_t stack_start = (uint64_t)argv - 8;
     printf("stack_start: %lx\n", stack_start);
 
-    init_signals();
-    init_process_control_64_bit();
+    struct sigaction sys_action = {
+        .sa_sigaction = handle_sig_sys,
+        .sa_flags = SA_SIGINFO,
+    };
+    sigaction(SIGSYS, &sys_action, NULL);
 
-    // while (true) {
-    //     sleep(1);
-    // }
+    init_process_control_64_bit();
 
     printf("starting child program...\n\n");
     run_asm(stack_start, header->e_entry);
@@ -99,42 +93,53 @@ int main(int argc, char *argv[]) {
     }
 }
 
-// void handle_sig_int(int sig, siginfo_t *info, void *ucontext) {
-//     printf("SIGINT received, %d, %d, %d\n", sig, info->si_signo,
-//     info->si_code); exit(0);
-// }
-
-void handle_sig_sys(int sig, siginfo_t *info, void *ucontext) {
-    //    0x401153:    mov    eax,0x3c
-    printf("SIGSYS received, code: %d, signo: %d (%d), sys: %x\n",
-           info->si_code, info->si_signo, sig,
-           info->_sifields._sigsys._syscall);
-
-    if (info->_sifields._sigsys._syscall == SYS_exit) {
-        printf("intercepted exit\n");
-        exit(0);
+static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
+    uint64_t sys_call_no = info->_sifields._sigsys._syscall;
+    char *code_display = NULL;
+    if (sys_call_no < SYS_CALL_TABLE_SIZE) {
+        code_display = (char *)SYS_CALL_NAMES[sys_call_no];
+    }
+    if (code_display == NULL) {
+        code_display = SYS_CALL_NUM_DISPLAY;
+        snprintf(code_display, 16, "%jd", sys_call_no);
     }
 
-    // int x = getcontext(ucontext);
-    ucontext_t *ucontext_typed = ucontext;
-    // int64_t x = ucontext_typed->uc_mcontext.gregs[REG_R14];
-    printf("try passing syscall through...\n");
-    syscall(info->_sifields._sigsys._syscall);
-    // printf("sig sys received\n");
+    ucontext_t *ucontext = ucontext_void;
+    int64_t rax = ucontext->uc_mcontext.gregs[REG_RAX];
+    int64_t rdi = ucontext->uc_mcontext.gregs[REG_RDI];
+    int64_t rsi = ucontext->uc_mcontext.gregs[REG_RSI];
+    int64_t rdx = ucontext->uc_mcontext.gregs[REG_RDX];
+    int64_t rcx = ucontext->uc_mcontext.gregs[REG_RCX];
+    int64_t r8 = ucontext->uc_mcontext.gregs[REG_R8];
+    int64_t r9 = ucontext->uc_mcontext.gregs[REG_R9];
+    if (LOG_SIGSYS) {
+        printf("\ncall: %s, (%jd, %jd, %jd, %jd, %jd, %jd)\n", code_display,
+               rdi, rsi, rdx, rcx, r8, r9);
+    }
+
+    if (sys_call_no != (uint64_t)rax) {
+        fprintf(stderr, "unexpected syscall");
+    }
+
+    // @todo: doesn't handle stack vars
+    int64_t result = syscall(rax, rdi, rsi, rdx, rcx, r8, r9);
+    if (LOG_SIGSYS) {
+        printf("\nresult: %jd\n", result);
+    }
 }
 
-void init_signals() {
-    // struct sigaction sig_int_action = {.sa_sigaction = handle_sig_int};
-    // sigaction(SIGINT, &sig_int_action, NULL);
+static void init_process_control_64_bit(void) {
+    printf("try init prctl\n");
 
-    struct sigaction sys_action = {
-        .sa_sigaction = handle_sig_sys,
-        .sa_flags = SA_SIGINFO,
+    if (prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON, 0x7ffff7def000,
+              0x156000, &block_status)) {
+        perror("prctl failed for libc");
+        exit(-1);
     };
-    sigaction(SIGSYS, &sys_action, NULL);
+    printf("init prctl success\n");
 }
 
-void run_asm(uint64_t stack_start, uint64_t program_entry) {
+static void run_asm(uint64_t stack_start, uint64_t program_entry) {
     asm volatile(
         "mov rbx, 0x00;"
         // set stack pointer

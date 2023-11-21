@@ -49,13 +49,16 @@ print_small_number:
     pop r8
     retn
 
-print_number:
+print_number_32:
+    mov rbp, rsp
     mov r8d, edi
-    mov r12, 0
+    mov r12, 0x00
     mov r13, 0x10000000
+    mov rsi, 0x00
 .calc_byte:
+    shr rsi, 0x08
     mov rax, r8
-    mov rdx, 0
+    mov rdx, 0x00
     mov rbx, r13
     div rbx
     mov r14, rax
@@ -65,9 +68,8 @@ print_number:
     mov r11, 0x57
     cmovge r10, r11
     add r9, r10
-    push r9
-    puts_len [rsp], 1
-    pop r9
+    shl r9, 0x38
+    or rsi, r9
 
     ; while
     add r12, 1
@@ -78,6 +80,9 @@ print_number:
     cmp r12, 0x08
     jl .calc_byte
 
+    push rsi
+    puts_len [rsp], 0x08
+    mov rsp, rbp
     ret
 
 print_auxiliary_vector:
@@ -85,12 +90,12 @@ print_auxiliary_vector:
 .loop:
     mov rdi, [r8]
     push r8
-    call print_number 
+    call print_number_32 
     puts_len space, 1
     pop r8
     mov rdi, [r8+8]
     push r8
-    call print_number 
+    call print_number_32 
     pop r8
     add r8, 16
     puts_line
@@ -102,6 +107,7 @@ print_auxiliary_vector:
 libc_exit:
     mov rax, SYS_EXIT
     syscall
+    ret
 
 section .data
     new_line db 0x0a

@@ -8,7 +8,7 @@ BITS 64
 _start:
     ; print arg count
     mov rdi, [rsp]
-    call print_number
+    call print_number_32
     puts_line
 
     ; print args
