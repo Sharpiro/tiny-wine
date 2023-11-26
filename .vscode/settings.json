@@ -6,5 +6,9 @@
     "functional": "c"
   },
   "C_Cpp.default.defines": ["MAP_ANONYMOUS"],
-  "C_Cpp.intelliSenseEngine": "disabled"
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "errorLens.enabled": true,
+  "errorLens.gutterIconsEnabled": false,
+  "errorLens.enabledDiagnosticLevels": ["error", "warning"],
+  "errorLens.enableOnDiffView": true
 }

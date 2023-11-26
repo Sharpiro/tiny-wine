@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include <elf.h>
+#include <link.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -26,6 +27,7 @@ char SYS_CALL_NUM_DISPLAY[16] = {};
 #define PROGRAM_ADDRESS_START 0x400000
 #define LOG_SIGSYS 0x00
 
+static void get_shared_objects(void);
 static void init_process_control_64_bit(void);
 static void handle_sig_sys(int sig, siginfo_t *info, void *ucontext_void);
 static void run_asm(u_int64_t value, uint64_t program_entry);
@@ -37,6 +39,9 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: linker <filename>\n");
         exit(EXIT_FAILURE);
     }
+
+    get_shared_objects();
+    return 0;
 
     char *program_path = argv[1];
     struct stat file_stat;
@@ -93,6 +98,44 @@ int main(int argc, char *argv[]) {
     }
 }
 
+static int dl_iterate_phdr_callback(struct dl_phdr_info *info, size_t size,
+                                    void *data) {
+    char *type;
+    int p_type;
+
+    printf("Name: \"%s\" (%d segments)\n", info->dlpi_name, info->dlpi_phnum);
+
+    for (int j = 0; j < info->dlpi_phnum; j++) {
+        p_type = info->dlpi_phdr[j].p_type;
+        type = (p_type == PT_LOAD)           ? "PT_LOAD"
+               : (p_type == PT_DYNAMIC)      ? "PT_DYNAMIC"
+               : (p_type == PT_INTERP)       ? "PT_INTERP"
+               : (p_type == PT_NOTE)         ? "PT_NOTE"
+               : (p_type == PT_INTERP)       ? "PT_INTERP"
+               : (p_type == PT_PHDR)         ? "PT_PHDR"
+               : (p_type == PT_TLS)          ? "PT_TLS"
+               : (p_type == PT_GNU_EH_FRAME) ? "PT_GNU_EH_FRAME"
+               : (p_type == PT_GNU_STACK)    ? "PT_GNU_STACK"
+               : (p_type == PT_GNU_RELRO)    ? "PT_GNU_RELRO"
+                                             : NULL;
+
+        printf("    %2d: [%14p; memsz:%7jx] flags: %#jx; ", j,
+               (void *)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr),
+               (uintmax_t)info->dlpi_phdr[j].p_memsz,
+               (uintmax_t)info->dlpi_phdr[j].p_flags);
+        if (type != NULL)
+            printf("%s\n", type);
+        else
+            printf("[other (%#x)]\n", p_type);
+    }
+
+    return 0;
+}
+
+static void get_shared_objects(void) {
+    dl_iterate_phdr(dl_iterate_phdr_callback, NULL);
+}
+
 static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
     uint64_t sys_call_no = info->_sifields._sigsys._syscall;
     char *code_display = NULL;
@@ -128,6 +171,10 @@ static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
     }
 }
 
+/**
+ * 'libc' memory location on 64 bit.
+ * 'vdso' memory location on 32 bit
+ */
 static void init_process_control_64_bit(void) {
     printf("try init prctl\n");
 
