@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
@@ -15,24 +16,29 @@
 #include <ucontext.h>
 #include <unistd.h>
 
-const char *SYS_CALL_NAMES[61] = {
+static const char *SYS_CALL_NAMES[61] = {
     [1] = "WRITE",
     [60] = "EXIT",
 };
-const size_t SYS_CALL_TABLE_SIZE = sizeof(SYS_CALL_NAMES) / sizeof(char *);
+static const size_t SYS_CALL_TABLE_SIZE =
+    sizeof(SYS_CALL_NAMES) / sizeof(char *);
 
-char SYS_CALL_NUM_DISPLAY[16] = {};
+static char SYS_CALL_NUM_DISPLAY[16] = {};
 
 #define PROGRAM_SPACE_SIZE 0x200000
 #define PROGRAM_ADDRESS_START 0x400000
-#define LOG_SIGSYS 0x00
+#define LOG_SIGSYS 1
 
-static void get_shared_objects(void);
+static int dl_iterate_phdr_callback(struct dl_phdr_info *info, size_t size,
+                                    void *data);
 static void init_process_control_64_bit(void);
 static void handle_sig_sys(int sig, siginfo_t *info, void *ucontext_void);
 static void run_asm(u_int64_t value, uint64_t program_entry);
 
-uint8_t block_status = SYSCALL_DISPATCH_FILTER_BLOCK;
+static uint8_t block_status = SYSCALL_DISPATCH_FILTER_BLOCK;
+
+static void *prctl_address = NULL;
+static size_t prctl_size = 0;
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -40,8 +46,13 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    get_shared_objects();
-    return 0;
+    dl_iterate_phdr(dl_iterate_phdr_callback, NULL);
+    if (prctl_address == NULL) {
+        fprintf(stderr, "no good\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("prctl_address: %p\n", prctl_address);
+    printf("prctl_size: %p\n", (void *)prctl_size);
 
     char *program_path = argv[1];
     struct stat file_stat;
@@ -100,40 +111,25 @@ int main(int argc, char *argv[]) {
 
 static int dl_iterate_phdr_callback(struct dl_phdr_info *info, size_t size,
                                     void *data) {
-    char *type;
-    int p_type;
-
-    printf("Name: \"%s\" (%d segments)\n", info->dlpi_name, info->dlpi_phnum);
+    // @todo: not portable
+    if (strcmp(info->dlpi_name, "/lib64/libc.so.6") != 0) {
+        return 0;
+    }
 
     for (int j = 0; j < info->dlpi_phnum; j++) {
-        p_type = info->dlpi_phdr[j].p_type;
-        type = (p_type == PT_LOAD)           ? "PT_LOAD"
-               : (p_type == PT_DYNAMIC)      ? "PT_DYNAMIC"
-               : (p_type == PT_INTERP)       ? "PT_INTERP"
-               : (p_type == PT_NOTE)         ? "PT_NOTE"
-               : (p_type == PT_INTERP)       ? "PT_INTERP"
-               : (p_type == PT_PHDR)         ? "PT_PHDR"
-               : (p_type == PT_TLS)          ? "PT_TLS"
-               : (p_type == PT_GNU_EH_FRAME) ? "PT_GNU_EH_FRAME"
-               : (p_type == PT_GNU_STACK)    ? "PT_GNU_STACK"
-               : (p_type == PT_GNU_RELRO)    ? "PT_GNU_RELRO"
-                                             : NULL;
+        const Elf64_Phdr *object_header = &info->dlpi_phdr[j];
+        if (object_header->p_type != PT_LOAD ||
+            object_header->p_flags != 0x05) {
+            continue;
+        }
 
-        printf("    %2d: [%14p; memsz:%7jx] flags: %#jx; ", j,
-               (void *)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr),
-               (uintmax_t)info->dlpi_phdr[j].p_memsz,
-               (uintmax_t)info->dlpi_phdr[j].p_flags);
-        if (type != NULL)
-            printf("%s\n", type);
-        else
-            printf("[other (%#x)]\n", p_type);
+        prctl_address = (void *)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr);
+        prctl_size = info->dlpi_phdr[j].p_memsz;
+
+        break;
     }
 
     return 0;
-}
-
-static void get_shared_objects(void) {
-    dl_iterate_phdr(dl_iterate_phdr_callback, NULL);
 }
 
 static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
@@ -178,8 +174,8 @@ static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
 static void init_process_control_64_bit(void) {
     printf("try init prctl\n");
 
-    if (prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON, 0x7ffff7def000,
-              0x156000, &block_status)) {
+    if (prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON, prctl_address,
+              prctl_size, &block_status)) {
         perror("prctl failed for libc");
         exit(-1);
     };
