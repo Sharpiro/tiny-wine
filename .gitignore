@@ -6,4 +6,4 @@
 *.cpy
 *.dump
 *.so
-linker
+tiny_wine
