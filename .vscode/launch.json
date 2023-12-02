@@ -5,7 +5,7 @@
       "name": "(gdb) Launch",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/linker",
+      "program": "${workspaceFolder}/loader",
       "args": ["test_program_asm/test.exe"],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
