@@ -23,6 +23,7 @@ loader: loader.c
 		-mno-sse \
 		-nostdlib \
 		-Wall -Wextra -Wpedantic \
+		-Wno-varargs \
 		-masm=intel \
 		-fno-stack-protector \
 		-g \

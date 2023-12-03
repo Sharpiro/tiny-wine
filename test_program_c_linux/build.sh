@@ -1,8 +1,6 @@
 set -e
 
-    # -static \
 gcc -Wall -g -o test.exe \
-    -nostdlib \
     -masm=intel \
     -fno-stack-protector \
     test_program.c

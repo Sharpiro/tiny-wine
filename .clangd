@@ -6,4 +6,5 @@ CompileFlags:
     # - -Wno-c2x-extensions
     # - -Wno-gnu-empty-initializer
     - -Wno-language-extension-token
+    - -Wno-varargs
     - -nostdlib

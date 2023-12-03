@@ -24,25 +24,18 @@ int main(int argc, char *argv[]) {
     }
     printf("size: %ld\n", file_stat.st_size);
 
-    void *program_map_buffer = mmap(
-        (void *)PROGRAM_ADDRESS_START, PROGRAM_SPACE_SIZE,
-        PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    FILE *file = fopen(program_path, "r");
+    void *program_map_buffer =
+        mmap((void *)PROGRAM_ADDRESS_START, PROGRAM_SPACE_SIZE,
+             PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, file->_fileno, 0);
     printf("mmap ptr %p\n", program_map_buffer);
 
-    if (program_map_buffer == NULL) {
-        printf("map NULL\n");
-        return 1;
-    }
     if (program_map_buffer == MAP_FAILED) {
         printf("map failed\n");
         return 1;
     }
     printf("mmap success\n");
 
-    FILE *file = fopen(program_path, "r");
-
-    fread(program_map_buffer, 1, file_stat.st_size, file);
-    printf("read success\n");
     fclose(file);
 
     Elf64_Ehdr *header = program_map_buffer;
