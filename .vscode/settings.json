@@ -9,5 +9,6 @@
   "errorLens.enabled": true,
   "errorLens.gutterIconsEnabled": false,
   "errorLens.enabledDiagnosticLevels": ["error", "warning"],
-  "errorLens.enableOnDiffView": true
+  "errorLens.enableOnDiffView": true,
+  "cSpell.words": ["Ehdr"]
 }

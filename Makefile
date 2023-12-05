@@ -12,23 +12,24 @@ tiny_wine: main.c prctl.c *.h
 		-g \
 		-o tiny_wine prctl.c main.c
 
-# -Wl,--section-start=.text=0x7d7d00000000 \
 # -std=gnu2x \
 # -nostartfiles \
 # -nodefaultlibs \
+# -Wl,--section-start=.rodata=0x6d7d00000000 \
 
 loader: loader.c
 	@$(CC) \
 		-O0 \
 		-mno-sse \
 		-nostdlib \
-		-Wall -Wextra -Wpedantic \
+		-Wall -Wextra \
 		-Wno-varargs \
 		-masm=intel \
+		-fPIE \
+		-Wl,--section-start=.text=0x7d7d00000000 \
 		-fno-stack-protector \
 		-g \
 		-o loader loader.c
-
 
 clean:
 	@rm -f tiny_wine loader
