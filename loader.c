@@ -292,7 +292,8 @@ void print_buffer(uint8_t *buffer, size_t length) {
 
 #if NO_LIBC
 void _start(void) {
-    const char *FILE_NAME = "test_program_asm/test.exe";
+    // const char *FILE_NAME = "test_program_asm/test.exe";
+    const char *FILE_NAME = "test_program_c_linux/test.exe";
     const size_t ADDRESS = 0x400000;
 
     if (tiny_c_munmap(ADDRESS, 0x1000)) {
@@ -303,12 +304,17 @@ void _start(void) {
     uint64_t fd = tiny_c_fopen(FILE_NAME);
     tiny_c_printf("fd: %x\n", fd);
 
+    // 0xA2000
     uint8_t *addr =
-        tiny_c_mmap(ADDRESS, 0x20000, PROT_READ | PROT_WRITE | PROT_EXEC,
+        tiny_c_mmap(ADDRESS, 0x200000, PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE, fd, 0);
     tiny_c_fclose(fd);
     if (addr == MAP_FAILED) {
         tiny_c_printf("map failed\n");
+        tiny_c_exit(1);
+    }
+    if ((uint64_t)addr == 0xfffffffffffffff7) {
+        tiny_c_printf("map failed for unknown reason\n");
         tiny_c_exit(1);
     }
 

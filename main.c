@@ -10,7 +10,7 @@
 
 static void run_asm(u_int64_t value, uint64_t program_entry);
 
-int main(int argc, char *argv[]) {
+int main_inferior(int argc, char *argv[]) {
     if (argc < 2) {
         printf("Usage: tiny_wine <filename>\n");
         exit(EXIT_FAILURE);
