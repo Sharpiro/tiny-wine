@@ -3,6 +3,7 @@
 
 void tiny_c_print_number(uint64_t num);
 void tiny_c_newline();
+void tiny_c_print(const char *data);
 void tiny_c_printf(const char *format, ...);
 void tiny_c_exit(int code);
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,

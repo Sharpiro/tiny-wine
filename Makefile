@@ -17,6 +17,20 @@ tiny_wine: main.c prctl.c *.h
 # -nodefaultlibs \
 # -Wl,--section-start=.rodata=0x6d7d00000000 \
 
+tiny_c_arm: tiny_c.c
+	@$(CC) \
+		-c \
+		-O0 \
+		-nostdlib \
+		-nostartfiles -nodefaultlibs \
+		-Wall -Wextra \
+		-Wno-varargs \
+		-fno-stack-protector \
+		-g \
+		-DARM32 \
+		-o tiny_c.o tiny_c.c
+	@ar rcs libtinyc.a tiny_c.o
+
 tiny_c: tiny_c.c
 	@$(CC) \
 		-c \

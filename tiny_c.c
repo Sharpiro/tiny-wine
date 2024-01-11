@@ -20,6 +20,8 @@ struct SysArgs {
     size_t param_seven;
 };
 
+#ifdef AMD64
+
 size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
 
@@ -35,6 +37,28 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 
     return result;
 }
+
+#endif
+
+#ifdef ARM32
+
+size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
+    size_t result = 0;
+
+    asm("mov r0, %0" : : "r"(sys_args->param_one));
+    asm("mov r1, %0" : : "r"(sys_args->param_two));
+    asm("mov r2, %0" : : "r"(sys_args->param_three));
+    asm("mov r3, %0" : : "r"(sys_args->param_four));
+    asm("mov r4, %0" : : "r"(sys_args->param_five));
+    asm("mov r5, %0" : : "r"(sys_args->param_six));
+    asm("mov r6, %0" : : "r"(sys_args->param_seven));
+    asm("mov r7, %0" : : "r"(sys_no));
+    asm("svc #0" : "=r"(result) : :);
+
+    return result;
+}
+
+#endif
 
 void tiny_c_print_len(const char *data, size_t size) {
     struct SysArgs args = {
@@ -79,6 +103,8 @@ size_t tiny_c_pow(size_t x, size_t y) {
 
     return product;
 }
+
+#ifdef AMD64
 
 void tiny_c_print_number(size_t num) {
     const char *HEX_CHARS = "0123456789abcdef";
@@ -239,3 +265,5 @@ size_t tiny_c_munmap(size_t address, size_t length) {
 
     return result;
 }
+
+#endif
