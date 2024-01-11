@@ -17,7 +17,21 @@ tiny_wine: main.c prctl.c *.h
 # -nodefaultlibs \
 # -Wl,--section-start=.rodata=0x6d7d00000000 \
 
-loader: loader.c
+tiny_c: tiny_c.c
+	@$(CC) \
+		-c \
+		-O0 \
+		-mno-sse \
+		-nostdlib \
+		-Wall -Wextra \
+		-Wno-varargs \
+		-masm=intel \
+		-fno-stack-protector \
+		-g \
+		-o tiny_c.o tiny_c.c
+	@ar rcs libtinyc.a tiny_c.o
+
+loader: loader.c tiny_c.c
 	@$(CC) \
 		-O0 \
 		-mno-sse \
@@ -29,7 +43,7 @@ loader: loader.c
 		-Wl,--section-start=.text=0x7d7d00000000 \
 		-fno-stack-protector \
 		-g \
-		-o loader loader.c
+		-o loader loader.c tiny_c.c
 
 clean:
-	@rm -f tiny_wine loader
+	@rm -f tiny_wine loader tiny_c.o libtinyc.a

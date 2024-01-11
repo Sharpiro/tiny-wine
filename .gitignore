@@ -8,3 +8,4 @@
 *.so
 tiny_wine
 loader
+*.a
