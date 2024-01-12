@@ -58,6 +58,33 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
+uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
+    if (denominator == 0) {
+        return 0xffffffff;
+    }
+    if (denominator == numerator) {
+        return 1;
+    }
+    if (denominator >= numerator) {
+        return 0;
+    }
+
+    size_t denominator_increment = denominator;
+    size_t count = 0;
+    while (denominator_increment <= numerator) {
+        count++;
+        denominator_increment += denominator;
+    }
+
+    return count;
+}
+
+void memset (char *s_buffer, char c_value, size_t n_count) {
+    for (size_t i = 0; i < n_count; i++) {
+        s_buffer[i] = c_value;
+    }
+}
+
 #endif
 
 void tiny_c_print_len(const char *data, size_t size) {
@@ -104,11 +131,10 @@ size_t tiny_c_pow(size_t x, size_t y) {
     return product;
 }
 
-#ifdef AMD64
 
 void tiny_c_print_number(size_t num) {
+    const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *HEX_CHARS = "0123456789abcdef";
-    const size_t MAX_DIGITS = 16;
 
     char num_buffer[32] = {0};
     num_buffer[0] = '0';
@@ -121,7 +147,7 @@ void tiny_c_print_number(size_t num) {
         num_buffer[j] = HEX_CHARS[digit];
         size_t digit_value = digit * current_base;
         num -= digit_value;
-        current_base /= 0x10;
+        current_base >>= 4;
     }
 
     struct SysArgs args = {
@@ -213,17 +239,6 @@ void tiny_c_exit(size_t code) {
     tiny_c_syscall(SYS_exit, &args);
 }
 
-struct stat tiny_c_stat(const char *path) {
-    struct stat file_stat;
-    struct SysArgs args = {
-        .param_one = (size_t)path,
-        .param_two = (size_t)&file_stat,
-    };
-    tiny_c_syscall(SYS_stat, &args);
-
-    return file_stat;
-}
-
 size_t tiny_c_fopen(const char *path) {
     struct SysArgs args = {
         .param_one = (size_t)path,
@@ -239,6 +254,19 @@ void tiny_c_fclose(size_t fd) {
         .param_one = fd,
     };
     tiny_c_syscall(SYS_close, &args);
+}
+
+#ifdef AMD64
+
+struct stat tiny_c_stat(const char *path) {
+    struct stat file_stat;
+    struct SysArgs args = {
+        .param_one = (size_t)path,
+        .param_two = (size_t)&file_stat,
+    };
+    tiny_c_syscall(SYS_stat, &args);
+
+    return file_stat;
 }
 
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,

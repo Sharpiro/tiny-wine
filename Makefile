@@ -25,6 +25,7 @@ tiny_c_arm: tiny_c.c
 		-nostartfiles -nodefaultlibs \
 		-Wall -Wextra \
 		-Wno-varargs \
+		-Wno-builtin-declaration-mismatch \
 		-fno-stack-protector \
 		-g \
 		-DARM32 \
