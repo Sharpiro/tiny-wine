@@ -58,6 +58,7 @@ tiny_c: tiny_c.c
 		-masm=intel \
 		-fno-stack-protector \
 		-g \
+		-DAMD64 \
 		-o tiny_c.o tiny_c.c
 	@ar rcs libtinyc.a tiny_c.o
 

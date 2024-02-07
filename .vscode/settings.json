@@ -5,7 +5,6 @@
     ".env.sample": "properties",
     "functional": "c"
   },
-  "C_Cpp.default.defines": ["MAP_ANONYMOUS"],
   "errorLens.enabled": true,
   "errorLens.gutterIconsEnabled": false,
   "errorLens.enabledDiagnosticLevels": ["error", "warning"],
