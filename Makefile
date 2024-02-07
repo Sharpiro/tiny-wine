@@ -32,6 +32,21 @@ tiny_c_arm: tiny_c.c
 		-o tiny_c.o tiny_c.c
 	@ar rcs libtinyc.a tiny_c.o
 
+tiny_c_arm_shared: tiny_c.c
+	@$(CC) \
+		-O0 \
+		-nostdlib \
+		-nostartfiles -nodefaultlibs \
+		-Wall -Wextra \
+		-Wno-varargs \
+		-Wno-builtin-declaration-mismatch \
+		-fno-stack-protector \
+		-g \
+		-DARM32 \
+		-shared \
+		-fPIC \
+		-o libtinyc.so tiny_c.c
+
 tiny_c: tiny_c.c
 	@$(CC) \
 		-c \
