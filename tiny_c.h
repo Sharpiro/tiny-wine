@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 void tiny_c_print_number(uint64_t num);
+void tiny_c_print_len(char *str, size_t len);
 void tiny_c_newline();
 void tiny_c_print(const char *data);
 void tiny_c_printf(const char *format, ...);

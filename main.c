@@ -50,6 +50,8 @@ int main_inferior(int argc, char *argv[]) {
 
     printf("starting child program...\n\n");
     run_asm(stack_start, header->e_entry);
+
+    return 0;
 }
 
 static void run_asm(uint64_t stack_start, uint64_t program_entry) {
