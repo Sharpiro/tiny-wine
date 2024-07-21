@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -21,6 +22,8 @@ struct SysArgs {
 };
 
 #ifdef AMD64
+
+#define MMAP SYS_mmap
 
 size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
@@ -42,18 +45,28 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 
 #ifdef ARM32
 
+#define MMAP SYS_mmap2
+
+// @todo: don't know how to clobber 7 registers
 size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
 
-    asm("mov r0, %0" : : "r"(sys_args->param_one));
-    asm("mov r1, %0" : : "r"(sys_args->param_two));
-    asm("mov r2, %0" : : "r"(sys_args->param_three));
-    asm("mov r3, %0" : : "r"(sys_args->param_four));
-    asm("mov r4, %0" : : "r"(sys_args->param_five));
-    asm("mov r5, %0" : : "r"(sys_args->param_six));
-    asm("mov r6, %0" : : "r"(sys_args->param_seven));
-    asm("mov r7, %0" : : "r"(sys_no));
-    asm("svc #0" : "=r"(result) : :);
+    asm("mov r0, %[p1]\n"
+        "mov r1, %[p2]\n"
+        "mov r2, %[p3]\n"
+        "mov r3, %[p4]\n"
+        "mov r4, %[p5]\n"
+        "mov r5, %[p6]\n"
+        "mov r6, %[p7]\n"
+        "mov r7, %[sysno]\n"
+        "svc #0\n"
+        "mov %[res], r0\n"
+        : [res] "=r"(result)
+        : [p1] "g"(sys_args->param_one), [p2] "g"(sys_args->param_two),
+          [p3] "g"(sys_args->param_three), [p4] "g"(sys_args->param_four),
+          [p5] "g"(sys_args->param_five), [p6] "g"(sys_args->param_six),
+          [p7] "g"(sys_args->param_seven), [sysno] "r"(sys_no)
+        : "r0", "r1", "r2", "r3", "r4");
 
     return result;
 }
@@ -79,11 +92,14 @@ uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
     return count;
 }
 
-void memset (char *s_buffer, char c_value, size_t n_count) {
+void memset(char *s_buffer, char c_value, size_t n_count) {
     for (size_t i = 0; i < n_count; i++) {
         s_buffer[i] = c_value;
     }
 }
+
+// void memcpy(void *__restrict __dest, const void *__restrict __src, size_t
+// __n) { }
 
 #endif
 
@@ -111,7 +127,7 @@ void tiny_c_print(const char *data) {
 void tiny_c_newline(void) {
     struct SysArgs args = (struct SysArgs){
         .param_one = STDOUT,
-        .param_two = (size_t) "\n",
+        .param_two = (size_t)"\n",
         .param_three = 1,
     };
     tiny_c_syscall(SYS_write, &args);
@@ -130,7 +146,6 @@ size_t tiny_c_pow(size_t x, size_t y) {
 
     return product;
 }
-
 
 void tiny_c_print_number(size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
@@ -239,7 +254,7 @@ void tiny_c_exit(size_t code) {
     tiny_c_syscall(SYS_exit, &args);
 }
 
-size_t tiny_c_fopen(const char *path) {
+size_t tiny_c_open(const char *path) {
     struct SysArgs args = {
         .param_one = (size_t)path,
         .param_two = O_RDWR,
@@ -256,6 +271,48 @@ void tiny_c_fclose(size_t fd) {
     tiny_c_syscall(SYS_close, &args);
 }
 
+void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
+                  size_t fd, size_t offset) {
+    struct SysArgs args = {
+        .param_one = address,
+        .param_two = length,
+        .param_three = prot,
+        .param_four = flags,
+        .param_five = fd,
+        .param_six = offset,
+    };
+    void *result = (void *)tiny_c_syscall(MMAP, &args);
+
+    return result;
+}
+
+// @todo: x64 convention disrespect could be a register clobber bug
+
+// void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t
+// flags,
+//                   size_t fd, size_t offset) {
+//     struct SysArgs args = {
+//         .param_one = address,
+//         .param_two = length,
+//         .param_three = prot,
+//         .param_seven = flags, // @note: disrespects x64 calling
+//         convention .param_five = fd, .param_six = offset,
+//     };
+//     void *result = (void *)tiny_c_syscall(MMAP, &args);
+
+//     return result;
+// }
+
+size_t tiny_c_munmap(size_t address, size_t length) {
+    struct SysArgs args = {
+        .param_one = address,
+        .param_two = length,
+    };
+    size_t result = tiny_c_syscall(SYS_munmap, &args);
+
+    return result;
+}
+
 #ifdef AMD64
 
 struct stat tiny_c_stat(const char *path) {
@@ -267,31 +324,6 @@ struct stat tiny_c_stat(const char *path) {
     tiny_c_syscall(SYS_stat, &args);
 
     return file_stat;
-}
-
-void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
-                  size_t fd, size_t offset) {
-    struct SysArgs args = {
-        .param_one = address,
-        .param_two = length,
-        .param_three = prot,
-        .param_seven = flags, // @note: disrespects calling convention
-        .param_five = fd,
-        .param_six = offset,
-    };
-    void *result = (void *)tiny_c_syscall(SYS_mmap, &args);
-
-    return result;
-}
-
-size_t tiny_c_munmap(size_t address, size_t length) {
-    struct SysArgs args = {
-        .param_one = address,
-        .param_two = length,
-    };
-    size_t result = tiny_c_syscall(SYS_munmap, &args);
-
-    return result;
 }
 
 #endif

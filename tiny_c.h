@@ -10,5 +10,5 @@ void tiny_c_exit(int code);
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
                   uint64_t fd, size_t offset);
 size_t tiny_c_munmap(size_t address, size_t length);
-uint64_t tiny_c_fopen(const char *path);
+uint64_t tiny_c_open(const char *path);
 void tiny_c_fclose(uint64_t fd);

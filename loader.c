@@ -10,6 +10,8 @@
 
 #define NO_LIBC 1
 
+#ifdef AMD64
+
 static void run_asm(uint64_t stack_start, uint64_t program_entry) {
     asm volatile("mov rbx, 0x00;"
                  // set stack pointer
@@ -51,6 +53,21 @@ static void run_asm(uint64_t stack_start, uint64_t program_entry) {
         rbp_out;                                                               \
     })
 
+#endif
+
+#ifdef ARM32
+
+static void run_asm(uint64_t stack_start, uint64_t program_entry){}
+
+#define GET_RBP()                                                              \
+    ({                                                                         \
+        uint64_t rbp_out = 0;                                                  \
+        asm("mov r0, r0" : "=r"(rbp_out) : :);                                 \
+        rbp_out;                                                               \
+    })
+
+#endif
+
 void print_buffer(uint8_t *buffer, size_t length) {
 
     for (size_t i = 0; i < length; i++) {
@@ -66,14 +83,18 @@ void print_buffer(uint8_t *buffer, size_t length) {
 void _start(void) {
     const char *FILE_NAME = "test_program_asm/test.exe";
     // const char *FILE_NAME = "test_program_c_linux/test.exe";
-    const size_t ADDRESS = 0x400000;
+    const size_t ADDRESS = 0x10000;
 
     if (tiny_c_munmap(ADDRESS, 0x1000)) {
-        tiny_c_printf("munmap failed");
+        tiny_c_printf("munmap of self failed\n");
         tiny_c_exit(1);
     }
 
-    uint64_t fd = tiny_c_fopen(FILE_NAME);
+    int32_t fd = tiny_c_open(FILE_NAME);
+    if (fd == -1) {
+        tiny_c_printf("file not found\n");
+        tiny_c_exit(1);
+    }
     tiny_c_printf("fd: %x\n", fd);
 
     // 0xA2000
@@ -83,10 +104,6 @@ void _start(void) {
     tiny_c_fclose(fd);
     if (addr == MAP_FAILED) {
         tiny_c_printf("map failed\n");
-        tiny_c_exit(1);
-    }
-    if ((uint64_t)addr == 0xfffffffffffffff7) {
-        tiny_c_printf("map failed for unknown reason\n");
         tiny_c_exit(1);
     }
 

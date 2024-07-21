@@ -71,10 +71,23 @@ loader: loader.c tiny_c.c
 		-Wno-varargs \
 		-masm=intel \
 		-fPIE \
-		-Wl,--section-start=.text=0x7d7d00000000 \
+		-Wl,--section-start=.text=0x00007d7d00000000 \
 		-fno-stack-protector \
 		-g \
 		-o loader loader.c tiny_c.c
 
+loader_arm: loader.c tiny_c.c
+	@$(CC) \
+		-O0 \
+		-nostdlib \
+		-Wall -Wextra \
+		-Wno-varargs \
+		-fPIE \
+		-Wl,--section-start=.text=7d7d0000 \
+		-fno-stack-protector \
+		-g \
+		-DARM32 \
+		-o loader loader.c libtinyc.a
+
 clean:
-	@rm -f tiny_wine loader tiny_c.o libtinyc.a
+	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so
