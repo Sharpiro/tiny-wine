@@ -3,6 +3,7 @@ CompileFlags:
     - -Wall
     - -Wextra
     - -Wpedantic
+    - -Wtype-limits
     # - -Wno-c2x-extensions
     # - -Wno-gnu-empty-initializer
     - -Wno-language-extension-token

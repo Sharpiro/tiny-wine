@@ -72,37 +72,6 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
-uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
-    if (denominator == 0) {
-        return 0xffffffff;
-    }
-    if (denominator == numerator) {
-        return 1;
-    }
-    if (denominator >= numerator) {
-        return 0;
-    }
-
-    size_t denominator_increment = denominator;
-    size_t count = 0;
-    while (denominator_increment <= numerator &&
-           denominator_increment >= denominator) {
-        count++;
-        denominator_increment += denominator;
-    }
-
-    return count;
-}
-
-void memset(char *s_buffer, char c_value, size_t n_count) {
-    for (size_t i = 0; i < n_count; i++) {
-        s_buffer[i] = c_value;
-    }
-}
-
-// void memcpy(void *__restrict __dest, const void *__restrict __src, size_t
-// __n) { }
-
 #endif
 
 void tiny_c_print_len(const char *data, size_t size) {
@@ -258,7 +227,7 @@ void tiny_c_exit(size_t code) {
 
 // @todo: docs say err should return -1, but i'm seeing -2, maybe related to
 //        ENOENT + no libc errno thread global
-size_t tiny_c_open(const char *path) {
+ssize_t tiny_c_open(const char *path) {
     struct SysArgs args = {
         .param_one = (size_t)path,
         .param_two = O_RDWR,
@@ -316,6 +285,48 @@ size_t tiny_c_munmap(size_t address, size_t length) {
 
     return result;
 }
+
+#ifdef ARM32
+
+uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
+    if (denominator == 0) {
+        return 0xffffffff;
+    }
+    if (denominator == numerator) {
+        return 1;
+    }
+    if (denominator >= numerator) {
+        return 0;
+    }
+
+    size_t denominator_increment = denominator;
+    size_t count = 0;
+    while (denominator_increment <= numerator &&
+           denominator_increment >= denominator) {
+        count++;
+        denominator_increment += denominator;
+    }
+
+    return count;
+}
+
+// NOLINTBEGIN(clang-diagnostic-incompatible-library-redeclaration)
+
+void memset(char *s_buffer, char c_value, size_t n_count) {
+    for (size_t i = 0; i < n_count; i++) {
+        s_buffer[i] = c_value;
+    }
+}
+
+// @todo: 'abort'?
+void memcpy(void) {
+    tiny_c_printf("unimplemented\n");
+    tiny_c_exit(-1);
+}
+
+// NOLINTEND(clang-diagnostic-incompatible-library-redeclaration)
+
+#endif
 
 #ifdef AMD64
 

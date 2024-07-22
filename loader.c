@@ -13,6 +13,8 @@
 
 #ifdef AMD64
 
+#define ELF_HEADER Elf64_Ehdr
+
 static void run_asm(size_t stack_start, size_t program_entry) {
     asm volatile("mov rbx, 0x00\n"
                  // set stack pointer
@@ -47,16 +49,11 @@ static void run_asm(size_t stack_start, size_t program_entry) {
                  : "rax");
 }
 
-#define GET_FRAME_POINTER()                                                    \
-    ({                                                                         \
-        size_t result = 0;                                                     \
-        asm("mov rax, rbp" : "=r"(result) : :);                                \
-        result;                                                                \
-    })
-
 #endif
 
 #ifdef ARM32
+
+#define ELF_HEADER Elf32_Ehdr
 
 static void run_asm(uint8_t *stack_start, size_t program_entry) {
     asm volatile(
@@ -86,21 +83,6 @@ static void run_asm(uint8_t *stack_start, size_t program_entry) {
                  : [program_entry] "r"(program_entry)
                  :);
 }
-
-// @todo: rm
-#define GET_FRAME_POINTER()                                                    \
-    ({                                                                         \
-        size_t result = 0;                                                     \
-        asm("mov %[res], fp" : [res] "=g"(result) : :);                        \
-        result;                                                                \
-    })
-
-#define GET_REGISTER(reg)                                                      \
-    ({                                                                         \
-        size_t result = 0;                                                     \
-        asm("mov %0, " reg : "=r"(result));                                    \
-        result;                                                                \
-    })
 
 #endif
 
@@ -137,7 +119,7 @@ void _start(void) {
         tiny_c_exit(1);
     }
 
-    int32_t fd = tiny_c_open(filename);
+    ssize_t fd = tiny_c_open(filename);
     if (fd < 0) {
         tiny_c_printf("file not found\n");
         tiny_c_exit(1);
@@ -154,11 +136,12 @@ void _start(void) {
         tiny_c_exit(1);
     }
 
-    Elf32_Ehdr *header = (Elf32_Ehdr *)addr;
+    ELF_HEADER *header = (ELF_HEADER *)addr;
     tiny_c_printf("program entry: %x\n", header->e_entry);
     tiny_c_printf("map address: %x\n", (size_t)addr);
 
-    uint8_t *stack_start = frame_pointer + 0x08;
+    // uint8_t *stack_start = frame_pointer + 0x08;
+    uint8_t *stack_start = frame_pointer;
     tiny_c_printf("frame_pointer: %x\n", frame_pointer);
     tiny_c_printf("stack_start: %x\n", stack_start);
     tiny_c_printf("running program...\n");
@@ -167,8 +150,5 @@ void _start(void) {
 #endif
 
 #if !NO_LIBC
-int main(void) {
-    char *temp = "hi";
-    printf("%s\n", temp);
-}
+int main(void) {}
 #endif

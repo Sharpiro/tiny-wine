@@ -1,6 +1,6 @@
 CC=gcc
 
-all: tiny_wine loader
+all: tiny_c_arm tiny_c_arm_shared loader_arm
 
 tiny_wine: main.c prctl.c *.h
 	@$(CC) \
@@ -82,12 +82,17 @@ loader_arm: loader.c tiny_c.c
 		-nostdlib \
 		-Wall -Wextra \
 		-Wno-varargs \
+		-Wno-builtin-declaration-mismatch \
 		-fPIE \
 		-Wl,--section-start=.text=7d7d0000 \
 		-fno-stack-protector \
 		-g \
 		-DARM32 \
-		-o loader loader.c libtinyc.a
+		-o loader loader.c tiny_c.c
 
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so
+
+install: all
+	cp tiny_c.h /usr/include
+	cp libtinyc.a libtinyc.so /usr/lib
