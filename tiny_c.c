@@ -48,6 +48,7 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 #define MMAP SYS_mmap2
 
 // @todo: don't know how to clobber 7 registers
+// @todo: asm vs asm volatile
 size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
 
@@ -84,7 +85,8 @@ uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
 
     size_t denominator_increment = denominator;
     size_t count = 0;
-    while (denominator_increment <= numerator) {
+    while (denominator_increment <= numerator &&
+           denominator_increment >= denominator) {
         count++;
         denominator_increment += denominator;
     }
@@ -254,6 +256,8 @@ void tiny_c_exit(size_t code) {
     tiny_c_syscall(SYS_exit, &args);
 }
 
+// @todo: docs say err should return -1, but i'm seeing -2, maybe related to
+//        ENOENT + no libc errno thread global
 size_t tiny_c_open(const char *path) {
     struct SysArgs args = {
         .param_one = (size_t)path,

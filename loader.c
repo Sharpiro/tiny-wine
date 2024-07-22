@@ -2,6 +2,7 @@
 #include <elf.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -12,58 +13,93 @@
 
 #ifdef AMD64
 
-static void run_asm(uint64_t stack_start, uint64_t program_entry) {
-    asm volatile("mov rbx, 0x00;"
+static void run_asm(size_t stack_start, size_t program_entry) {
+    asm volatile("mov rbx, 0x00\n"
                  // set stack pointer
-                 "mov rsp, %[stack_start];"
+                 "mov rsp, %[stack_start]\n"
 
                  //  clear 'PF' flag
-                 "mov r15, 0xff;"
-                 "xor r15, 1;"
+                 "mov r15, 0xff\n"
+                 "xor r15, 1\n"
 
                  // clear registers
-                 "mov rax, 0x00;"
-                 "mov rcx, 0x00;"
-                 "mov rdx, 0x00;"
-                 "mov rsi, 0x00;"
-                 "mov rdi, 0x00;"
-                 //  "mov rbp, 0x00;"
-                 "mov r8, 0x00;"
-                 "mov r9, 0x00;"
-                 "mov r10, 0x00;"
-                 "mov r11, 0x00;"
-                 "mov r12, 0x00;"
-                 "mov r13, 0x00;"
-                 "mov r14, 0x00;"
-                 "mov r15, 0x00;"
+                 "mov rax, 0x00\n"
+                 "mov rcx, 0x00\n"
+                 "mov rdx, 0x00\n"
+                 "mov rsi, 0x00\n"
+                 "mov rdi, 0x00\n"
+                 //  "mov rbp, 0x00\n"
+                 "mov r8, 0x00\n"
+                 "mov r9, 0x00\n"
+                 "mov r10, 0x00\n"
+                 "mov r11, 0x00\n"
+                 "mov r12, 0x00\n"
+                 "mov r13, 0x00\n"
+                 "mov r14, 0x00\n"
+                 "mov r15, 0x00\n"
                  :
                  : [stack_start] "r"(stack_start));
 
     // jump to program
-    asm volatile("jmp %[program_entry];"
+    asm volatile("jmp %[program_entry]\n"
                  :
                  : [program_entry] "r"(program_entry)
                  : "rax");
 }
 
-#define GET_RBP()                                                              \
+#define GET_FRAME_POINTER()                                                    \
     ({                                                                         \
-        uint64_t rbp_out = 0;                                                  \
-        asm("mov rax, rbp" : "=r"(rbp_out) : :);                               \
-        rbp_out;                                                               \
+        size_t result = 0;                                                     \
+        asm("mov rax, rbp" : "=r"(result) : :);                                \
+        result;                                                                \
     })
 
 #endif
 
 #ifdef ARM32
 
-static void run_asm(uint64_t stack_start, uint64_t program_entry){}
+static void run_asm(uint8_t *stack_start, size_t program_entry) {
+    asm volatile(
+        // set stack pointer first
+        "mov sp, %[stack_start]\n"
 
-#define GET_RBP()                                                              \
+        // clear registers
+        "mov r0, #0\n"
+        "mov r1, #0\n"
+        "mov r2, #0\n"
+        "mov r3, #0\n"
+        "mov r4, #0\n"
+        "mov r5, #0\n"
+        "mov r6, #0\n"
+        "mov r7, #0\n"
+        "mov r8, #0\n"
+        "mov r9, #0\n"
+        "mov r10, #0\n"
+
+        :
+        : [stack_start] "r"(stack_start)
+        :);
+
+    // jump to program
+    asm volatile("bx %[program_entry]\n"
+                 :
+                 : [program_entry] "r"(program_entry)
+                 :);
+}
+
+// @todo: rm
+#define GET_FRAME_POINTER()                                                    \
     ({                                                                         \
-        uint64_t rbp_out = 0;                                                  \
-        asm("mov r0, r0" : "=r"(rbp_out) : :);                                 \
-        rbp_out;                                                               \
+        size_t result = 0;                                                     \
+        asm("mov %[res], fp" : [res] "=g"(result) : :);                        \
+        result;                                                                \
+    })
+
+#define GET_REGISTER(reg)                                                      \
+    ({                                                                         \
+        size_t result = 0;                                                     \
+        asm("mov %0, " reg : "=r"(result));                                    \
+        result;                                                                \
     })
 
 #endif
@@ -81,8 +117,19 @@ void print_buffer(uint8_t *buffer, size_t length) {
 
 #if NO_LIBC
 void _start(void) {
-    const char *FILE_NAME = "test_program_asm/test.exe";
-    // const char *FILE_NAME = "test_program_c_linux/test.exe";
+    uint8_t *frame_pointer = (uint8_t *)GET_REGISTER("fp");
+    size_t argc = *(size_t *)(frame_pointer + sizeof(size_t));
+    if (argc < 2) {
+        tiny_c_printf("Filename required\n", argc);
+        tiny_c_exit(-1);
+        return;
+    }
+
+    char *filename = *(char **)(frame_pointer + sizeof(size_t) * 3);
+
+    tiny_c_printf("args: %x\n", argc);
+    tiny_c_printf("filename: %s\n", filename);
+
     const size_t ADDRESS = 0x10000;
 
     if (tiny_c_munmap(ADDRESS, 0x1000)) {
@@ -90,14 +137,14 @@ void _start(void) {
         tiny_c_exit(1);
     }
 
-    int32_t fd = tiny_c_open(FILE_NAME);
-    if (fd == -1) {
+    int32_t fd = tiny_c_open(filename);
+    if (fd < 0) {
         tiny_c_printf("file not found\n");
         tiny_c_exit(1);
     }
     tiny_c_printf("fd: %x\n", fd);
 
-    // 0xA2000
+    // @todo: map data section
     uint8_t *addr =
         tiny_c_mmap(ADDRESS, 0x200000, PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE, fd, 0);
@@ -107,13 +154,12 @@ void _start(void) {
         tiny_c_exit(1);
     }
 
-    Elf64_Ehdr *header = (Elf64_Ehdr *)addr;
+    Elf32_Ehdr *header = (Elf32_Ehdr *)addr;
     tiny_c_printf("program entry: %x\n", header->e_entry);
-    tiny_c_printf("map address: %x\n", (uint64_t)addr);
+    tiny_c_printf("map address: %x\n", (size_t)addr);
 
-    uint64_t rbp = GET_RBP();
-    uint64_t stack_start = rbp + 0x08;
-    tiny_c_printf("rbp: %x\n", rbp);
+    uint8_t *stack_start = frame_pointer + 0x08;
+    tiny_c_printf("frame_pointer: %x\n", frame_pointer);
     tiny_c_printf("stack_start: %x\n", stack_start);
     tiny_c_printf("running program...\n");
     run_asm(stack_start, header->e_entry);
