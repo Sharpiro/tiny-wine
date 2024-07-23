@@ -87,7 +87,6 @@ static void run_asm(uint8_t *stack_start, size_t program_entry) {
 #endif
 
 void print_buffer(uint8_t *buffer, size_t length) {
-
     for (size_t i = 0; i < length; i++) {
         if (i > 0 && i % 2 == 0) {
             tiny_c_printf("\n", buffer[i]);

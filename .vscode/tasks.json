@@ -1,15 +1,15 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "build tiny_wine",
-      "type": "shell",
-      "command": "make clean && make tiny_wine"
-    },
-    {
-      "label": "build loader",
-      "type": "shell",
-      "command": "make clean && make loader"
-    }
-  ]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build tiny_wine",
+            "type": "shell",
+            "command": "make clean && make tiny_wine"
+        },
+        {
+            "label": "build loader",
+            "type": "shell",
+            "command": "make clean && make loader_arm"
+        }
+    ]
 }

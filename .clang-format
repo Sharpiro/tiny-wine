@@ -1,5 +1,3 @@
 BasedOnStyle: LLVM
 IndentWidth: 4
-# AllowShortFunctionsOnASingleLine: false
-# AllowShortLambdasOnASingleLine: None
-# AlignAfterOpenBracket: DontAlign
+KeepEmptyLinesAtTheStartOfBlocks: false
