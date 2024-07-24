@@ -1,8 +1,10 @@
+#include "tiny_c.h"
 #include <elf.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -84,6 +86,11 @@ void tiny_c_print_len(const char *data, size_t size) {
 }
 
 void tiny_c_print(const char *data) {
+    if (data == NULL) {
+        tiny_c_print_len("<null>", 6);
+        return;
+    }
+
     size_t size = 0;
     for (size_t i = 0; true; i++) {
         if (data[i] == 0x00) {
@@ -220,7 +227,7 @@ void tiny_c_printf(const char *format, ...) {
     va_end(var_args);
 }
 
-void tiny_c_exit(size_t code) {
+void tiny_c_exit(int32_t code) {
     struct SysArgs args = {.param_one = code};
     tiny_c_syscall(SYS_exit, &args);
 }

@@ -95,6 +95,6 @@ loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so
 
-install: all
-	cp tiny_c.h /usr/include
+install: all_arm
+	cp src/tiny_c/tiny_c.h /usr/include
 	cp libtinyc.a libtinyc.so /usr/lib
