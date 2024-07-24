@@ -55,33 +55,32 @@ static void run_asm(size_t stack_start, size_t program_entry) {
 
 #define ELF_HEADER Elf32_Ehdr
 
-static void run_asm(uint8_t *stack_start, size_t program_entry) {
-    asm volatile(
-        // set stack pointer first
-        "mov sp, %[stack_start]\n"
-
-        // clear registers
-        "mov r0, #0\n"
-        "mov r1, #0\n"
-        "mov r2, #0\n"
-        "mov r3, #0\n"
-        "mov r4, #0\n"
-        "mov r5, #0\n"
-        "mov r6, #0\n"
-        "mov r7, #0\n"
-        "mov r8, #0\n"
-        "mov r9, #0\n"
-        "mov r10, #0\n"
-
-        :
-        : [stack_start] "r"(stack_start)
-        :);
-
-    // jump to program
-    asm volatile("bx %[program_entry]\n"
+static void run_asm(size_t *frame_start, size_t *stack_start,
+                    size_t program_entry) {
+    asm volatile("mov r0, #0\n"
+                 "mov r1, #0\n"
+                 "mov r2, #0\n"
+                 "mov r3, #0\n"
+                 "mov r4, #0\n"
+                 "mov r5, #0\n"
+                 "mov r6, #0\n"
+                 "mov r7, #0\n"
+                 "mov r8, #0\n"
+                 "mov r9, #0\n"
+                 "mov r10, #0\n"
                  :
-                 : [program_entry] "r"(program_entry)
-                 :);
+                 :
+                 : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9",
+                   "r10");
+
+    asm volatile(
+        "mov fp, %[frame_start]\n"
+        "mov sp, %[stack_start]\n"
+        "bx %[program_entry]\n"
+        :
+        : [frame_start] "r"(frame_start), [stack_start] "r"(stack_start),
+          [program_entry] "r"(program_entry)
+        :);
 }
 
 #endif
@@ -98,17 +97,18 @@ void print_buffer(uint8_t *buffer, size_t length) {
 
 #if NO_LIBC
 void _start(void) {
-    uint8_t *frame_pointer = (uint8_t *)GET_REGISTER("fp");
-    size_t argc = *(size_t *)(frame_pointer + sizeof(size_t));
+    size_t *frame_pointer = (size_t *)GET_REGISTER("fp");
+    size_t argc = frame_pointer[1];
+    char **argv = (char **)(frame_pointer + 2);
     if (argc < 2) {
         tiny_c_printf("Filename required\n", argc);
         tiny_c_exit(-1);
         return;
     }
 
-    char *filename = *(char **)(frame_pointer + sizeof(size_t) * 3);
+    char *filename = argv[1];
 
-    tiny_c_printf("args: %x\n", argc);
+    tiny_c_printf("argc: %x\n", argc);
     tiny_c_printf("filename: %s\n", filename);
 
     const size_t ADDRESS = 0x10000;
@@ -139,12 +139,13 @@ void _start(void) {
     tiny_c_printf("program entry: %x\n", header->e_entry);
     tiny_c_printf("map address: %x\n", (size_t)addr);
 
-    // uint8_t *stack_start = frame_pointer + 0x08;
-    uint8_t *stack_start = frame_pointer;
+    size_t *frame_start = frame_pointer + 1;
+    *(frame_start + 1) = argc - 1;
+    size_t *stack_start = frame_start + 1;
     tiny_c_printf("frame_pointer: %x\n", frame_pointer);
     tiny_c_printf("stack_start: %x\n", stack_start);
     tiny_c_printf("running program...\n");
-    run_asm(stack_start, header->e_entry);
+    run_asm(frame_start, stack_start, header->e_entry);
 }
 #endif
 
