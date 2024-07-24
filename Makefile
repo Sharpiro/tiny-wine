@@ -78,7 +78,7 @@ loader: loader.c src/tiny_c/tiny_c.c
 		-g \
 		-o loader loader.c src/tiny_c/tiny_c.c
 
-loader_arm: src/loader.c src/tiny_c/tiny_c.c
+loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) \
 		-O0 \
 		-nostdlib \
@@ -90,7 +90,7 @@ loader_arm: src/loader.c src/tiny_c/tiny_c.c
 		-fno-stack-protector \
 		-g \
 		-DARM32 \
-		-o loader src/loader.c src/tiny_c/tiny_c.c
+		-o loader src/loader/loader_main.c src/tiny_c/tiny_c.c
 
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so

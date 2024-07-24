@@ -7,5 +7,5 @@
 *.dump
 *.so
 tiny_wine
-loader
+/loader
 *.a
