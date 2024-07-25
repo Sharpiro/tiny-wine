@@ -2,7 +2,7 @@ CC=gcc
 
 all: tiny_c tiny_c_shared loader
 
-all_arm: tiny_c_arm tiny_c_arm_shared loader_arm
+all_arm: tiny_c_arm tiny_c_arm_shared programs/linux/data_section loader_arm
 
 tiny_wine: main.c prctl.c *.h
 	@$(CC) \
@@ -91,6 +91,15 @@ loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-g \
 		-DARM32 \
 		-o loader src/loader/loader_main.c src/tiny_c/tiny_c.c
+
+programs/linux/data_section:
+	@$(CC) -Wall -g \
+		-D ARM32 \
+		-nostartfiles -nodefaultlibs \
+		-Wno-builtin-declaration-mismatch \
+		-Wno-varargs \
+		-o data_section src/programs/linux/data_section/data_section_main.c \
+		src/tiny_c/tiny_c.c
 
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so
