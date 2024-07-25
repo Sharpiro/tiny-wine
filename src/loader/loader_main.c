@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -130,14 +131,21 @@ void _start(void) {
         tiny_c_mmap(ADDRESS, 0x200000, PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE, fd, 0);
     tiny_c_fclose(fd);
-    if (addr == MAP_FAILED) {
+    if (addr == NULL || addr == MAP_FAILED) {
         tiny_c_printf("map failed\n");
         tiny_c_exit(1);
     }
 
+    const char ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
+
     ELF_HEADER *header = (ELF_HEADER *)addr;
     tiny_c_printf("program entry: %x\n", header->e_entry);
     tiny_c_printf("map address: %x\n", (size_t)addr);
+
+    if (tiny_c_memcmp(header->e_ident, ELF_MAGIC, 4)) {
+        tiny_c_printf("Program type not supported\n");
+        tiny_c_exit(1);
+    }
 
     size_t *frame_start = frame_pointer + 1;
     *(frame_start + 1) = argc - 1;
@@ -147,8 +155,4 @@ void _start(void) {
     tiny_c_printf("running program...\n");
     run_asm(frame_start, stack_start, header->e_entry);
 }
-#endif
-
-#if !NO_LIBC
-int main(void) {}
 #endif

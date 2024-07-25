@@ -14,6 +14,7 @@ void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
 size_t tiny_c_munmap(size_t address, size_t length);
 ssize_t tiny_c_open(const char *path);
 void tiny_c_fclose(size_t fd);
+int tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
 
 #ifdef ARM32
 

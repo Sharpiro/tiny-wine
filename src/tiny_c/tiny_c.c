@@ -293,6 +293,18 @@ size_t tiny_c_munmap(size_t address, size_t length) {
     return result;
 }
 
+int tiny_c_memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        u_int8_t a = ((u_int8_t *)buffer_a)[i];
+        u_int8_t b = ((u_int8_t *)buffer_b)[i];
+        if (a != b) {
+            return a - b;
+        }
+    }
+
+    return 0;
+}
+
 #ifdef ARM32
 
 uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
