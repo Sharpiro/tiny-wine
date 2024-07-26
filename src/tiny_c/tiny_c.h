@@ -5,7 +5,7 @@
 
 void tiny_c_print_number(size_t num);
 void tiny_c_print_len(const char *str, size_t len);
-void tiny_c_newline();
+void tiny_c_newline(void);
 void tiny_c_print(const char *data);
 void tiny_c_printf(const char *format, ...);
 void tiny_c_exit(int32_t code);

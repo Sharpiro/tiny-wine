@@ -10,3 +10,4 @@ tiny_wine
 /loader
 *.a
 /data_section
+/env

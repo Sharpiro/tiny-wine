@@ -1,12 +1,19 @@
 CC=gcc
+WARNINGS = \
+	-Wall -Wextra -Wpedantic -Wno-varargs \
+	-Wno-builtin-declaration-mismatch
 
 all: tiny_c tiny_c_shared loader
 
-all_arm: tiny_c_arm tiny_c_arm_shared programs/linux/data_section loader_arm
+all_arm: tiny_c_arm \
+	tiny_c_arm_shared \
+	programs/linux/env \
+	programs/linux/data_section \
+	loader_arm
 
 tiny_wine: main.c prctl.c *.h
 	@$(CC) \
-		-Wall -Wextra -Wpedantic \
+		$(WARNINGS) \
 		-std=gnu2x \
 		-masm=intel \
 		-Wl,--section-start=.interp=0x900000 \
@@ -25,9 +32,7 @@ tiny_c_arm: src/tiny_c/tiny_c.c
 		-O0 \
 		-nostdlib \
 		-nostartfiles -nodefaultlibs \
-		-Wall -Wextra \
-		-Wno-varargs \
-		-Wno-builtin-declaration-mismatch \
+		$(WARNINGS) \
 		-fno-stack-protector \
 		-g \
 		-DARM32 \
@@ -39,9 +44,7 @@ tiny_c_arm_shared: src/tiny_c/tiny_c.c
 		-O0 \
 		-nostdlib \
 		-nostartfiles -nodefaultlibs \
-		-Wall -Wextra \
-		-Wno-varargs \
-		-Wno-builtin-declaration-mismatch \
+		$(WARNINGS) \
 		-fno-stack-protector \
 		-g \
 		-DARM32 \
@@ -55,8 +58,7 @@ tiny_c: src/tiny_c/tiny_c.c
 		-O0 \
 		-mno-sse \
 		-nostdlib \
-		-Wall -Wextra \
-		-Wno-varargs \
+		$(WARNINGS) \
 		-masm=intel \
 		-fno-stack-protector \
 		-g \
@@ -69,8 +71,7 @@ loader: loader.c src/tiny_c/tiny_c.c
 		-O0 \
 		-mno-sse \
 		-nostdlib \
-		-Wall -Wextra \
-		-Wno-varargs \
+		$(WARNINGS) \
 		-masm=intel \
 		-fPIE \
 		-Wl,--section-start=.text=0x00007d7d00000000 \
@@ -82,9 +83,7 @@ loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) \
 		-O0 \
 		-nostdlib \
-		-Wall -Wextra \
-		-Wno-varargs \
-		-Wno-builtin-declaration-mismatch \
+		$(WARNINGS) \
 		-fPIE \
 		-Wl,--section-start=.text=7d7d0000 \
 		-fno-stack-protector \
@@ -92,13 +91,20 @@ loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-DARM32 \
 		-o loader src/loader/loader_main.c src/tiny_c/tiny_c.c
 
-programs/linux/data_section:
-	@$(CC) -Wall -g \
+programs/linux/env:
+	@$(CC) -g \
 		-D ARM32 \
 		-nostartfiles -nodefaultlibs \
-		-Wno-builtin-declaration-mismatch \
-		-Wno-varargs \
+		$(WARNINGS) \
 		-o data_section src/programs/linux/data_section/data_section_main.c \
+		src/tiny_c/tiny_c.c
+
+programs/linux/data_section:
+	@$(CC) -g \
+		-D ARM32 \
+		-nostartfiles -nodefaultlibs \
+		$(WARNINGS) \
+		-o env src/programs/linux/env/env_main.c \
 		src/tiny_c/tiny_c.c
 
 clean:

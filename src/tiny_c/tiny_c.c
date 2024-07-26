@@ -125,6 +125,7 @@ size_t tiny_c_pow(size_t x, size_t y) {
     return product;
 }
 
+// @todo: bug: prints null characters
 void tiny_c_print_number(size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *HEX_CHARS = "0123456789abcdef";
