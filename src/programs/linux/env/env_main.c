@@ -8,8 +8,7 @@ void _start(void) {
     size_t argc = frame_pointer[1];
     char **argv = (char **)(frame_pointer + 2);
 
-    tiny_c_print_number(argc);
-    tiny_c_exit(0);
+    tiny_c_printf("%x\n", argc);
 
     // Print args
     for (size_t i = 0; i < argc; i++) {

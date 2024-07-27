@@ -86,17 +86,6 @@ static void run_asm(size_t *frame_start, size_t *stack_start,
 
 #endif
 
-void print_buffer(uint8_t *buffer, size_t length) {
-    for (size_t i = 0; i < length; i++) {
-        if (i > 0 && i % 2 == 0) {
-            tiny_c_printf("\n", buffer[i]);
-        }
-        tiny_c_printf("%x, ", buffer[i]);
-    }
-    tiny_c_printf("\n");
-}
-
-#if NO_LIBC
 void _start(void) {
     size_t *frame_pointer = (size_t *)GET_REGISTER("fp");
     size_t argc = frame_pointer[1];
@@ -155,4 +144,3 @@ void _start(void) {
     tiny_c_printf("running program...\n");
     run_asm(frame_start, stack_start, header->e_entry);
 }
-#endif

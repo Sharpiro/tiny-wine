@@ -125,8 +125,7 @@ size_t tiny_c_pow(size_t x, size_t y) {
     return product;
 }
 
-// @todo: bug: prints null characters
-void tiny_c_print_number(size_t num) {
+void tiny_c_print_number_hex(size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *HEX_CHARS = "0123456789abcdef";
 
@@ -135,10 +134,10 @@ void tiny_c_print_number(size_t num) {
     num_buffer[1] = 'x';
 
     size_t current_base = tiny_c_pow(0x10, MAX_DIGITS - 1);
-    for (size_t i = 0; i < MAX_DIGITS; i++) {
+    size_t buffer_index = 2;
+    for (size_t i = 0; i < MAX_DIGITS; i++, buffer_index++) {
         size_t digit = num / current_base;
-        size_t j = i + 2;
-        num_buffer[j] = HEX_CHARS[digit];
+        num_buffer[buffer_index] = HEX_CHARS[digit];
         size_t digit_value = digit * current_base;
         num -= digit_value;
         current_base >>= 4;
@@ -147,7 +146,7 @@ void tiny_c_print_number(size_t num) {
     struct SysArgs args = {
         .param_one = STDOUT,
         .param_two = (size_t)num_buffer,
-        .param_three = 18,
+        .param_three = buffer_index,
     };
     tiny_c_syscall(SYS_write, &args);
 }
@@ -210,7 +209,7 @@ void tiny_c_printf(const char *format, ...) {
         }
         case 'x': {
             size_t data = va_arg(var_args, size_t);
-            tiny_c_print_number(data);
+            tiny_c_print_number_hex(data);
             break;
         }
         case 0x00: {
@@ -345,6 +344,16 @@ void memcpy(void) {
 }
 
 // NOLINTEND(clang-diagnostic-incompatible-library-redeclaration)
+
+void print_buffer(uint8_t *buffer, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        if (i > 0 && i % 2 == 0) {
+            tiny_c_printf("\n", buffer[i]);
+        }
+        tiny_c_printf("%x, ", buffer[i]);
+    }
+    tiny_c_printf("\n");
+}
 
 #endif
 

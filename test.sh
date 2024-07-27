@@ -8,9 +8,14 @@ assert() {
     fi
 }
 
-env_result=`./env`
+env_result_len=`./loader ./env test | wc -c`
+env_result=`./loader ./env test`
+expected=`cat <<EOF
+0x00000002
+./env
+test
+EOF
+`
 
-echo $env_result
-
-# assert [ 1 -eq 1 ]
-# assert [ 1 -eq 2 ]
+assert [ "$env_result_len" == "22" ]
+assert [ "$env_result" == "$expected" ]

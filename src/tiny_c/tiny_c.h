@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-void tiny_c_print_number(size_t num);
+void tiny_c_print_number_hex(size_t num);
 void tiny_c_print_len(const char *str, size_t len);
 void tiny_c_newline(void);
 void tiny_c_print(const char *data);
