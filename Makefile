@@ -8,7 +8,7 @@ all: tiny_c tiny_c_shared loader
 all_arm: tiny_c_arm \
 	tiny_c_arm_shared \
 	programs/linux/env \
-	programs/linux/data_section \
+	programs/linux/string \
 	loader_arm
 
 tiny_wine: main.c prctl.c *.h
@@ -91,15 +91,15 @@ loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-DARM32 \
 		-o loader src/loader/loader_main.c src/tiny_c/tiny_c.c
 
-programs/linux/env:
+programs/linux/string:
 	@$(CC) -g \
 		-D ARM32 \
 		-nostartfiles -nodefaultlibs \
 		$(WARNINGS) \
-		-o data_section src/programs/linux/data_section/data_section_main.c \
+		-o string src/programs/linux/string/string_main.c \
 		src/tiny_c/tiny_c.c
 
-programs/linux/data_section:
+programs/linux/env:
 	@$(CC) -g \
 		-D ARM32 \
 		-nostartfiles -nodefaultlibs \
@@ -108,7 +108,7 @@ programs/linux/data_section:
 		src/tiny_c/tiny_c.c
 
 clean:
-	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so
+	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so env string
 
 install: tiny_c_arm tiny_c_arm_shared
 	cp src/tiny_c/tiny_c.h /usr/include

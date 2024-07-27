@@ -1,20 +1,22 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-void tiny_c_print_number_hex(size_t num);
-void tiny_c_print_len(const char *str, size_t len);
-void tiny_c_newline(void);
-void tiny_c_print(const char *data);
+#define STDOUT 1
+#define STDERR 2
+
+void tiny_c_fprintf(size_t file_handle, const char *format, ...);
 void tiny_c_printf(const char *format, ...);
 void tiny_c_exit(int32_t code);
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
                   size_t fd, size_t offset);
 size_t tiny_c_munmap(size_t address, size_t length);
-ssize_t tiny_c_open(const char *path);
+int32_t tiny_c_open(const char *path);
 void tiny_c_fclose(size_t fd);
-int tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
+int32_t tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
+int32_t tiny_c_strcmp(const void *__s1, const void *__s2);
 
 #ifdef ARM32
 

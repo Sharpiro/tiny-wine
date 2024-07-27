@@ -8,14 +8,15 @@ assert() {
     fi
 }
 
-env_result_len=`./loader ./env test | wc -c`
-env_result=`./loader ./env test`
-expected=`cat <<EOF
-0x00000002
-./env
-test
-EOF
-`
+# expected=`cat <<EOF
+# 0x00000002 env
+# silent
+# EOF
+# `
 
-assert [ "$env_result_len" == "22" ]
-assert [ "$env_result" == "$expected" ]
+# Env Test
+assert [ `./loader env silent | wc -c` == "22" ]
+assert [ "`./loader env silent`" == $'0x00000002\nenv\nsilent' ]
+
+# String Test
+assert [ "`./loader string silent`" == $'const data\nstatic data' ]

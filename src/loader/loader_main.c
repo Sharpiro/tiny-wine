@@ -87,33 +87,40 @@ static void run_asm(size_t *frame_start, size_t *stack_start,
 #endif
 
 void _start(void) {
+    ssize_t null_file_handle = tiny_c_open("/dev/null");
+    ssize_t log_file_handle = STDERR;
+
     size_t *frame_pointer = (size_t *)GET_REGISTER("fp");
     size_t argc = frame_pointer[1];
     char **argv = (char **)(frame_pointer + 2);
     if (argc < 2) {
-        tiny_c_printf("Filename required\n", argc);
+        tiny_c_fprintf(STDERR, "Filename required\n", argc);
         tiny_c_exit(-1);
         return;
     }
 
+    if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
+        log_file_handle = null_file_handle;
+    }
+
     char *filename = argv[1];
 
-    tiny_c_printf("argc: %x\n", argc);
-    tiny_c_printf("filename: %s\n", filename);
+    tiny_c_fprintf(log_file_handle, "argc: %x\n", argc);
+    tiny_c_fprintf(log_file_handle, "filename: %s\n", filename);
 
     const size_t ADDRESS = 0x10000;
 
     if (tiny_c_munmap(ADDRESS, 0x1000)) {
-        tiny_c_printf("munmap of self failed\n");
+        tiny_c_fprintf(STDERR, "munmap of self failed\n");
         tiny_c_exit(1);
     }
 
     ssize_t fd = tiny_c_open(filename);
     if (fd < 0) {
-        tiny_c_printf("file not found\n");
+        tiny_c_fprintf(STDERR, "file not found\n");
         tiny_c_exit(1);
     }
-    tiny_c_printf("fd: %x\n", fd);
+    tiny_c_fprintf(log_file_handle, "fd: %x\n", fd);
 
     // @todo: map data section
     uint8_t *addr =
@@ -121,26 +128,26 @@ void _start(void) {
                     MAP_PRIVATE, fd, 0);
     tiny_c_fclose(fd);
     if (addr == NULL || addr == MAP_FAILED) {
-        tiny_c_printf("map failed\n");
+        tiny_c_fprintf(STDERR, "map failed\n");
         tiny_c_exit(1);
     }
 
     const char ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
 
     ELF_HEADER *header = (ELF_HEADER *)addr;
-    tiny_c_printf("program entry: %x\n", header->e_entry);
-    tiny_c_printf("map address: %x\n", (size_t)addr);
+    tiny_c_fprintf(log_file_handle, "program entry: %x\n", header->e_entry);
+    tiny_c_fprintf(log_file_handle, "map address: %x\n", (size_t)addr);
 
     if (tiny_c_memcmp(header->e_ident, ELF_MAGIC, 4)) {
-        tiny_c_printf("Program type not supported\n");
+        tiny_c_fprintf(STDERR, "Program type not supported\n");
         tiny_c_exit(1);
     }
 
     size_t *frame_start = frame_pointer + 1;
     *(frame_start + 1) = argc - 1;
     size_t *stack_start = frame_start + 1;
-    tiny_c_printf("frame_pointer: %x\n", frame_pointer);
-    tiny_c_printf("stack_start: %x\n", stack_start);
-    tiny_c_printf("running program...\n");
+    tiny_c_fprintf(log_file_handle, "frame_pointer: %x\n", frame_pointer);
+    tiny_c_fprintf(log_file_handle, "stack_start: %x\n", stack_start);
+    tiny_c_fprintf(log_file_handle, "running program...\n");
     run_asm(frame_start, stack_start, header->e_entry);
 }
