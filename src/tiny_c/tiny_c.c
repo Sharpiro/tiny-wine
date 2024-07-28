@@ -51,22 +51,22 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
 
-    asm("mov r0, %[p1]\n"
-        "mov r1, %[p2]\n"
-        "mov r2, %[p3]\n"
-        "mov r3, %[p4]\n"
-        "mov r4, %[p5]\n"
-        "mov r5, %[p6]\n"
-        "mov r6, %[p7]\n"
-        "mov r7, %[sysno]\n"
-        "svc #0\n"
-        "mov %[res], r0\n"
-        : [res] "=r"(result)
-        : [p1] "g"(sys_args->param_one), [p2] "g"(sys_args->param_two),
-          [p3] "g"(sys_args->param_three), [p4] "g"(sys_args->param_four),
-          [p5] "g"(sys_args->param_five), [p6] "g"(sys_args->param_six),
-          [p7] "g"(sys_args->param_seven), [sysno] "r"(sys_no)
-        : "r0", "r1", "r2", "r3", "r4");
+    __asm__("mov r0, %[p1]\n"
+            "mov r1, %[p2]\n"
+            "mov r2, %[p3]\n"
+            "mov r3, %[p4]\n"
+            "mov r4, %[p5]\n"
+            "mov r5, %[p6]\n"
+            "mov r6, %[p7]\n"
+            "mov r7, %[sysno]\n"
+            "svc #0\n"
+            "mov %[res], r0\n"
+            : [res] "=r"(result)
+            : [p1] "g"(sys_args->param_one), [p2] "g"(sys_args->param_two),
+              [p3] "g"(sys_args->param_three), [p4] "g"(sys_args->param_four),
+              [p5] "g"(sys_args->param_five), [p6] "g"(sys_args->param_six),
+              [p7] "g"(sys_args->param_seven), [sysno] "r"(sys_no)
+            : "r0", "r1", "r2", "r3", "r4");
 
     return result;
 }

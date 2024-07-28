@@ -1,5 +1,6 @@
 CC=gcc
 WARNINGS = \
+	-std=gnu2x \
 	-Wall -Wextra -Wpedantic -Wno-varargs \
 	-Wno-builtin-declaration-mismatch
 
@@ -89,15 +90,10 @@ loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-fno-stack-protector \
 		-g \
 		-DARM32 \
-		-o loader src/loader/loader_main.c src/tiny_c/tiny_c.c
-
-programs/linux/string:
-	@$(CC) -g \
-		-D ARM32 \
-		-nostartfiles -nodefaultlibs \
-		$(WARNINGS) \
-		-o string src/programs/linux/string/string_main.c \
-		src/tiny_c/tiny_c.c
+		-o loader \
+		src/loader/loader_main.c \
+		src/tiny_c/tiny_c.c \
+		src/elf_tools.c
 
 programs/linux/env:
 	@$(CC) -g \
@@ -107,8 +103,17 @@ programs/linux/env:
 		-o env src/programs/linux/env/env_main.c \
 		src/tiny_c/tiny_c.c
 
+programs/linux/string:
+	@$(CC) -g \
+		-D ARM32 \
+		-nostartfiles -nodefaultlibs \
+		$(WARNINGS) \
+		-o string src/programs/linux/string/string_main.c \
+		src/tiny_c/tiny_c.c
+	@objdump -D string > string.dump
+
 clean:
-	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so env string
+	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so env string *.dump
 
 install: tiny_c_arm tiny_c_arm_shared
 	cp src/tiny_c/tiny_c.h /usr/include

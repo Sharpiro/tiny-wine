@@ -1,12 +1,12 @@
 CompileFlags:
   Add:
-    - -std=gnu17
+    - -std=gnu23
     - -xc
     - -Wall
     - -Wextra
     - -Wpedantic
     - -Wtype-limits
-    - -Wno-language-extension-token
-    - -Wno-gnu-statement-expression-from-macro-expansion
+    - -Werror=return-type
+    - -Werror=incompatible-pointer-types
     - -Wno-varargs
     - -nostdlib

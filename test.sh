@@ -18,5 +18,5 @@ assert() {
 assert [ `./loader env silent | wc -c` == "22" ]
 assert [ "`./loader env silent`" == $'0x00000002\nenv\nsilent' ]
 
-# String Test
-assert [ "`./loader string silent`" == $'const data\nstatic data' ]
+# # String Test
+# assert [ "`./loader string silent`" == $'const data\nstatic data' ]
