@@ -82,9 +82,6 @@ static void run_asm(size_t *frame_start, size_t *stack_start,
 #endif
 
 void _start(void) {
-    ssize_t null_file_handle = tiny_c_open("/dev/null");
-    ssize_t log_handle = STDERR;
-
     size_t *frame_pointer = (size_t *)GET_REGISTER("fp");
     size_t argc = frame_pointer[1];
     char **argv = (char **)(frame_pointer + 2);
@@ -94,6 +91,8 @@ void _start(void) {
         return;
     }
 
+    ssize_t null_file_handle = tiny_c_open("/dev/null");
+    ssize_t log_handle = STDERR;
     if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
         log_handle = null_file_handle;
     }
@@ -121,7 +120,7 @@ void _start(void) {
     uint8_t *addr =
         tiny_c_mmap(ADDRESS, 0x200000, PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE, fd, 0);
-    tiny_c_fclose(fd);
+    tiny_c_close(fd);
     if (addr == NULL || addr == MAP_FAILED) {
         tiny_c_fprintf(STDERR, "map failed\n");
         tiny_c_exit(1);

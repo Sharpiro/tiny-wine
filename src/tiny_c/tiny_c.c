@@ -27,15 +27,15 @@ struct SysArgs {
 size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
 
-    asm("mov rdi, %0" : : "r"(sys_args->param_one));
-    asm("mov rsi, %0" : : "r"(sys_args->param_two));
-    asm("mov rdx, %0" : : "r"(sys_args->param_three));
-    asm("mov rcx, %0" : : "r"(sys_args->param_four));
-    asm("mov r8, %0" : : "r"(sys_args->param_five));
-    asm("mov r9, %0" : : "r"(sys_args->param_six));
-    asm("mov r10, %0" : : "r"(sys_args->param_seven));
-    asm("mov rax, %0" : : "r"(sys_no));
-    asm("syscall" : "=r"(result) : :);
+    __asm__("mov rdi, %0" : : "r"(sys_args->param_one));
+    __asm__("mov rsi, %0" : : "r"(sys_args->param_two));
+    __asm__("mov rdx, %0" : : "r"(sys_args->param_three));
+    __asm__("mov rcx, %0" : : "r"(sys_args->param_four));
+    __asm__("mov r8, %0" : : "r"(sys_args->param_five));
+    __asm__("mov r9, %0" : : "r"(sys_args->param_six));
+    __asm__("mov r10, %0" : : "r"(sys_args->param_seven));
+    __asm__("mov rax, %0" : : "r"(sys_no));
+    __asm__("syscall" : "=r"(result) : :);
 
     return result;
 }
@@ -62,10 +62,10 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
             "svc #0\n"
             "mov %[res], r0\n"
             : [res] "=r"(result)
-            : [p1] "g"(sys_args->param_one), [p2] "g"(sys_args->param_two),
-              [p3] "g"(sys_args->param_three), [p4] "g"(sys_args->param_four),
-              [p5] "g"(sys_args->param_five), [p6] "g"(sys_args->param_six),
-              [p7] "g"(sys_args->param_seven), [sysno] "r"(sys_no)
+            : [p1] "r"(sys_args->param_one), [p2] "r"(sys_args->param_two),
+              [p3] "r"(sys_args->param_three), [p4] "r"(sys_args->param_four),
+              [p5] "r"(sys_args->param_five), [p6] "r"(sys_args->param_six),
+              [p7] "r"(sys_args->param_seven), [sysno] "r"(sys_no)
             : "r0", "r1", "r2", "r3", "r4");
 
     return result;
@@ -251,12 +251,19 @@ ssize_t tiny_c_open(const char *path) {
     return fd;
 }
 
-void tiny_c_fclose(size_t fd) {
+void tiny_c_close(size_t fd) {
     struct SysArgs args = {
         .param_one = fd,
     };
     tiny_c_syscall(SYS_close, &args);
 }
+
+// void tiny_c_read(size_t fd) {
+//     // struct SysArgs args = {
+//     //     .param_one = fd,
+//     // };
+//     // tiny_c_syscall(SYS_close, &args);
+// }
 
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
                   size_t fd, size_t offset) {

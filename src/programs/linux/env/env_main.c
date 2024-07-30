@@ -3,20 +3,28 @@
 #include <stdint.h>
 #include <tiny_c.h>
 
-void _start(void) {
-    size_t *frame_pointer = (size_t *)GET_REGISTER("fp");
-    size_t argc = frame_pointer[1];
-    char **argv = (char **)(frame_pointer + 2);
+__attribute__((naked)) void _start(void) {
+    __asm__("ldr r0, [sp]\n"
+            // "add r1, sp, #4\n"
+            // @todo: no point in not using const w/ this asm
+            "add r1, sp, %[p1]\n"
+            "bl main\n"
+            "mov r7, #1\n"
+            "svc #0\n" ::[p1] "r"(sizeof(size_t))
+            :);
+}
 
+int main(int argc, char *argv[]) {
+    return -1;
     tiny_c_printf("%x\n", argc);
 
     // Print args
-    for (size_t i = 0; i < argc; i++) {
+    for (int i = 0; i < argc; i++) {
         tiny_c_printf("%s\n", argv[i]);
     }
 
     if (argc <= 3) {
-        tiny_c_exit(0);
+        return 0;
     }
 
     // Print env vars
@@ -39,6 +47,4 @@ void _start(void) {
         }
         tiny_c_printf("{%x, %x}\n", aux.key, aux.value);
     }
-
-    tiny_c_exit(0);
 }
