@@ -358,21 +358,12 @@ uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
     return count;
 }
 
-// NOLINTBEGIN(clang-diagnostic-incompatible-library-redeclaration)
-
-void memset(char *s_buffer, char c_value, size_t n_count) {
+void *memset(void *s_buffer, int c_value, uint32_t n_count) {
     for (size_t i = 0; i < n_count; i++) {
-        s_buffer[i] = c_value;
+        ((uint8_t *)s_buffer)[i] = c_value;
     }
+    return s_buffer;
 }
-
-// @todo: 'abort'?
-void memcpy(void) {
-    tiny_c_printf("unimplemented\n");
-    tiny_c_exit(-1);
-}
-
-// NOLINTEND(clang-diagnostic-incompatible-library-redeclaration)
 
 void print_buffer(uint8_t *buffer, size_t length) {
     for (size_t i = 0; i < length; i++) {

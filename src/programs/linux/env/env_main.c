@@ -3,19 +3,9 @@
 #include <stdint.h>
 #include <tiny_c.h>
 
-__attribute__((naked)) void _start(void) {
-    __asm__("ldr r0, [sp]\n"
-            // "add r1, sp, #4\n"
-            // @todo: no point in not using const w/ this asm
-            "add r1, sp, %[p1]\n"
-            "bl main\n"
-            "mov r7, #1\n"
-            "svc #0\n" ::[p1] "r"(sizeof(size_t))
-            :);
-}
+ARM32_START_FUNCTION
 
 int main(int argc, char *argv[]) {
-    return -1;
     tiny_c_printf("%x\n", argc);
 
     // Print args

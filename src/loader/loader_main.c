@@ -52,7 +52,9 @@ static void run_asm(size_t stack_start, size_t program_entry) {
 
 #ifdef ARM32
 
-static void run_asm(size_t *frame_start, size_t *stack_start,
+ARM32_START_FUNCTION
+
+static void run_asm(size_t frame_start, size_t stack_start,
                     size_t program_entry) {
     __asm__("mov r0, #0\n"
             "mov r1, #0\n"
@@ -81,14 +83,11 @@ static void run_asm(size_t *frame_start, size_t *stack_start,
 
 #endif
 
-void _start(void) {
-    size_t *frame_pointer = (size_t *)GET_REGISTER("fp");
-    size_t argc = frame_pointer[1];
-    char **argv = (char **)(frame_pointer + 2);
+int main(int32_t argc, char **argv) {
+    size_t *frame_pointer = (size_t *)argv - 1;
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
-        tiny_c_exit(-1);
-        return;
+        return -1;
     }
 
     ssize_t null_file_handle = tiny_c_open("/dev/null");
@@ -106,13 +105,13 @@ void _start(void) {
 
     if (tiny_c_munmap(ADDRESS, 0x1000)) {
         tiny_c_fprintf(STDERR, "munmap of self failed\n");
-        tiny_c_exit(1);
+        return -1;
     }
 
     ssize_t fd = tiny_c_open(filename);
     if (fd < 0) {
         tiny_c_fprintf(STDERR, "file not found\n");
-        tiny_c_exit(1);
+        return -1;
     }
     tiny_c_fprintf(log_handle, "fd: %x\n", fd);
 
@@ -123,7 +122,7 @@ void _start(void) {
     tiny_c_close(fd);
     if (addr == NULL || addr == MAP_FAILED) {
         tiny_c_fprintf(STDERR, "map failed\n");
-        tiny_c_exit(1);
+        return -1;
     }
 
     const char ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
@@ -134,14 +133,15 @@ void _start(void) {
 
     if (tiny_c_memcmp(elf_data.header->e_ident, ELF_MAGIC, 4)) {
         tiny_c_fprintf(STDERR, "Program type not supported\n");
-        tiny_c_exit(1);
+        return -1;
     }
 
-    size_t *frame_start = frame_pointer + 1;
-    *(frame_start + 1) = argc - 1;
-    size_t *stack_start = frame_start + 1;
+    size_t *inferior_frame_pointer = frame_pointer + 1;
+    *inferior_frame_pointer = argc - 1;
+    size_t *stack_start = inferior_frame_pointer;
     tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
     tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
     tiny_c_fprintf(log_handle, "running program...\n");
-    run_asm(frame_start, stack_start, elf_data.header->e_entry);
+    run_asm((size_t)inferior_frame_pointer, (size_t)stack_start,
+            elf_data.header->e_entry);
 }

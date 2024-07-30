@@ -20,6 +20,16 @@ int32_t tiny_c_strcmp(const void *__s1, const void *__s2);
 
 #ifdef ARM32
 
+#define ARM32_START_FUNCTION                                                   \
+    __attribute__((naked)) void _start(void) {                                 \
+        __asm__("ldr r0, [sp]\n"                                               \
+                "add r1, sp, #4\n"                                             \
+                "bl main\n"                                                    \
+                "mov r7, #1\n"                                                 \
+                "svc #0\n"                                                     \
+                :);                                                            \
+    }
+
 #define GET_REGISTER(reg)                                                      \
     ({                                                                         \
         size_t result = 0;                                                     \

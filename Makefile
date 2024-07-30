@@ -1,8 +1,7 @@
-CC=gcc
+CC ?= cc
 WARNINGS = \
 	-std=gnu2x \
-	-Wall -Wextra -Wpedantic -Wno-varargs \
-	-Wno-builtin-declaration-mismatch
+	-Wall -Wextra -Wpedantic -Wno-varargs
 
 all: tiny_c tiny_c_shared loader
 
@@ -11,6 +10,7 @@ all_arm: tiny_c_arm \
 	programs/linux/env \
 	programs/linux/string \
 	loader_arm
+	@$(CC) --version
 
 tiny_wine: main.c prctl.c *.h
 	@$(CC) \
@@ -22,17 +22,11 @@ tiny_wine: main.c prctl.c *.h
 		-g \
 		-o tiny_wine prctl.c main.c
 
-# -std=gnu2x \
-# -nostartfiles \
-# -nodefaultlibs \
-# -Wl,--section-start=.rodata=0x6d7d00000000 \
-
 tiny_c_arm: src/tiny_c/tiny_c.c
 	@$(CC) \
 		-c \
 		-O0 \
-		-nostdlib \
-		-nostartfiles -nodefaultlibs \
+		-nostdlib -static \
 		$(WARNINGS) \
 		-fno-stack-protector \
 		-g \
@@ -43,8 +37,7 @@ tiny_c_arm: src/tiny_c/tiny_c.c
 tiny_c_arm_shared: src/tiny_c/tiny_c.c
 	@$(CC) \
 		-O0 \
-		-nostdlib \
-		-nostartfiles -nodefaultlibs \
+		-nostdlib -static \
 		$(WARNINGS) \
 		-fno-stack-protector \
 		-g \
@@ -83,7 +76,7 @@ loader: loader.c src/tiny_c/tiny_c.c
 loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) \
 		-O0 \
-		-nostdlib \
+		-nostdlib -static \
 		$(WARNINGS) \
 		-fPIE \
 		-Wl,--section-start=.text=7d7d0000 \
@@ -98,7 +91,7 @@ loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
 programs/linux/env:
 	@$(CC) -g \
 		-D ARM32 \
-		-nostartfiles -nodefaultlibs \
+		-nostdlib -static \
 		$(WARNINGS) \
 		-o env src/programs/linux/env/env_main.c \
 		src/tiny_c/tiny_c.c
@@ -106,7 +99,7 @@ programs/linux/env:
 programs/linux/string:
 	@$(CC) -g \
 		-D ARM32 \
-		-nostartfiles -nodefaultlibs \
+		-nostdlib -static \
 		$(WARNINGS) \
 		-o string src/programs/linux/string/string_main.c \
 		src/tiny_c/tiny_c.c
