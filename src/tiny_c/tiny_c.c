@@ -73,16 +73,16 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 
 #endif
 
-void tiny_c_print_len(size_t file_handle, const char *data, size_t size) {
+void tiny_c_print_len(int32_t file_handle, const char *data, size_t size) {
     struct SysArgs args = {
-        .param_one = file_handle,
+        .param_one = (size_t)file_handle,
         .param_two = (size_t)data,
         .param_three = size,
     };
     tiny_c_syscall(SYS_write, &args);
 }
 
-void tiny_c_print(size_t file_handle, const char *data) {
+void tiny_c_print(int32_t file_handle, const char *data) {
     if (data == NULL) {
         tiny_c_print_len(file_handle, "<null>", 6);
         return;
@@ -99,16 +99,16 @@ void tiny_c_print(size_t file_handle, const char *data) {
     tiny_c_print_len(file_handle, data, size);
 }
 
-static void tiny_c_newline(size_t file_handle) {
+static void tiny_c_newline(int32_t file_handle) {
     struct SysArgs args = (struct SysArgs){
-        .param_one = file_handle,
+        .param_one = (size_t)file_handle,
         .param_two = (size_t)"\n",
         .param_three = 1,
     };
     tiny_c_syscall(SYS_write, &args);
 }
 
-void tiny_c_puts(size_t file_handle, const char *data) {
+void tiny_c_puts(int32_t file_handle, const char *data) {
     tiny_c_print(file_handle, data);
     tiny_c_newline(file_handle);
 }
@@ -154,7 +154,7 @@ struct PrintItem {
     char formatter;
 };
 
-static void tiny_c_fprintf_internal(size_t file_handle, const char *format,
+static void tiny_c_fprintf_internal(int32_t file_handle, const char *format,
                                     va_list var_args) {
     size_t print_items_index = 0;
     size_t print_items_count = 0;
@@ -227,7 +227,7 @@ void tiny_c_printf(const char *format, ...) {
     va_end(var_args);
 }
 
-void tiny_c_fprintf(size_t file_handle, const char *format, ...) {
+void tiny_c_fprintf(int32_t file_handle, const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
     tiny_c_fprintf_internal(file_handle, format, var_args);
@@ -241,7 +241,7 @@ void tiny_c_exit(int32_t code) {
 
 // @todo: docs say err should return -1, but i'm seeing -2, maybe related to
 //        ENOENT + no libc errno thread global
-ssize_t tiny_c_open(const char *path) {
+int32_t tiny_c_open(const char *path) {
     struct SysArgs args = {
         .param_one = (size_t)path,
         .param_two = O_RDWR,
@@ -251,28 +251,31 @@ ssize_t tiny_c_open(const char *path) {
     return fd;
 }
 
-void tiny_c_close(size_t fd) {
+void tiny_c_close(int32_t fd) {
     struct SysArgs args = {
         .param_one = fd,
     };
     tiny_c_syscall(SYS_close, &args);
 }
 
-// void tiny_c_read(size_t fd) {
-//     // struct SysArgs args = {
-//     //     .param_one = fd,
-//     // };
-//     // tiny_c_syscall(SYS_close, &args);
-// }
+ssize_t tiny_c_read(int32_t fd, uint8_t *buf, size_t count) {
+    struct SysArgs args = {
+        .param_one = (size_t)fd,
+        .param_two = (size_t)buf,
+        .param_three = count,
+    };
+    return tiny_c_syscall(SYS_read, &args);
+}
 
+// @todo: returning negative on err?
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
-                  size_t fd, size_t offset) {
+                  int32_t fd, size_t offset) {
     struct SysArgs args = {
         .param_one = address,
         .param_two = length,
         .param_three = prot,
         .param_four = flags,
-        .param_five = fd,
+        .param_five = (size_t)fd,
         .param_six = offset,
     };
     void *result = (void *)tiny_c_syscall(MMAP, &args);

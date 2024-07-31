@@ -1,6 +1,6 @@
 CC ?= cc
 WARNINGS = \
-	-std=gnu2x \
+	-std=c17 \
 	-Wall -Wextra -Wpedantic -Wno-varargs
 
 all: tiny_c tiny_c_shared loader
@@ -10,12 +10,10 @@ all_arm: tiny_c_arm \
 	programs/linux/env \
 	programs/linux/string \
 	loader_arm
-	@$(CC) --version
 
 tiny_wine: main.c prctl.c *.h
 	@$(CC) \
 		$(WARNINGS) \
-		-std=gnu2x \
 		-masm=intel \
 		-Wl,--section-start=.interp=0x900000 \
 		-fno-stack-protector \
@@ -109,5 +107,5 @@ clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so env string *.dump
 
 install: tiny_c_arm tiny_c_arm_shared
-	cp src/tiny_c/tiny_c.h /usr/include
-	cp libtinyc.a libtinyc.so /usr/lib
+	cp src/tiny_c/tiny_c.h /usr/local/include
+	cp libtinyc.a libtinyc.so /usr/local/lib

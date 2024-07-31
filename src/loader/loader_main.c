@@ -1,14 +1,15 @@
 #include "../elf_tools.h"
-#include "tiny_c.h"
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <tiny_c.h>
 
 #ifdef AMD64
 
@@ -84,14 +85,13 @@ static void run_asm(size_t frame_start, size_t stack_start,
 #endif
 
 int main(int32_t argc, char **argv) {
-    size_t *frame_pointer = (size_t *)argv - 1;
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
         return -1;
     }
 
-    ssize_t null_file_handle = tiny_c_open("/dev/null");
-    ssize_t log_handle = STDERR;
+    int32_t null_file_handle = tiny_c_open("/dev/null");
+    int32_t log_handle = STDERR;
     if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
         log_handle = null_file_handle;
     }
@@ -116,32 +116,48 @@ int main(int32_t argc, char **argv) {
     tiny_c_fprintf(log_handle, "fd: %x\n", fd);
 
     // @todo: map data section
-    uint8_t *addr =
-        tiny_c_mmap(ADDRESS, 0x200000, PROT_READ | PROT_WRITE | PROT_EXEC,
-                    MAP_PRIVATE, fd, 0);
-    tiny_c_close(fd);
-    if (addr == NULL || addr == MAP_FAILED) {
-        tiny_c_fprintf(STDERR, "map failed\n");
+
+    struct ElfData elf_data;
+    if (!get_elf_data(fd, &elf_data)) {
+        tiny_c_fprintf(STDERR, "error parsing elf data\n");
         return -1;
     }
+    // if (tiny_c_memcmp(elf_data.header->e_ident, ELF_MAGIC, 4)) {
+    //     tiny_c_fprintf(STDERR, "Program type not supported\n");
+    //     return -1;
+    // }
 
-    const char ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
+    // tiny_c_fprintf(log_handle, "program entry: %x\n",
+    //                elf_data.memory_regions_len);
+    // tiny_c_fprintf(log_handle, "program entry: %x\n",
+    // elf_data.header->e_entry);
 
-    struct ElfData elf_data = get_elf_data(addr);
-    tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header->e_entry);
-    tiny_c_fprintf(log_handle, "map address: %x\n", (size_t)addr);
+    // for (size_t i = 0; i < elf_data.memory_regions_len; i++) {
+    //     auto memory_region = &elf_data.memory_regions[i];
+    //     auto memory_region_len = memory_region->end - memory_region->start;
+    //     uint8_t *addr =
+    //         tiny_c_mmap(memory_region->start, memory_region_len,
+    //                     PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd,
+    //                     0);
+    //     tiny_c_fprintf(log_handle, "map address: %x\n", (size_t)addr);
+    //     if ((int)addr < 1) {
+    //         tiny_c_fprintf(STDERR, "map failed\n");
+    //         return -1;
+    //     }
+    // }
 
-    if (tiny_c_memcmp(elf_data.header->e_ident, ELF_MAGIC, 4)) {
-        tiny_c_fprintf(STDERR, "Program type not supported\n");
-        return -1;
-    }
+    // uint8_t *addr =
+    //     tiny_c_mmap(ADDRESS, 0x200000, PROT_READ | PROT_WRITE | PROT_EXEC,
+    //                 MAP_PRIVATE, fd, 0);
+    // tiny_c_fprintf(log_handle, "map address: %x\n", (size_t)addr);
 
-    size_t *inferior_frame_pointer = frame_pointer + 1;
-    *inferior_frame_pointer = argc - 1;
-    size_t *stack_start = inferior_frame_pointer;
-    tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
-    tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
-    tiny_c_fprintf(log_handle, "running program...\n");
-    run_asm((size_t)inferior_frame_pointer, (size_t)stack_start,
-            elf_data.header->e_entry);
+    // size_t *frame_pointer = (size_t *)argv - 1;
+    // size_t *inferior_frame_pointer = frame_pointer + 1;
+    // *inferior_frame_pointer = argc - 1;
+    // size_t *stack_start = inferior_frame_pointer;
+    // tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
+    // tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
+    // tiny_c_fprintf(log_handle, "running program...\n");
+    // run_asm((size_t)inferior_frame_pointer, (size_t)stack_start,
+    //         elf_data.header->e_entry);
 }

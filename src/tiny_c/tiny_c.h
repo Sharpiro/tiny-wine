@@ -1,20 +1,23 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #define STDOUT 1
 #define STDERR 2
 
-void tiny_c_fprintf(size_t file_handle, const char *format, ...);
+void tiny_c_fprintf(int32_t file_handle, const char *format, ...);
 void tiny_c_printf(const char *format, ...);
 void tiny_c_exit(int32_t code);
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
-                  size_t fd, size_t offset);
+                  int32_t fd, size_t offset);
 size_t tiny_c_munmap(size_t address, size_t length);
 int32_t tiny_c_open(const char *path);
-void tiny_c_close(size_t fd);
+void tiny_c_close(int32_t fd);
+ssize_t tiny_c_read(int32_t fd, uint8_t *buf, size_t count);
 int32_t tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
 int32_t tiny_c_strcmp(const void *__s1, const void *__s2);
 

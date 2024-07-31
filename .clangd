@@ -1,10 +1,11 @@
 CompileFlags:
   Add:
-    - -std=gnu23
+    - -std=c17
     - -xc
     - -Wall
     - -Wextra
     - -Wpedantic
+    - -Wconversion
     - -Wtype-limits
     - -Werror=return-type
     - -Werror=incompatible-pointer-types

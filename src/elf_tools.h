@@ -1,6 +1,7 @@
 #pragma once
 
 #include <elf.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 #ifdef ARM32
@@ -23,4 +24,4 @@ struct ElfData {
     size_t memory_regions_len;
 };
 
-struct ElfData get_elf_data(const uint8_t *elf_start);
+bool get_elf_data(int fd, struct ElfData *elf_data);
