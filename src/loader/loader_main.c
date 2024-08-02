@@ -101,8 +101,8 @@ int main(int32_t argc, char **argv) {
     tiny_c_fprintf(log_handle, "argc: %x\n", argc);
     tiny_c_fprintf(log_handle, "filename: %s\n", filename);
 
+    // @todo: old gcc maps this by default for some reason
     const size_t ADDRESS = 0x10000;
-
     if (tiny_c_munmap(ADDRESS, 0x1000)) {
         tiny_c_fprintf(STDERR, "munmap of self failed\n");
         return -1;
@@ -113,7 +113,6 @@ int main(int32_t argc, char **argv) {
         tiny_c_fprintf(STDERR, "file not found\n");
         return -1;
     }
-    tiny_c_fprintf(log_handle, "fd: %x\n", fd);
 
     // @todo: map data section
 
@@ -122,42 +121,35 @@ int main(int32_t argc, char **argv) {
         tiny_c_fprintf(STDERR, "error parsing elf data\n");
         return -1;
     }
-    // if (tiny_c_memcmp(elf_data.header->e_ident, ELF_MAGIC, 4)) {
-    //     tiny_c_fprintf(STDERR, "Program type not supported\n");
-    //     return -1;
-    // }
 
-    // tiny_c_fprintf(log_handle, "program entry: %x\n",
-    //                elf_data.memory_regions_len);
-    // tiny_c_fprintf(log_handle, "program entry: %x\n",
-    // elf_data.header->e_entry);
+    tiny_c_fprintf(log_handle, "memory regions: %x\n",
+                   elf_data.memory_regions_len);
+    tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header->e_entry);
 
-    // for (size_t i = 0; i < elf_data.memory_regions_len; i++) {
-    //     auto memory_region = &elf_data.memory_regions[i];
-    //     auto memory_region_len = memory_region->end - memory_region->start;
-    //     uint8_t *addr =
-    //         tiny_c_mmap(memory_region->start, memory_region_len,
-    //                     PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd,
-    //                     0);
-    //     tiny_c_fprintf(log_handle, "map address: %x\n", (size_t)addr);
-    //     if ((int)addr < 1) {
-    //         tiny_c_fprintf(STDERR, "map failed\n");
-    //         return -1;
-    //     }
-    // }
+    for (size_t i = 0; i < elf_data.memory_regions_len; i++) {
+        struct MemoryRegion *memory_region = &elf_data.memory_regions[i];
+        size_t memory_region_len = memory_region->end - memory_region->start;
+        // @todo: mem region test?
+        size_t prot_read = (memory_region->permissions & 4) >> 2;
+        size_t prot_write = memory_region->permissions & 2;
+        size_t prot_execute = (memory_region->permissions & 1) << 2;
+        size_t map_protection = prot_read | prot_write | prot_execute;
+        uint8_t *addr = tiny_c_mmap(memory_region->start, memory_region_len,
+                                    map_protection, MAP_PRIVATE, fd, 0);
+        tiny_c_fprintf(log_handle, "map address: %x\n", (size_t)addr);
+        if ((ssize_t)addr < 1) {
+            tiny_c_fprintf(STDERR, "map failed\n");
+            return -1;
+        }
+    }
 
-    // uint8_t *addr =
-    //     tiny_c_mmap(ADDRESS, 0x200000, PROT_READ | PROT_WRITE | PROT_EXEC,
-    //                 MAP_PRIVATE, fd, 0);
-    // tiny_c_fprintf(log_handle, "map address: %x\n", (size_t)addr);
-
-    // size_t *frame_pointer = (size_t *)argv - 1;
-    // size_t *inferior_frame_pointer = frame_pointer + 1;
-    // *inferior_frame_pointer = argc - 1;
-    // size_t *stack_start = inferior_frame_pointer;
-    // tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
-    // tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
-    // tiny_c_fprintf(log_handle, "running program...\n");
-    // run_asm((size_t)inferior_frame_pointer, (size_t)stack_start,
-    //         elf_data.header->e_entry);
+    size_t *frame_pointer = (size_t *)argv - 1;
+    size_t *inferior_frame_pointer = frame_pointer + 1;
+    *inferior_frame_pointer = (size_t)(argc - 1);
+    size_t *stack_start = inferior_frame_pointer;
+    tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
+    tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
+    tiny_c_fprintf(log_handle, "running program...\n");
+    run_asm((size_t)inferior_frame_pointer, (size_t)stack_start,
+            elf_data.header->e_entry);
 }

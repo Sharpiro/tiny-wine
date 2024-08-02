@@ -1,7 +1,7 @@
 CC ?= cc
 WARNINGS = \
-	-std=c17 \
-	-Wall -Wextra -Wpedantic -Wno-varargs
+	-std=gnu17 \
+	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments
 
 all: tiny_c tiny_c_shared loader
 

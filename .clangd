@@ -1,6 +1,6 @@
 CompileFlags:
   Add:
-    - -std=c17
+    - -std=gnu17
     - -xc
     - -Wall
     - -Wextra
@@ -10,4 +10,5 @@ CompileFlags:
     - -Werror=return-type
     - -Werror=incompatible-pointer-types
     - -Wno-varargs
+    - -Wno-gnu-zero-variadic-macro-arguments
     - -nostdlib

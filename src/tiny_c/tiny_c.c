@@ -122,7 +122,7 @@ size_t tiny_c_pow(size_t x, size_t y) {
     return product;
 }
 
-void tiny_c_print_number_hex(size_t file_handle, size_t num) {
+void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *HEX_CHARS = "0123456789abcdef";
 
@@ -141,7 +141,7 @@ void tiny_c_print_number_hex(size_t file_handle, size_t num) {
     }
 
     struct SysArgs args = {
-        .param_one = file_handle,
+        .param_one = (size_t)file_handle,
         .param_two = (size_t)num_buffer,
         .param_three = buffer_index,
     };
@@ -235,7 +235,7 @@ void tiny_c_fprintf(int32_t file_handle, const char *format, ...) {
 }
 
 void tiny_c_exit(int32_t code) {
-    struct SysArgs args = {.param_one = code};
+    struct SysArgs args = {.param_one = (size_t)code};
     tiny_c_syscall(SYS_exit, &args);
 }
 
@@ -246,14 +246,14 @@ int32_t tiny_c_open(const char *path) {
         .param_one = (size_t)path,
         .param_two = O_RDWR,
     };
-    size_t fd = tiny_c_syscall(SYS_open, &args);
+    int32_t fd = (int32_t)tiny_c_syscall(SYS_open, &args);
 
     return fd;
 }
 
 void tiny_c_close(int32_t fd) {
     struct SysArgs args = {
-        .param_one = fd,
+        .param_one = (size_t)fd,
     };
     tiny_c_syscall(SYS_close, &args);
 }
@@ -264,7 +264,7 @@ ssize_t tiny_c_read(int32_t fd, uint8_t *buf, size_t count) {
         .param_two = (size_t)buf,
         .param_three = count,
     };
-    return tiny_c_syscall(SYS_read, &args);
+    return (ssize_t)tiny_c_syscall(SYS_read, &args);
 }
 
 // @todo: returning negative on err?
@@ -361,9 +361,9 @@ uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
     return count;
 }
 
-void *memset(void *s_buffer, int c_value, uint32_t n_count) {
+void *memset(void *s_buffer, int c_value, size_t n_count) {
     for (size_t i = 0; i < n_count; i++) {
-        ((uint8_t *)s_buffer)[i] = c_value;
+        ((uint8_t *)s_buffer)[i] = (uint8_t)c_value;
     }
     return s_buffer;
 }
