@@ -15,4 +15,7 @@ assert [ "`./loader ./env silent`" == $'0x00000002\n./env\nsilent' ]
 # String Test
 assert [ "`./loader string silent`" == $'inline string\nconst string' ]
 
+# Dynamic Test
+assert [ "`./loader ./dynamic silent`" == $'hello, dynamic\n' ]
+
 echo All tests passed
