@@ -27,4 +27,7 @@ EOF
 `
 assert [ "`$PRELOADER ./loader string silent`" == "$expected" ]
 
+# Dynamic Test
+assert [ "`./loader ./dynamic silent`" == $'hello, dynamic\n' ]
+
 echo All tests passed

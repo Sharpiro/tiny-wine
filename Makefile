@@ -14,7 +14,8 @@ all: tiny_c \
 	loader \
 	programs/linux/env \
 	programs/linux/string \
-	programs/linux/tinyfetch
+	programs/linux/tinyfetch \
+	programs/linux/dynamic
 
 tiny_c: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
@@ -65,6 +66,7 @@ programs/linux/env:
 		-o env src/programs/linux/env/env_main.c \
 		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c
+	@objdump -D env > env.dump
 
 programs/linux/string:
 	@$(CC) $(CFLAGS) -g \
@@ -85,6 +87,15 @@ programs/linux/tinyfetch:
 		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c
 	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
+
+programs/linux/dynamic:
+	@$(CC) -g \
+		-D ARM32 \
+		-nostdlib \
+		$(WARNINGS) \
+		-o dynamic src/programs/linux/dynamic/dynamic_main.c \
+		./libtinyc.so 
+	@objdump -D dynamic > dynamic.dump
 
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so *.dump \
