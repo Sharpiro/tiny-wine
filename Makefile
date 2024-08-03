@@ -1,4 +1,5 @@
-CC ?= cc
+CC ?= clang
+# CC = zig cc --target=arm-linux-gnueabihf
 WARNINGS = \
 	-std=gnu99 \
 	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments
