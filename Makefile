@@ -4,24 +4,13 @@ WARNINGS = \
 	-std=gnu99 \
 	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments
 
-all: tiny_c tiny_c_shared loader
-
-all_arm: tiny_c_arm \
-	tiny_c_arm_shared \
+all: tiny_c \
+	tiny_c_shared \
 	programs/linux/env \
 	programs/linux/string \
-	loader_arm
+	loader
 
-tiny_wine: main.c prctl.c *.h
-	@$(CC) \
-		$(WARNINGS) \
-		-masm=intel \
-		-Wl,--section-start=.interp=0x900000 \
-		-fno-stack-protector \
-		-g \
-		-o tiny_wine prctl.c main.c
-
-tiny_c_arm: src/tiny_c/tiny_c.c
+tiny_c: src/tiny_c/tiny_c.c
 	@$(CC) \
 		-c \
 		-O0 \
@@ -33,7 +22,7 @@ tiny_c_arm: src/tiny_c/tiny_c.c
 		-o tiny_c.o src/tiny_c/tiny_c.c
 	@ar rcs libtinyc.a tiny_c.o
 
-tiny_c_arm_shared: src/tiny_c/tiny_c.c
+tiny_c_shared: src/tiny_c/tiny_c.c
 	@$(CC) \
 		-O0 \
 		-nostdlib -static \
@@ -45,34 +34,7 @@ tiny_c_arm_shared: src/tiny_c/tiny_c.c
 		-fPIC \
 		-o libtinyc.so src/tiny_c/tiny_c.c
 
-tiny_c: src/tiny_c/tiny_c.c
-	@$(CC) \
-		-c \
-		-O0 \
-		-mno-sse \
-		-nostdlib \
-		$(WARNINGS) \
-		-masm=intel \
-		-fno-stack-protector \
-		-g \
-		-DAMD64 \
-		-o tiny_c.o src/tiny_c/tiny_c.c
-	@ar rcs libtinyc.a tiny_c.o
-
-loader: loader.c src/tiny_c/tiny_c.c
-	@$(CC) \
-		-O0 \
-		-mno-sse \
-		-nostdlib \
-		$(WARNINGS) \
-		-masm=intel \
-		-fPIE \
-		-Wl,--section-start=.text=0x00007d7d00000000 \
-		-fno-stack-protector \
-		-g \
-		-o loader loader.c src/tiny_c/tiny_c.c
-
-loader_arm: src/loader/loader_main.c src/tiny_c/tiny_c.c
+loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) \
 		-O0 \
 		-nostdlib -static \
@@ -107,6 +69,6 @@ programs/linux/string:
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so env string *.dump
 
-install: tiny_c_arm tiny_c_arm_shared
+install: tiny_c tiny_c_shared
 	cp src/tiny_c/tiny_c.h /usr/local/include
 	cp libtinyc.a libtinyc.so /usr/local/lib

@@ -21,5 +21,5 @@ WORKDIR /root/tiny_wine
 # ENTRYPOINT [ "zig", "cc", "--target=arm-linux-gnueabihf"]
 # CMD [ "zig", "cc", "--target=arm-linux-gnueabihf"]
 # ENV CC="zig cc --target=arm-linux-gnueabihf"
-CMD [ "make", "tiny_c_arm"]
+CMD [ "make", "tiny_c"]
 # qemu-arm ./a.out
