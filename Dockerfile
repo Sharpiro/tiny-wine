@@ -12,14 +12,27 @@ RUN apt-get update && apt-get -y install \
 
 WORKDIR /root
 
-RUN curl -fLO https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz
-RUN tar -vxaf zig-linux-x86_64-0.13.0.tar.xz
+ENV CC="clang"
+
+RUN apt-get -y install debootstrap file
+
+RUN mkdir -p /root/sysroot
+
+RUN debootstrap --arch=armhf --foreign bullseye /root/sysroot http://deb.debian.org/debian
+RUN chroot /root/sysroot /debootstrap/debootstrap --second-stage
 
 WORKDIR /root/tiny_wine
+
+ENV CFLAGS="--target=arm-linux-gnueabihf --sysroot=/root/sysroot"
+ENV OBJDUMP="/usr/arm-linux-gnueabihf/bin/objdump"
+
 
 # RUN zig cc --target=arm-linux-gnueabihf temp.c
 # ENTRYPOINT [ "zig", "cc", "--target=arm-linux-gnueabihf"]
 # CMD [ "zig", "cc", "--target=arm-linux-gnueabihf"]
 # ENV CC="zig cc --target=arm-linux-gnueabihf"
-CMD [ "make", "tiny_c"]
+CMD [ "make" ]
 # qemu-arm ./a.out
+
+# clang --target=arm-linux-gnueabihf --sysroot=/root/sysroot temp.c
+# make tiny_c

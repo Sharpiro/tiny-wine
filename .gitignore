@@ -12,3 +12,4 @@ tiny_wine
 /data_section
 /env
 /string
+*.core

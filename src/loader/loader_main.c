@@ -1,6 +1,6 @@
 #include "../elf_tools.h"
+#include "../tiny_c/tiny_c.h"
 #include <sys/mman.h>
-#include <tiny_c.h>
 
 #ifdef AMD64
 

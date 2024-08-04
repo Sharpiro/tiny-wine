@@ -1,5 +1,5 @@
 CC ?= clang
-# CC = zig cc --target=arm-linux-gnueabihf
+OBJDUMP ?= objdump
 WARNINGS = \
 	-std=gnu99 \
 	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments
@@ -11,7 +11,7 @@ all: tiny_c \
 	loader
 
 tiny_c: src/tiny_c/tiny_c.c
-	@$(CC) \
+	@$(CC) $(CFLAGS) \
 		-c \
 		-O0 \
 		-nostdlib -static \
@@ -23,7 +23,7 @@ tiny_c: src/tiny_c/tiny_c.c
 	@ar rcs libtinyc.a tiny_c.o
 
 tiny_c_shared: src/tiny_c/tiny_c.c
-	@$(CC) \
+	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
 		$(WARNINGS) \
@@ -35,7 +35,7 @@ tiny_c_shared: src/tiny_c/tiny_c.c
 		-o libtinyc.so src/tiny_c/tiny_c.c
 
 loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
-	@$(CC) \
+	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
 		$(WARNINGS) \
@@ -50,7 +50,7 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		src/elf_tools.c
 
 programs/linux/env:
-	@$(CC) -g \
+	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \
 		$(WARNINGS) \
@@ -58,13 +58,13 @@ programs/linux/env:
 		src/tiny_c/tiny_c.c
 
 programs/linux/string:
-	@$(CC) -g \
+	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \
 		$(WARNINGS) \
 		-o string src/programs/linux/string/string_main.c \
 		src/tiny_c/tiny_c.c
-	@objdump -D string > string.dump
+	@$(OBJDUMP) -D string > string.dump
 
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so env string *.dump

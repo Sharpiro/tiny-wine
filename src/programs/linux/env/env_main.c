@@ -1,7 +1,7 @@
+#include "../../../tiny_c/tiny_c.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <tiny_c.h>
 
 ARM32_START_FUNCTION
 
