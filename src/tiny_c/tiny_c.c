@@ -1,14 +1,8 @@
 #include "tiny_c.h"
-#include <elf.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <sys/syscall.h>
-#include <sys/types.h>
 
 struct SysArgs {
     size_t param_one;

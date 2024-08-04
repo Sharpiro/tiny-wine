@@ -1,9 +1,7 @@
 #pragma once
 
-#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/types.h>
 
 #define STDOUT 1

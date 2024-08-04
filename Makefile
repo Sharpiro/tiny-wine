@@ -1,6 +1,6 @@
 CC ?= cc
 WARNINGS = \
-	-std=gnu17 \
+	-std=gnu99 \
 	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments
 
 all: tiny_c tiny_c_shared loader

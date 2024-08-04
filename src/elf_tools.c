@@ -1,6 +1,4 @@
 #include "elf_tools.h"
-#include <stddef.h>
-#include <stdint.h>
 #include <tiny_c.h>
 
 #define ELF_HEADER_LEN sizeof(ELF_HEADER)
