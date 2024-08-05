@@ -1,5 +1,6 @@
 #include "../elf_tools.h"
 #include "../tiny_c/tiny_c.h"
+#include <stdint.h>
 #include <sys/mman.h>
 
 #ifdef AMD64
@@ -99,7 +100,7 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    ssize_t fd = tiny_c_open(filename);
+    int32_t fd = tiny_c_open(filename);
     if (fd < 0) {
         tiny_c_fprintf(STDERR, "file not found\n");
         return -1;
@@ -127,8 +128,9 @@ int main(int32_t argc, char **argv) {
         size_t map_protection = prot_read | prot_write | prot_execute;
         uint8_t *addr = tiny_c_mmap(memory_region->start, memory_region_len,
                                     map_protection, MAP_PRIVATE, fd, 0);
-        tiny_c_fprintf(log_handle, "map address: %x\n", (size_t)addr);
-        if ((ssize_t)addr < 1) {
+        tiny_c_fprintf(log_handle, "map address: %x, %x\n",
+                       memory_region->start, (size_t)addr);
+        if ((size_t)addr != memory_region->start) {
             tiny_c_fprintf(STDERR, "map failed\n");
             return -1;
         }
