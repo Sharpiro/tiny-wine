@@ -332,6 +332,11 @@ int tiny_c_strcmp(const void *buffer_a, const void *buffer_b) {
     return 0;
 }
 
+int32_t tiny_c_getpid(void) {
+    struct SysArgs args = {0};
+    return (int32_t)tiny_c_syscall(SYS_getpid, &args);
+}
+
 #ifdef ARM32
 
 uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {

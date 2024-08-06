@@ -4,7 +4,7 @@
         {
             "label": "build loader",
             "type": "shell",
-            "command": "make clean && CC=clang make all_arm"
+            "command": "make clean && make"
         }
     ]
 }

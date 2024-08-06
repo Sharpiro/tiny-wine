@@ -77,15 +77,18 @@ static void run_asm(size_t frame_start, size_t stack_start,
 #endif
 
 int main(int32_t argc, char **argv) {
-    if (argc < 2) {
-        tiny_c_fprintf(STDERR, "Filename required\n", argc);
-        return -1;
-    }
-
     int32_t null_file_handle = tiny_c_open("/dev/null");
     int32_t log_handle = STDERR;
     if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
         log_handle = null_file_handle;
+    }
+
+    int32_t pid = tiny_c_getpid();
+    tiny_c_fprintf(log_handle, "pid: %x\n", pid);
+
+    if (argc < 2) {
+        tiny_c_fprintf(STDERR, "Filename required\n", argc);
+        return -1;
     }
 
     char *filename = argv[1];

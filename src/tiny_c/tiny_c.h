@@ -18,6 +18,7 @@ void tiny_c_close(int32_t fd);
 ssize_t tiny_c_read(int32_t fd, uint8_t *buf, size_t count);
 int32_t tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
 int32_t tiny_c_strcmp(const void *__s1, const void *__s2);
+int32_t tiny_c_getpid(void);
 
 #ifdef ARM32
 

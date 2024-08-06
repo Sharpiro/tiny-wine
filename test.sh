@@ -13,6 +13,6 @@ assert [ `./loader ./env silent | wc -c` == "24" ]
 assert [ "`./loader ./env silent`" == $'0x00000002\n./env\nsilent' ]
 
 # String Test
-assert [ "`./loader string silent`" == $'const string\ninline string' ]
+assert [ "`./loader string silent`" == $'inline string\nconst string' ]
 
 echo All tests passed
