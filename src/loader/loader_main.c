@@ -1,5 +1,6 @@
 #include "../elf_tools.h"
 #include "../tiny_c/tiny_c.h"
+#include <fcntl.h>
 #include <stdint.h>
 #include <sys/mman.h>
 
@@ -8,37 +9,37 @@
 #define ELF_HEADER Elf64_Ehdr
 
 static void run_asm(size_t stack_start, size_t program_entry) {
-    asm volatile("mov rbx, 0x00\n"
-                 // set stack pointer
-                 "mov rsp, %[stack_start]\n"
+    __asm__("mov rbx, 0x00\n"
+            // set stack pointer
+            "mov rsp, %[stack_start]\n"
 
-                 //  clear 'PF' flag
-                 "mov r15, 0xff\n"
-                 "xor r15, 1\n"
+            //  clear 'PF' flag
+            "mov r15, 0xff\n"
+            "xor r15, 1\n"
 
-                 // clear registers
-                 "mov rax, 0x00\n"
-                 "mov rcx, 0x00\n"
-                 "mov rdx, 0x00\n"
-                 "mov rsi, 0x00\n"
-                 "mov rdi, 0x00\n"
-                 //  "mov rbp, 0x00\n"
-                 "mov r8, 0x00\n"
-                 "mov r9, 0x00\n"
-                 "mov r10, 0x00\n"
-                 "mov r11, 0x00\n"
-                 "mov r12, 0x00\n"
-                 "mov r13, 0x00\n"
-                 "mov r14, 0x00\n"
-                 "mov r15, 0x00\n"
-                 :
-                 : [stack_start] "r"(stack_start));
+            // clear registers
+            "mov rax, 0x00\n"
+            "mov rcx, 0x00\n"
+            "mov rdx, 0x00\n"
+            "mov rsi, 0x00\n"
+            "mov rdi, 0x00\n"
+            //  "mov rbp, 0x00\n"
+            "mov r8, 0x00\n"
+            "mov r9, 0x00\n"
+            "mov r10, 0x00\n"
+            "mov r11, 0x00\n"
+            "mov r12, 0x00\n"
+            "mov r13, 0x00\n"
+            "mov r14, 0x00\n"
+            "mov r15, 0x00\n"
+            :
+            : [stack_start] "r"(stack_start));
 
     // jump to program
-    asm volatile("jmp %[program_entry]\n"
-                 :
-                 : [program_entry] "r"(program_entry)
-                 : "rax");
+    __asm__("jmp %[program_entry]\n"
+            :
+            : [program_entry] "r"(program_entry)
+            : "rax");
 }
 
 #endif
@@ -77,7 +78,7 @@ static void run_asm(size_t frame_start, size_t stack_start,
 #endif
 
 int main(int32_t argc, char **argv) {
-    int32_t null_file_handle = tiny_c_open("/dev/null");
+    int32_t null_file_handle = tiny_c_open("/dev/null", O_RDONLY);
     int32_t log_handle = STDERR;
     if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
         log_handle = null_file_handle;
@@ -103,9 +104,9 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    int32_t fd = tiny_c_open(filename);
+    int32_t fd = tiny_c_open(filename, O_RDONLY);
     if (fd < 0) {
-        tiny_c_fprintf(STDERR, "file not found, %x\n", fd);
+        tiny_c_fprintf(STDERR, "file error, %x, %s\n", -fd, tinyc_strerror(fd));
         return -1;
     }
 
@@ -129,12 +130,14 @@ int main(int32_t argc, char **argv) {
         size_t prot_write = memory_region->permissions & 2;
         size_t prot_execute = (memory_region->permissions & 1) << 2;
         size_t map_protection = prot_read | prot_write | prot_execute;
-        uint8_t *addr = tiny_c_mmap(memory_region->start, memory_region_len,
-                                    map_protection, MAP_PRIVATE, fd, 0);
+        uint8_t *addr =
+            tiny_c_mmap(memory_region->start, memory_region_len, map_protection,
+                        MAP_PRIVATE | MAP_FIXED, fd, 0);
         tiny_c_fprintf(log_handle, "map address: %x, %x\n",
-                       memory_region->start, (size_t)addr);
+                       memory_region->start, addr);
         if ((size_t)addr != memory_region->start) {
-            tiny_c_fprintf(STDERR, "map failed\n");
+            tiny_c_fprintf(STDERR, "map failed, %x, %s\n", tinyc_errno,
+                           tinyc_strerror(tinyc_errno));
             return -1;
         }
     }

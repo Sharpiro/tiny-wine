@@ -1,5 +1,6 @@
 #pragma once
 
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -7,19 +8,25 @@
 #define STDOUT 1
 #define STDERR 2
 
+#define TINYC_ENOENT -ENOENT;
+#define TINYC_EACCES -EACCES
+
+extern int32_t tinyc_errno;
+
 void tiny_c_fprintf(int32_t file_handle, const char *format, ...);
 void tiny_c_printf(const char *format, ...);
 void tiny_c_exit(int32_t code);
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
                   int32_t fd, size_t offset);
 size_t tiny_c_munmap(size_t address, size_t length);
-int32_t tiny_c_open(const char *path);
+int32_t tiny_c_open(const char *path, int flags);
 void tiny_c_close(int32_t fd);
 ssize_t tiny_c_read(int32_t fd, uint8_t *buf, size_t count);
 int32_t tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
 int32_t tiny_c_strcmp(const void *__s1, const void *__s2);
 int32_t tiny_c_get_pid(void);
 char *tiny_c_get_cwd(char *buffer, size_t size);
+const char *tinyc_strerror(int32_t err_number);
 
 #ifdef ARM32
 

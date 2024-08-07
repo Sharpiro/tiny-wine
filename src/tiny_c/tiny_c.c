@@ -1,8 +1,13 @@
 #include "tiny_c.h"
+#include <asm-generic/errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/mman.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 
 struct SysArgs {
     size_t param_one;
@@ -13,6 +18,8 @@ struct SysArgs {
     size_t param_six;
     size_t param_seven;
 };
+
+int32_t tinyc_errno = 0;
 
 #ifdef AMD64
 
@@ -236,10 +243,10 @@ void tiny_c_exit(int32_t code) {
 
 // @todo: docs say err should return -1, but i'm seeing -2, maybe related to
 //        ENOENT + no libc errno thread global
-int32_t tiny_c_open(const char *path) {
+int32_t tiny_c_open(const char *path, int flags) {
     struct SysArgs args = {
         .param_one = (size_t)path,
-        .param_two = O_RDWR,
+        .param_two = (size_t)flags,
     };
     int32_t fd = (int32_t)tiny_c_syscall(SYS_open, &args);
 
@@ -262,7 +269,6 @@ ssize_t tiny_c_read(int32_t fd, uint8_t *buf, size_t count) {
     return (ssize_t)tiny_c_syscall(SYS_read, &args);
 }
 
-// @todo: returning negative on err?
 void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
                   int32_t fd, size_t offset) {
     struct SysArgs args = {
@@ -273,9 +279,15 @@ void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
         .param_five = (size_t)fd,
         .param_six = offset,
     };
-    void *result = (void *)tiny_c_syscall(MMAP, &args);
+    size_t result = tiny_c_syscall(MMAP, &args);
+    tiny_c_printf("raw %x\n", result);
+    int32_t err = (int32_t)result;
+    if (err < 1) {
+        tinyc_errno = -err;
+        return MAP_FAILED;
+    }
 
-    return result;
+    return (void *)result;
 }
 
 // @todo: x64 convention disrespect could be a register clobber bug
@@ -342,7 +354,23 @@ char *tiny_c_get_cwd(char *buffer, size_t size) {
         .param_one = (size_t)buffer,
         .param_two = size,
     };
-    return (char *)tiny_c_syscall(SYS_getcwd, &args);
+    size_t result = tiny_c_syscall(SYS_getcwd, &args);
+    if (result < 1) {
+        return NULL;
+    }
+
+    return buffer;
+}
+
+const char *tinyc_strerror(int32_t err_number) {
+    switch (-err_number) {
+    case ENOENT:
+        return "No such file or directory";
+    case EACCES:
+        return "Permission denied";
+    default:
+        return "Unknown";
+    }
 }
 
 #ifdef ARM32
