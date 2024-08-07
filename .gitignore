@@ -12,4 +12,5 @@ tiny_wine
 /data_section
 /env
 /string
+/tinyfetch
 *.core

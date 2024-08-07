@@ -6,9 +6,10 @@ WARNINGS = \
 
 all: tiny_c \
 	tiny_c_shared \
+	loader \
 	programs/linux/env \
 	programs/linux/string \
-	loader
+	programs/linux/tinyfetch
 
 tiny_c: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
@@ -66,8 +67,18 @@ programs/linux/string:
 		src/tiny_c/tiny_c.c
 	@$(OBJDUMP) -D string > string.dump
 
+programs/linux/tinyfetch:
+	@$(CC) $(CFLAGS) -g \
+		-D ARM32 \
+		-nostdlib -static \
+		$(WARNINGS) \
+		-o tinyfetch src/programs/linux/tinyfetch/tinyfetch_main.c \
+		src/tiny_c/tiny_c.c
+	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
+
 clean:
-	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so env string *.dump
+	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so *.dump \
+		env string tinyfetch
 
 install: tiny_c tiny_c_shared
 	cp src/tiny_c/tiny_c.h /usr/local/include

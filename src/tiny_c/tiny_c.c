@@ -332,9 +332,17 @@ int tiny_c_strcmp(const void *buffer_a, const void *buffer_b) {
     return 0;
 }
 
-int32_t tiny_c_getpid(void) {
+int32_t tiny_c_get_pid(void) {
     struct SysArgs args = {0};
     return (int32_t)tiny_c_syscall(SYS_getpid, &args);
+}
+
+char *tiny_c_get_cwd(char *buffer, size_t size) {
+    struct SysArgs args = {
+        .param_one = (size_t)buffer,
+        .param_two = size,
+    };
+    return (char *)tiny_c_syscall(SYS_getcwd, &args);
 }
 
 #ifdef ARM32

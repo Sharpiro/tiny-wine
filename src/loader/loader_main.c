@@ -83,7 +83,7 @@ int main(int32_t argc, char **argv) {
         log_handle = null_file_handle;
     }
 
-    int32_t pid = tiny_c_getpid();
+    int32_t pid = tiny_c_get_pid();
     tiny_c_fprintf(log_handle, "pid: %x\n", pid);
 
     if (argc < 2) {
@@ -94,7 +94,7 @@ int main(int32_t argc, char **argv) {
     char *filename = argv[1];
 
     tiny_c_fprintf(log_handle, "argc: %x\n", argc);
-    tiny_c_fprintf(log_handle, "filename: %s\n", filename);
+    tiny_c_fprintf(log_handle, "filename: '%s'\n", filename);
 
     // @todo: old gcc maps this by default for some reason
     const size_t ADDRESS = 0x10000;
@@ -105,7 +105,7 @@ int main(int32_t argc, char **argv) {
 
     int32_t fd = tiny_c_open(filename);
     if (fd < 0) {
-        tiny_c_fprintf(STDERR, "file not found\n");
+        tiny_c_fprintf(STDERR, "file not found, %x\n", fd);
         return -1;
     }
 
