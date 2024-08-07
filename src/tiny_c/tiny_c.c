@@ -277,7 +277,7 @@ void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
         .param_three = prot,
         .param_four = flags,
         .param_five = (size_t)fd,
-        .param_six = offset,
+        .param_six = offset / 0x1000,
     };
     size_t result = tiny_c_syscall(MMAP, &args);
     int32_t err = (int32_t)result;

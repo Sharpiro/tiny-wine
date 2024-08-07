@@ -54,15 +54,20 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
             continue;
         }
 
+        uint32_t file_offset = program_header->p_offset /
+                               program_header->p_align *
+                               program_header->p_align;
         uint32_t start = program_header->p_vaddr / program_header->p_align *
                          program_header->p_align;
         uint32_t end = start +
                        program_header->p_memsz / program_header->p_align *
                            program_header->p_align +
                        program_header->p_align;
+
         memory_regions[j++] = (struct MemoryRegion){
             .start = start,
             .end = end,
+            .file_offset = file_offset,
             .permissions = program_header->p_flags,
         };
     }

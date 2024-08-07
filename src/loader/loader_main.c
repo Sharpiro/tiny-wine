@@ -130,9 +130,9 @@ int main(int32_t argc, char **argv) {
         size_t prot_write = memory_region->permissions & 2;
         size_t prot_execute = (memory_region->permissions & 1) << 2;
         size_t map_protection = prot_read | prot_write | prot_execute;
-        uint8_t *addr =
-            tiny_c_mmap(memory_region->start, memory_region_len, map_protection,
-                        MAP_PRIVATE | MAP_FIXED, fd, 0);
+        uint8_t *addr = tiny_c_mmap(memory_region->start, memory_region_len,
+                                    map_protection, MAP_PRIVATE | MAP_FIXED, fd,
+                                    memory_region->file_offset);
         tiny_c_fprintf(log_handle, "map address: %x, %x\n",
                        memory_region->start, addr);
         if ((size_t)addr != memory_region->start) {

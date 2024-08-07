@@ -14,6 +14,7 @@
 struct MemoryRegion {
     size_t start;
     size_t end;
+    size_t file_offset;
     size_t permissions;
 };
 
