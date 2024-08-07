@@ -280,7 +280,6 @@ void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
         .param_six = offset,
     };
     size_t result = tiny_c_syscall(MMAP, &args);
-    tiny_c_printf("raw %x\n", result);
     int32_t err = (int32_t)result;
     if (err < 1) {
         tinyc_errno = -err;
