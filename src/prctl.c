@@ -18,8 +18,9 @@
 #include <ucontext.h>
 #include <unistd.h>
 
-static int dl_iterate_phdr_callback(struct dl_phdr_info *info, size_t size,
-                                    void *data);
+static int dl_iterate_phdr_callback(
+    struct dl_phdr_info *info, size_t size, void *data
+);
 static void init_process_control(void);
 static void handle_sig_sys(int sig, siginfo_t *info, void *ucontext_void);
 
@@ -97,8 +98,16 @@ static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
     int64_t r8 = ucontext->uc_mcontext.gregs[REG_R8];
     int64_t r9 = ucontext->uc_mcontext.gregs[REG_R9];
     if (LOG_SIGSYS) {
-        printf("\ncall: %s, (%jd, %jd, %jd, %jd, %jd, %jd)\n", code_display,
-               rdi, rsi, rdx, rcx, r8, r9);
+        printf(
+            "\ncall: %s, (%jd, %jd, %jd, %jd, %jd, %jd)\n",
+            code_display,
+            rdi,
+            rsi,
+            rdx,
+            rcx,
+            r8,
+            r9
+        );
     }
 
     if (sys_call_no != (uint64_t)rax) {
@@ -119,8 +128,13 @@ static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
 static void init_process_control(void) {
     printf("try init prctl\n");
 
-    if (prctl(PR_SET_SYSCALL_USER_DISPATCH, PR_SYS_DISPATCH_ON, prctl_address,
-              prctl_size, &block_status)) {
+    if (prctl(
+            PR_SET_SYSCALL_USER_DISPATCH,
+            PR_SYS_DISPATCH_ON,
+            prctl_address,
+            prctl_size,
+            &block_status
+        )) {
         perror("prctl failed for libc");
         exit(-1);
     };

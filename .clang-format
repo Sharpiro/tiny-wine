@@ -1,4 +1,10 @@
 BasedOnStyle: LLVM
 IndentWidth: 4
+ContinuationIndentWidth: 4
 KeepEmptyLinesAtTheStartOfBlocks: false
 AllowShortFunctionsOnASingleLine: false
+AlignAfterOpenBracket: BlockIndent
+BinPackParameters: false
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: true
+PenaltyReturnTypeOnItsOwnLine: 1000000

@@ -14,3 +14,5 @@ tiny_wine
 /string
 /tinyfetch
 *.core
+/dynamic
+a.out

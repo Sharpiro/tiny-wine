@@ -6,6 +6,7 @@ CompileFlags:
     - -Wextra
     - -Wpedantic
     - -Wconversion
+    - -Wint-conversion
     - -Wtype-limits
     - -Werror=return-type
     - -Werror=incompatible-pointer-types

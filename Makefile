@@ -73,6 +73,7 @@ programs/linux/tinyfetch:
 		-nostdlib -static \
 		$(WARNINGS) \
 		-o tinyfetch src/programs/linux/tinyfetch/tinyfetch_main.c \
+		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c
 	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
 

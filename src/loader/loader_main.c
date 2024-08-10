@@ -48,8 +48,9 @@ static void run_asm(size_t stack_start, size_t program_entry) {
 
 ARM32_START_FUNCTION
 
-static void run_asm(size_t frame_start, size_t stack_start,
-                    size_t program_entry) {
+static void run_asm(
+    size_t frame_start, size_t stack_start, size_t program_entry
+) {
     __asm__("mov r0, #0\n"
             "mov r1, #0\n"
             "mov r2, #0\n"
@@ -63,14 +64,15 @@ static void run_asm(size_t frame_start, size_t stack_start,
             "mov r10, #0\n"
             :
             :
-            : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9",
-              "r10");
+            : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+    );
 
     __asm__("mov fp, %[frame_start]\n"
             "mov sp, %[stack_start]\n"
             "bx %[program_entry]\n"
             :
-            : [frame_start] "r"(frame_start), [stack_start] "r"(stack_start),
+            : [frame_start] "r"(frame_start),
+              [stack_start] "r"(stack_start),
               [program_entry] "r"(program_entry)
             :);
 }
@@ -118,8 +120,9 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    tiny_c_fprintf(log_handle, "memory regions: %x\n",
-                   elf_data.memory_regions_len);
+    tiny_c_fprintf(
+        log_handle, "memory regions: %x\n", elf_data.memory_regions_len
+    );
     tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header->e_entry);
 
     for (size_t i = 0; i < elf_data.memory_regions_len; i++) {
@@ -130,14 +133,24 @@ int main(int32_t argc, char **argv) {
         size_t prot_write = memory_region->permissions & 2;
         size_t prot_execute = (memory_region->permissions & 1) << 2;
         size_t map_protection = prot_read | prot_write | prot_execute;
-        uint8_t *addr = tiny_c_mmap(memory_region->start, memory_region_len,
-                                    map_protection, MAP_PRIVATE | MAP_FIXED, fd,
-                                    memory_region->file_offset);
-        tiny_c_fprintf(log_handle, "map address: %x, %x\n",
-                       memory_region->start, addr);
+        uint8_t *addr = tiny_c_mmap(
+            memory_region->start,
+            memory_region_len,
+            map_protection,
+            MAP_PRIVATE | MAP_FIXED,
+            fd,
+            memory_region->file_offset
+        );
+        tiny_c_fprintf(
+            log_handle, "map address: %x, %x\n", memory_region->start, addr
+        );
         if ((size_t)addr != memory_region->start) {
-            tiny_c_fprintf(STDERR, "map failed, %x, %s\n", tinyc_errno,
-                           tinyc_strerror(tinyc_errno));
+            tiny_c_fprintf(
+                STDERR,
+                "map failed, %x, %s\n",
+                tinyc_errno,
+                tinyc_strerror(tinyc_errno)
+            );
             return -1;
         }
     }
@@ -149,6 +162,9 @@ int main(int32_t argc, char **argv) {
     tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
     tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
     tiny_c_fprintf(log_handle, "running program...\n");
-    run_asm((size_t)inferior_frame_pointer, (size_t)stack_start,
-            elf_data.header->e_entry);
+    run_asm(
+        (size_t)inferior_frame_pointer,
+        (size_t)stack_start,
+        elf_data.header->e_entry
+    );
 }

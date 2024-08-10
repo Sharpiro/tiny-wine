@@ -1,4 +1,5 @@
 #include "tiny_c.h"
+#include "tinyc_sys.h"
 #include <asm-generic/errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -9,17 +10,9 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
-struct SysArgs {
-    size_t param_one;
-    size_t param_two;
-    size_t param_three;
-    size_t param_four;
-    size_t param_five;
-    size_t param_six;
-    size_t param_seven;
-};
-
 int32_t tinyc_errno = 0;
+size_t tinyc_heap_index = 0;
+size_t tinyc_heap_len = 0;
 
 #ifdef AMD64
 
@@ -45,8 +38,8 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 
 #ifdef ARM32
 
-// #define MMAP SYS_mmap2
-#define MMAP 0xc0
+#define MMAP SYS_mmap2
+// #define MMAP 0xc0
 
 // @todo: don't know how to clobber 7 registers
 // @todo: asm vs asm volatile
@@ -64,10 +57,14 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
             "svc #0\n"
             "mov %[res], r0\n"
             : [res] "=r"(result)
-            : [p1] "r"(sys_args->param_one), [p2] "r"(sys_args->param_two),
-              [p3] "r"(sys_args->param_three), [p4] "r"(sys_args->param_four),
-              [p5] "r"(sys_args->param_five), [p6] "r"(sys_args->param_six),
-              [p7] "r"(sys_args->param_seven), [sysno] "r"(sys_no)
+            : [p1] "r"(sys_args->param_one),
+              [p2] "r"(sys_args->param_two),
+              [p3] "r"(sys_args->param_three),
+              [p4] "r"(sys_args->param_four),
+              [p5] "r"(sys_args->param_five),
+              [p6] "r"(sys_args->param_six),
+              [p7] "r"(sys_args->param_seven),
+              [sysno] "r"(sys_no)
             : "r0", "r1", "r2", "r3", "r4");
 
     return result;
@@ -156,8 +153,9 @@ struct PrintItem {
     char formatter;
 };
 
-static void tiny_c_fprintf_internal(int32_t file_handle, const char *format,
-                                    va_list var_args) {
+static void tiny_c_fprintf_internal(
+    int32_t file_handle, const char *format, va_list var_args
+) {
     size_t print_items_index = 0;
     size_t print_items_count = 0;
     struct PrintItem print_items[256] = {0};
@@ -269,8 +267,14 @@ ssize_t tiny_c_read(int32_t fd, uint8_t *buf, size_t count) {
     return (ssize_t)tiny_c_syscall(SYS_read, &args);
 }
 
-void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t flags,
-                  int32_t fd, size_t offset) {
+void *tiny_c_mmap(
+    size_t address,
+    size_t length,
+    size_t prot,
+    size_t flags,
+    int32_t fd,
+    size_t offset
+) {
     struct SysArgs args = {
         .param_one = address,
         .param_two = length,
@@ -362,14 +366,48 @@ char *tiny_c_get_cwd(char *buffer, size_t size) {
 }
 
 const char *tinyc_strerror(int32_t err_number) {
-    switch (-err_number) {
+    switch (err_number) {
     case ENOENT:
         return "No such file or directory";
     case EACCES:
         return "Permission denied";
+    case EINVAL:
+        return "Invalid argument";
+    case ERANGE:
+        return "Math result not representable";
     default:
         return "Unknown";
     }
+}
+
+// int32_t tinyc_brk(void *addr) {
+//     size_t result = tinyc_sys_brk((size_t)addr);
+//     int32_t err = (int32_t)result;
+//     if (err < 1) {
+//         tinyc_errno = -err;
+//         return -1;
+//     }
+
+//     addr = (void *)result;
+//     return 0;
+// }
+
+void *tinyc_malloc(size_t n) {
+    const int MAX_HEAP_LEN = 0x1000;
+    if (tinyc_heap_len == 0) {
+        void *heap_start = (void *)tinyc_sys_brk(0);
+        void *heap_end =
+            (void *)tinyc_sys_brk((size_t)heap_start + MAX_HEAP_LEN);
+        tinyc_heap_index = (size_t)heap_start;
+        tinyc_heap_len = (size_t)heap_end - (size_t)heap_start;
+    }
+    if (tinyc_heap_index + n > tinyc_heap_len) {
+        return NULL;
+    }
+
+    void *address = (void *)tinyc_heap_index;
+    tinyc_heap_index += n;
+    return address;
 }
 
 #ifdef ARM32
