@@ -11,8 +11,9 @@
 #include <sys/types.h>
 
 int32_t tinyc_errno = 0;
+size_t tinyc_heap_start = 0;
+size_t tinyc_heap_end = 0;
 size_t tinyc_heap_index = 0;
-size_t tinyc_heap_len = 0;
 
 #ifdef AMD64
 
@@ -239,16 +240,19 @@ void tiny_c_exit(int32_t code) {
     tiny_c_syscall(SYS_exit, &args);
 }
 
-// @todo: docs say err should return -1, but i'm seeing -2, maybe related to
-//        ENOENT + no libc errno thread global
 int32_t tiny_c_open(const char *path, int flags) {
     struct SysArgs args = {
         .param_one = (size_t)path,
         .param_two = (size_t)flags,
     };
-    int32_t fd = (int32_t)tiny_c_syscall(SYS_open, &args);
+    int32_t result = (int32_t)tiny_c_syscall(SYS_open, &args);
+    int32_t err = (int32_t)result;
+    if (err < 1) {
+        tinyc_errno = -err;
+        return -1;
+    }
 
-    return fd;
+    return result;
 }
 
 void tiny_c_close(int32_t fd) {
@@ -258,7 +262,7 @@ void tiny_c_close(int32_t fd) {
     tiny_c_syscall(SYS_close, &args);
 }
 
-ssize_t tiny_c_read(int32_t fd, uint8_t *buf, size_t count) {
+ssize_t tiny_c_read(int32_t fd, void *buf, size_t count) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
         .param_two = (size_t)buf,
@@ -380,34 +384,25 @@ const char *tinyc_strerror(int32_t err_number) {
     }
 }
 
-// int32_t tinyc_brk(void *addr) {
-//     size_t result = tinyc_sys_brk((size_t)addr);
-//     int32_t err = (int32_t)result;
-//     if (err < 1) {
-//         tinyc_errno = -err;
-//         return -1;
-//     }
-
-//     addr = (void *)result;
-//     return 0;
-// }
-
 void *tinyc_malloc(size_t n) {
-    const int MAX_HEAP_LEN = 0x1000;
-    if (tinyc_heap_len == 0) {
-        void *heap_start = (void *)tinyc_sys_brk(0);
-        void *heap_end =
-            (void *)tinyc_sys_brk((size_t)heap_start + MAX_HEAP_LEN);
-        tinyc_heap_index = (size_t)heap_start;
-        tinyc_heap_len = (size_t)heap_end - (size_t)heap_start;
+    const int HEAP_CHUNK_LEN = 0x1000;
+
+    if (tinyc_heap_start == 0) {
+        tinyc_heap_start = tinyc_sys_brk(0);
+        tinyc_heap_end = tinyc_heap_start;
+        tinyc_heap_index = tinyc_heap_start;
     }
-    if (tinyc_heap_index + n > tinyc_heap_len) {
-        return NULL;
+    if (tinyc_heap_index + n > tinyc_heap_end) {
+        tinyc_heap_end = tinyc_sys_brk((size_t)tinyc_heap_end + HEAP_CHUNK_LEN);
     }
 
     void *address = (void *)tinyc_heap_index;
     tinyc_heap_index += n;
     return address;
+}
+
+void tinyc_free(void *_) {
+    // @todo: free
 }
 
 #ifdef ARM32

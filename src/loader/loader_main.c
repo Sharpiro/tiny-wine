@@ -108,7 +108,12 @@ int main(int32_t argc, char **argv) {
 
     int32_t fd = tiny_c_open(filename, O_RDONLY);
     if (fd < 0) {
-        tiny_c_fprintf(STDERR, "file error, %x, %s\n", -fd, tinyc_strerror(fd));
+        tiny_c_fprintf(
+            STDERR,
+            "file error, %x, %s\n",
+            tinyc_errno,
+            tinyc_strerror(tinyc_errno)
+        );
         return -1;
     }
 

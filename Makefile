@@ -2,7 +2,9 @@ CC ?= clang
 OBJDUMP ?= objdump
 WARNINGS = \
 	-std=gnu99 \
-	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments
+	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments \
+    -Werror=return-type \
+    -Werror=incompatible-pointer-types \
 
 all: tiny_c \
 	tiny_c_shared \
@@ -47,6 +49,7 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-DARM32 \
 		-o loader \
 		src/loader/loader_main.c \
+		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c \
 		src/elf_tools.c
 
@@ -56,6 +59,7 @@ programs/linux/env:
 		-nostdlib -static \
 		$(WARNINGS) \
 		-o env src/programs/linux/env/env_main.c \
+		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c
 
 programs/linux/string:
@@ -64,6 +68,7 @@ programs/linux/string:
 		-nostdlib -static \
 		$(WARNINGS) \
 		-o string src/programs/linux/string/string_main.c \
+		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c
 	@$(OBJDUMP) -D string > string.dump
 

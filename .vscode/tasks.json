@@ -2,9 +2,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build loader",
+            "label": "build",
             "type": "shell",
-            "command": "make clean && make programs/linux/tinyfetch"
+            "command": "make clean && make"
         }
     ]
 }
