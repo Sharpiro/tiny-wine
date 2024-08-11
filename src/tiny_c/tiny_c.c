@@ -11,7 +11,9 @@
 #include <sys/types.h>
 
 int32_t tinyc_errno = 0;
-size_t tinyc_heap_start = 0;
+
+// @todo: 0 initial value doesn't work
+size_t tinyc_heap_start = 42;
 size_t tinyc_heap_end = 0;
 size_t tinyc_heap_index = 0;
 
@@ -384,25 +386,27 @@ const char *tinyc_strerror(int32_t err_number) {
     }
 }
 
-void *tinyc_malloc(size_t n) {
-    const int HEAP_CHUNK_LEN = 0x1000;
+void *tinyc_malloc_arena(size_t n) {
+    const int PAGE_SIZE = 0x1000;
 
-    if (tinyc_heap_start == 0) {
+    if (tinyc_heap_start == 42) {
         tinyc_heap_start = tinyc_sys_brk(0);
         tinyc_heap_end = tinyc_heap_start;
         tinyc_heap_index = tinyc_heap_start;
     }
     if (tinyc_heap_index + n > tinyc_heap_end) {
-        tinyc_heap_end = tinyc_sys_brk((size_t)tinyc_heap_end + HEAP_CHUNK_LEN);
+        size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
+        tinyc_heap_end = tinyc_sys_brk(tinyc_heap_end + extend_size);
     }
 
     void *address = (void *)tinyc_heap_index;
     tinyc_heap_index += n;
+
     return address;
 }
 
-void tinyc_free(void *_) {
-    // @todo: free
+void tinyc_free_arena(void) {
+    tinyc_heap_index = tinyc_heap_start;
 }
 
 #ifdef ARM32

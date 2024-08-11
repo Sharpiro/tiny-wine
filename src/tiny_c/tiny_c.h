@@ -33,8 +33,8 @@ int32_t tiny_c_strcmp(const void *__s1, const void *__s2);
 int32_t tiny_c_get_pid(void);
 char *tiny_c_get_cwd(char *buffer, size_t size);
 const char *tinyc_strerror(int32_t err_number);
-void *tinyc_malloc(size_t n);
-void tinyc_free(void *_);
+void *tinyc_malloc_arena(size_t n);
+void tinyc_free_arena(void);
 
 #ifdef ARM32
 

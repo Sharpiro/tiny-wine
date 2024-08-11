@@ -8,3 +8,5 @@ BinPackParameters: false
 BinPackArguments: false
 AllowAllParametersOfDeclarationOnNextLine: true
 PenaltyReturnTypeOnItsOwnLine: 1000000
+# ternary expressions
+AlignOperands: false

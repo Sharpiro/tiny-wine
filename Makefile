@@ -49,9 +49,10 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-DARM32 \
 		-o loader \
 		src/loader/loader_main.c \
+		src/loader/loader_lib.c \
 		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c \
-		src/elf_tools.c
+		src/loader/elf_tools.c
 
 programs/linux/env:
 	@$(CC) $(CFLAGS) -g \

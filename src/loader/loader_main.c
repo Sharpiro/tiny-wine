@@ -1,5 +1,5 @@
-#include "../elf_tools.h"
 #include "../tiny_c/tiny_c.h"
+#include "elf_tools.h"
 #include <fcntl.h>
 #include <stdint.h>
 #include <sys/mman.h>
@@ -117,8 +117,6 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    // @todo: map data section
-
     struct ElfData elf_data;
     if (!get_elf_data(fd, &elf_data)) {
         tiny_c_fprintf(STDERR, "error parsing elf data\n");
@@ -133,7 +131,6 @@ int main(int32_t argc, char **argv) {
     for (size_t i = 0; i < elf_data.memory_regions_len; i++) {
         struct MemoryRegion *memory_region = &elf_data.memory_regions[i];
         size_t memory_region_len = memory_region->end - memory_region->start;
-        // @todo: mem region test?
         size_t prot_read = (memory_region->permissions & 4) >> 2;
         size_t prot_write = memory_region->permissions & 2;
         size_t prot_execute = (memory_region->permissions & 1) << 2;
@@ -167,6 +164,7 @@ int main(int32_t argc, char **argv) {
     tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
     tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
     tiny_c_fprintf(log_handle, "running program...\n");
+
     run_asm(
         (size_t)inferior_frame_pointer,
         (size_t)stack_start,

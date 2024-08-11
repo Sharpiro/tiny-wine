@@ -1,5 +1,6 @@
 #include "elf_tools.h"
-#include "tiny_c/tiny_c.h"
+#include "../tiny_c/tiny_c.h"
+#include "loader_lib.h"
 
 #define ELF_HEADER_LEN sizeof(ELF_HEADER)
 
@@ -12,7 +13,7 @@ const uint8_t ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
 #define EXAMPLE2(fmt, ...) tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__)
 
 bool get_elf_data(int fd, struct ElfData *elf_data) {
-    ELF_HEADER *elf_header = tinyc_malloc(ELF_HEADER_LEN);
+    ELF_HEADER *elf_header = loader_malloc_arena(ELF_HEADER_LEN);
     ssize_t header_read_len = tiny_c_read(fd, elf_header, ELF_HEADER_LEN);
     if (header_read_len != ELF_HEADER_LEN) {
         tiny_c_fprintf(STDERR, "read failed\n");
@@ -29,14 +30,14 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
     }
 
     size_t program_headers_len = elf_header->e_phnum * elf_header->e_phentsize;
-    PROGRAM_HEADER *program_headers = tinyc_malloc(program_headers_len);
+    PROGRAM_HEADER *program_headers = loader_malloc_arena(program_headers_len);
     ssize_t ph_read_len = tiny_c_read(fd, program_headers, program_headers_len);
     if ((size_t)ph_read_len != program_headers_len) {
         BAIL("read failed\n")
     }
 
     struct MemoryRegion *memory_regions =
-        tinyc_malloc(sizeof(struct MemoryRegion) * elf_header->e_phnum);
+        loader_malloc_arena(sizeof(struct MemoryRegion) * elf_header->e_phnum);
 
     size_t j = 0;
     for (size_t i = 0; i < elf_header->e_phnum; i++) {
@@ -46,14 +47,13 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
         }
 
         uint32_t file_offset = program_header->p_offset /
-                               program_header->p_align *
-                               program_header->p_align;
+            program_header->p_align * program_header->p_align;
         uint32_t start = program_header->p_vaddr / program_header->p_align *
-                         program_header->p_align;
+            program_header->p_align;
         uint32_t end = start +
-                       program_header->p_memsz / program_header->p_align *
-                           program_header->p_align +
-                       program_header->p_align;
+            program_header->p_memsz / program_header->p_align *
+                program_header->p_align +
+            program_header->p_align;
 
         memory_regions[j++] = (struct MemoryRegion){
             .start = start,
