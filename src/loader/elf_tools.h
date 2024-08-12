@@ -19,7 +19,7 @@ struct MemoryRegion {
 };
 
 struct ElfData {
-    ELF_HEADER *header;
+    ELF_HEADER header;
     PROGRAM_HEADER *program_headers;
     struct MemoryRegion *memory_regions;
     size_t memory_regions_len;

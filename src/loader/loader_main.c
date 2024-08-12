@@ -126,7 +126,7 @@ int main(int32_t argc, char **argv) {
     tiny_c_fprintf(
         log_handle, "memory regions: %x\n", elf_data.memory_regions_len
     );
-    tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header->e_entry);
+    tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header.e_entry);
 
     for (size_t i = 0; i < elf_data.memory_regions_len; i++) {
         struct MemoryRegion *memory_region = &elf_data.memory_regions[i];
@@ -168,6 +168,6 @@ int main(int32_t argc, char **argv) {
     run_asm(
         (size_t)inferior_frame_pointer,
         (size_t)stack_start,
-        elf_data.header->e_entry
+        elf_data.header.e_entry
     );
 }
