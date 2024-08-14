@@ -1,12 +1,11 @@
 CompileFlags:
   Add:
-    - -std=gnu99
+    - -std=c99
     - -xc
     - -Wall
     - -Wextra
     - -Wpedantic
     - -Wconversion
-    - -Wint-conversion
     - -Wtype-limits
     - -Werror=return-type
     - -Werror=incompatible-pointer-types

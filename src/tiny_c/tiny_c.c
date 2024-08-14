@@ -13,7 +13,7 @@
 int32_t tinyc_errno = 0;
 
 // @todo: 0 initial value doesn't work
-size_t tinyc_heap_start = 42;
+size_t tinyc_heap_start = 0;
 size_t tinyc_heap_end = 0;
 size_t tinyc_heap_index = 0;
 
@@ -389,7 +389,7 @@ const char *tinyc_strerror(int32_t err_number) {
 void *tinyc_malloc_arena(size_t n) {
     const int PAGE_SIZE = 0x1000;
 
-    if (tinyc_heap_start == 42) {
+    if (tinyc_heap_start == 0) {
         tinyc_heap_start = tinyc_sys_brk(0);
         tinyc_heap_end = tinyc_heap_start;
         tinyc_heap_index = tinyc_heap_start;
@@ -407,6 +407,10 @@ void *tinyc_malloc_arena(size_t n) {
 
 void tinyc_free_arena(void) {
     tinyc_heap_index = tinyc_heap_start;
+}
+
+off_t tinyc_lseek(int fd, off_t offset, int whence) {
+    return tinyc_sys_lseek((size_t)fd, offset, (size_t)whence);
 }
 
 #ifdef ARM32
@@ -440,14 +444,12 @@ void *memset(void *s_buffer, int c_value, size_t n_count) {
     return s_buffer;
 }
 
-void print_buffer(uint8_t *buffer, size_t length) {
-    for (size_t i = 0; i < length; i++) {
-        if (i > 0 && i % 2 == 0) {
-            tiny_c_printf("\n", buffer[i]);
-        }
-        tiny_c_printf("%x, ", buffer[i]);
+void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        ((uint8_t *)dest)[i] = ((uint8_t *)src)[i];
     }
-    tiny_c_printf("\n");
+
+    return NULL;
 }
 
 #endif
@@ -466,3 +468,13 @@ struct stat tiny_c_stat(const char *path) {
 }
 
 #endif
+
+void print_buffer(uint8_t *buffer, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        if (i > 0 && i % 2 == 0) {
+            tiny_c_printf("\n", buffer[i]);
+        }
+        tiny_c_printf("%x, ", buffer[i]);
+    }
+    tiny_c_printf("\n");
+}

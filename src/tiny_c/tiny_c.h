@@ -35,6 +35,7 @@ char *tiny_c_get_cwd(char *buffer, size_t size);
 const char *tinyc_strerror(int32_t err_number);
 void *tinyc_malloc_arena(size_t n);
 void tinyc_free_arena(void);
+off_t tinyc_lseek(int fd, off_t offset, int whence);
 
 #ifdef ARM32
 

@@ -8,11 +8,16 @@ size_t tinyc_sys_brk(size_t brk) {
         .param_one = brk,
     };
     size_t result = tiny_c_syscall(SYS_brk, &args);
-    // int32_t err = (int32_t)result;
-    // if (err < 1) {
-    //     tinyc_errno = -err;
-    //     return -1;
-    // }
-
     return result;
+}
+
+off_t tinyc_sys_lseek(uint32_t fd, off_t offset, uint32_t whence) {
+    struct SysArgs args = {
+        .param_one = fd,
+        .param_two = (size_t)offset,
+        .param_three = whence,
+    };
+    size_t result = tiny_c_syscall(SYS_lseek, &args);
+    off_t result_offset = (off_t)result;
+    return result_offset;
 }

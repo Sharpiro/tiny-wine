@@ -1,7 +1,9 @@
 #include "../tiny_c/tiny_c.h"
 #include "elf_tools.h"
 #include <fcntl.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/mman.h>
 
 #ifdef AMD64
@@ -157,6 +159,11 @@ int main(int32_t argc, char **argv) {
         }
     }
 
+    /* Initialize .bss */
+    void *bss = (void *)elf_data.bss_section_header.sh_addr;
+    memset(bss, 0, elf_data.bss_section_header.sh_size);
+
+    /* Jump to program */
     size_t *frame_pointer = (size_t *)argv - 1;
     size_t *inferior_frame_pointer = frame_pointer + 1;
     *inferior_frame_pointer = (size_t)(argc - 1);

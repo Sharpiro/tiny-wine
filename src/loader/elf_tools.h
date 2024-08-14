@@ -8,6 +8,7 @@
 
 #define ELF_HEADER Elf32_Ehdr
 #define PROGRAM_HEADER Elf32_Phdr
+#define SECTION_HEADER Elf32_Shdr
 
 #endif
 
@@ -21,6 +22,7 @@ struct MemoryRegion {
 struct ElfData {
     ELF_HEADER header;
     PROGRAM_HEADER *program_headers;
+    SECTION_HEADER bss_section_header;
     struct MemoryRegion *memory_regions;
     size_t memory_regions_len;
 };

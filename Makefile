@@ -1,8 +1,11 @@
+# @todo: add fsanitize
+
 CC ?= clang
 OBJDUMP ?= objdump
 WARNINGS = \
-	-std=gnu99 \
+	-std=c99 \
 	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments \
+	-Wconversion \
     -Werror=return-type \
     -Werror=incompatible-pointer-types \
 
