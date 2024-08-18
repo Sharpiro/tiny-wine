@@ -170,7 +170,7 @@ int main(int32_t argc, char **argv) {
     size_t *stack_start = inferior_frame_pointer;
     tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
     tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
-    tiny_c_fprintf(log_handle, "running program...\n");
+    tiny_c_fprintf(log_handle, "------------running program------------\n");
 
     run_asm(
         (size_t)inferior_frame_pointer,
