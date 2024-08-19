@@ -14,9 +14,12 @@ RUN apt-get update && apt-get -y install \
     debootstrap \
     file
 
+# @todo: try using ubuntu package for sysroot?
 RUN mkdir -p /root/sysroot
 RUN \
     debootstrap --arch=armhf --foreign bullseye /root/sysroot http://deb.debian.org/debian && \
     chroot /root/sysroot /debootstrap/debootstrap --second-stage
+
+ENV PRELOADER="qemu-arm"
 
 WORKDIR /root/tiny_wine

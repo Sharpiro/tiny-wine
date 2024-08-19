@@ -9,8 +9,8 @@ assert() {
 }
 
 # Env Test
-assert [ `./loader ./env silent | wc -c` == "24" ]
-assert [ "`./loader ./env silent`" == $'0x00000002\n./env\nsilent' ]
+assert [ "`$PRELOADER ./loader ./env silent | wc -c`" == "24" ]
+assert [ "`$PRELOADER ./loader ./env silent`" == $'0x00000002\n./env\nsilent' ]
 
 # String Test
 expected=`cat <<EOF
@@ -25,6 +25,6 @@ bss_string 0x00000000
 malloc_string abcd
 EOF
 `
-assert [ "`./loader string silent`" == "$expected" ]
+assert [ "`$PRELOADER ./loader string silent`" == "$expected" ]
 
 echo All tests passed
