@@ -1,6 +1,6 @@
 # Tiny Wine
 
-Educational repo to help me understand how linkers and Wine works.
+A Project to help me understand how linkers and Wine work.
 
 Very basic support for jumping to other static Linux ELF programs.
 
@@ -38,3 +38,7 @@ docker run --rm -v $PWD:/root/tiny_wine tinywine qemu-arm ./loader ./env always 
 ```sh
 docker run --rm -v $PWD:/root/tiny_wine tinywine ./test.sh
 ```
+
+## Contributing
+
+This repo is currently experimental and thus not taking contributions at this time.
