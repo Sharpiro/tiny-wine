@@ -8,12 +8,6 @@
 
 const uint8_t ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
 
-#define BAIL(fmt, ...)                                                         \
-    tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
-    return false;
-
-#define EXAMPLE2(fmt, ...) tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__)
-
 bool get_elf_data(int fd, struct ElfData *elf_data) {
     ELF_HEADER elf_header;
     ssize_t header_read_len = tiny_c_read(fd, &elf_header, ELF_HEADER_LEN);

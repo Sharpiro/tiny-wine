@@ -1,6 +1,7 @@
 #pragma once
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -36,6 +37,10 @@ const char *tinyc_strerror(int32_t err_number);
 void *tinyc_malloc_arena(size_t n);
 void tinyc_free_arena(void);
 off_t tinyc_lseek(int fd, off_t offset, int whence);
+
+#define BAIL(fmt, ...)                                                         \
+    tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
+    return false;
 
 #ifdef ARM32
 

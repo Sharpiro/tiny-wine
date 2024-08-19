@@ -1,4 +1,5 @@
 #include "../../../tiny_c/tiny_c.h"
+#include <fcntl.h>
 #include <stddef.h>
 
 ARM32_START_FUNCTION
@@ -15,19 +16,16 @@ int main(void) {
     const char *cwd = tiny_c_get_cwd(cwd_buffer, 100);
     tiny_c_printf("cwd: '%s'\n", cwd);
 
-    const int MALLOC_SIZE = 0x1001;
-    uint8_t *buffer = tinyc_malloc_arena(MALLOC_SIZE);
-    tiny_c_printf("p: %x\n", buffer);
-    tiny_c_printf("f: %x\n", *buffer);
-    tiny_c_printf("l: %x\n", *(buffer + MALLOC_SIZE - 1));
+    uint8_t *buffer = tinyc_malloc_arena(0x1000);
+    if (buffer == NULL) {
+        BAIL("malloc failed");
+    }
 
-    buffer = tinyc_malloc_arena(0x800);
-    tiny_c_printf("p: %x\n", buffer);
-    tiny_c_printf("n: %x\n", *buffer);
-
-    buffer = tinyc_malloc_arena(0x800);
-    tiny_c_printf("p: %x\n", buffer);
-    tiny_c_printf("n: %x\n", *buffer);
+    int32_t fd = tiny_c_open("/proc/self/maps", O_RDONLY);
+    tiny_c_read(fd, buffer, 0x1000);
+    tiny_c_printf("heap start: %x\n", buffer);
+    tiny_c_printf("Mapped address spaces:\n");
+    tiny_c_printf("%s\n", buffer);
 
     tinyc_free_arena();
 }
