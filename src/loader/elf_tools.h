@@ -13,6 +13,14 @@
 
 #endif
 
+struct Symbol {
+    char *name;
+    size_t value;
+    size_t size;
+    size_t type;
+    size_t bind;
+};
+
 struct MemoryRegion {
     size_t start;
     size_t end;
@@ -20,14 +28,17 @@ struct MemoryRegion {
     size_t permissions;
 };
 
+struct DynamicData {
+    struct Symbol *symbols;
+    size_t symbols_len;
+};
+
 struct ElfData {
     ELF_HEADER header;
     PROGRAM_HEADER *program_headers;
     size_t program_headers_len;
-    SECTION_HEADER *bss_section_header;
-    SECTION_HEADER *dyn_sym_section_header;
-    SYMBOL *dyn_symbols;
-    size_t dyn_symbols_len;
+    const SECTION_HEADER *bss_section_header;
+    struct DynamicData *dynamic_data;
 };
 
 bool get_elf_data(int fd, struct ElfData *elf_data);

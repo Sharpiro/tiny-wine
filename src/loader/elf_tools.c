@@ -10,12 +10,12 @@
 const uint8_t ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
 
 // @todo: finds by 'type' which is not unique
-static SECTION_HEADER *find_section_header(
-    SECTION_HEADER *section_headers, size_t len, size_t type
+static const SECTION_HEADER *find_section_header(
+    const SECTION_HEADER *section_headers, size_t len, size_t type
 ) {
-    SECTION_HEADER *dyn_sym_section_header = NULL;
+    const SECTION_HEADER *dyn_sym_section_header = NULL;
     for (size_t i = 0; i < len; i++) {
-        SECTION_HEADER *curr_header = &section_headers[i];
+        const SECTION_HEADER *curr_header = &section_headers[i];
         if (curr_header->sh_type == type) {
             dyn_sym_section_header = curr_header;
             break;
@@ -23,6 +23,80 @@ static SECTION_HEADER *find_section_header(
     }
 
     return dyn_sym_section_header;
+}
+
+static bool get_dynamic_data(
+    const SECTION_HEADER *section_headers,
+    size_t section_headers_len,
+    int32_t fd,
+    struct DynamicData *dynamic_data
+) {
+    if (dynamic_data == NULL) {
+        BAIL("dynamic_data was null\n");
+    }
+    const SECTION_HEADER *dyn_sym_section_header =
+        find_section_header(section_headers, section_headers_len, SHT_DYNSYM);
+    const SECTION_HEADER *dyn_str_section_header =
+        find_section_header(section_headers, section_headers_len, SHT_STRTAB);
+    if (dyn_sym_section_header == NULL) {
+        return NULL;
+    }
+    if (dyn_str_section_header == NULL) {
+        BAIL("Could not find dynamic string section header\n");
+    }
+
+    size_t dyn_sym_section_size = dyn_sym_section_header->sh_size;
+    SYMBOL *dyn_symbols = tinyc_malloc_arena(dyn_sym_section_size);
+    off_t seeked =
+        tinyc_lseek(fd, (off_t)dyn_sym_section_header->sh_addr, SEEK_SET);
+    if (seeked != (off_t)dyn_sym_section_header->sh_addr) {
+        BAIL("seek failed\n");
+    }
+    ssize_t read_len = tiny_c_read(fd, dyn_symbols, dyn_sym_section_size);
+    if ((size_t)read_len != dyn_sym_section_size) {
+        BAIL("read failed\n")
+    }
+
+    uint8_t *dyn_strings = tinyc_malloc_arena(dyn_str_section_header->sh_size);
+    seeked = tinyc_lseek(fd, (off_t)dyn_str_section_header->sh_addr, SEEK_SET);
+    if (seeked != (off_t)dyn_str_section_header->sh_addr) {
+        BAIL("seek failed\n");
+    }
+    read_len = tiny_c_read(fd, dyn_strings, dyn_str_section_header->sh_size);
+    if ((size_t)read_len != dyn_str_section_header->sh_size) {
+        BAIL("read failed\n")
+    }
+
+    size_t dyn_str_table_len =
+        dyn_sym_section_header->sh_size / dyn_sym_section_header->sh_entsize;
+    struct Symbol *symbols =
+        tinyc_malloc_arena(sizeof(struct Symbol) * dyn_str_table_len);
+
+    size_t dyn_symbols_len = 0;
+    for (size_t i = 0; i < dyn_str_table_len; i++) {
+        SYMBOL dyn_elf_symbol = dyn_symbols[i];
+        if (dyn_elf_symbol.st_name == 0) {
+            continue;
+        }
+
+        char *name = (char *)dyn_strings + dyn_elf_symbol.st_name;
+        struct Symbol symbol = {
+            .name = name,
+            .value = dyn_elf_symbol.st_value,
+            .size = dyn_elf_symbol.st_size,
+            // @todo: compute this
+            .type = 0,
+            .bind = 0,
+        };
+        symbols[dyn_symbols_len++] = symbol;
+    }
+
+    *dynamic_data = (struct DynamicData){
+        .symbols = symbols,
+        .symbols_len = dyn_symbols_len,
+    };
+
+    return true;
 }
 
 bool get_elf_data(int fd, struct ElfData *elf_data) {
@@ -61,34 +135,15 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
         BAIL("read failed\n")
     }
 
-    SECTION_HEADER *bss_section_header =
+    const SECTION_HEADER *bss_section_header =
         find_section_header(section_headers, elf_header.e_shnum, SHT_NOBITS);
 
-    SECTION_HEADER *dyn_sym_section_header =
-        find_section_header(section_headers, elf_header.e_shnum, SHT_DYNSYM);
-    if (dyn_sym_section_header != NULL) {
-        size_t dyn_sym_section_size = dyn_sym_section_header->sh_size;
-        // size_t dyn_symbols_len =
-        //     dyn_sym_section_header->sh_size /
-        //     dyn_sym_section_header->sh_entsize;
-        SYMBOL *dyn_symbols = tinyc_malloc_arena(dyn_sym_section_size);
-        seeked =
-            tinyc_lseek(fd, (off_t)dyn_sym_section_header->sh_addr, SEEK_SET);
-        if (seeked != (off_t)dyn_sym_section_header->sh_addr) {
-            BAIL("seek failed");
-        }
-        ssize_t dyn_sym_read_len =
-            tiny_c_read(fd, dyn_symbols, dyn_sym_section_size);
-        if ((size_t)dyn_sym_read_len != dyn_sym_section_size) {
-            BAIL("read failed\n")
-        }
-    }
-
-    SECTION_HEADER *dyn_str_section_header =
-        find_section_header(section_headers, elf_header.e_shnum, SHT_STRTAB);
-
-    if (dyn_str_section_header != NULL) {
-        // uint8_t data = tinyc_malloc_arena(dyn_)
+    struct DynamicData *dynamic_data =
+        tinyc_malloc_arena(sizeof(struct DynamicData));
+    if (!get_dynamic_data(
+            section_headers, elf_header.e_shnum, fd, dynamic_data
+        )) {
+        BAIL("failed getting dynamic data\n")
     }
 
     *elf_data = (struct ElfData){
@@ -96,9 +151,7 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
         .program_headers = program_headers,
         .program_headers_len = elf_header.e_phnum,
         .bss_section_header = bss_section_header,
-        .dyn_sym_section_header = dyn_sym_section_header,
-        .dyn_symbols = NULL,
-        .dyn_symbols_len = 0,
+        .dynamic_data = dynamic_data,
     };
 
     return true;
