@@ -39,7 +39,9 @@ tiny_c_shared: src/tiny_c/tiny_c.c
 		-DARM32 \
 		-shared \
 		-fPIC \
-		-o libtinyc.so src/tiny_c/tiny_c.c
+		-o libtinyc.so \
+		src/tiny_c/tinyc_sys.c \
+		src/tiny_c/tiny_c.c
 
 loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
@@ -54,6 +56,7 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-o loader \
 		src/loader/loader_main.c \
 		src/loader/loader_lib.c \
+		src/loader/memory_map.c \
 		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c \
 		src/loader/elf_tools.c
@@ -89,17 +92,24 @@ programs/linux/tinyfetch:
 	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
 
 programs/linux/dynamic:
+	@$(CC) \
+		-D ARM32 \
+		$(WARNINGS) \
+		-S \
+		-o dynamic.s \
+		src/programs/linux/dynamic/dynamic_main.c
 	@$(CC) -g \
 		-D ARM32 \
 		-nostdlib \
 		$(WARNINGS) \
-		-o dynamic src/programs/linux/dynamic/dynamic_main.c \
-		./libtinyc.so 
+		-o dynamic \
+		./libtinyc.so \
+		src/programs/linux/dynamic/dynamic_main.c
 	@objdump -D dynamic > dynamic.dump
 
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so *.dump \
-		env string tinyfetch
+		env string tinyfetch dynamic *.s
 
 install: tiny_c tiny_c_shared
 	cp src/tiny_c/tiny_c.h /usr/local/include

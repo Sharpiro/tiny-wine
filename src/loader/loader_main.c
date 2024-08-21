@@ -1,5 +1,7 @@
 #include "../tiny_c/tiny_c.h"
 #include "elf_tools.h"
+#include "loader_lib.h"
+#include "memory_map.h"
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -125,13 +127,17 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    tiny_c_fprintf(
-        log_handle, "memory regions: %x\n", elf_data.memory_regions_len
-    );
     tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header.e_entry);
 
-    for (size_t i = 0; i < elf_data.memory_regions_len; i++) {
-        struct MemoryRegion *memory_region = &elf_data.memory_regions[i];
+    struct MemoryRegion *memory_regions = NULL;
+    size_t memory_regions_len = 0;
+    if (!get_memory_regions(&elf_data, &memory_regions, &memory_regions_len)) {
+        BAIL("failed getting memory regions\n");
+    }
+
+    tiny_c_fprintf(log_handle, "memory regions: %x\n", memory_regions_len);
+    for (size_t i = 0; i < memory_regions_len; i++) {
+        struct MemoryRegion *memory_region = &memory_regions[i];
         size_t memory_region_len = memory_region->end - memory_region->start;
         size_t prot_read = (memory_region->permissions & 4) >> 2;
         size_t prot_write = memory_region->permissions & 2;
@@ -160,8 +166,10 @@ int main(int32_t argc, char **argv) {
     }
 
     /* Initialize .bss */
-    void *bss = (void *)elf_data.bss_section_header.sh_addr;
-    memset(bss, 0, elf_data.bss_section_header.sh_size);
+    if (elf_data.bss_section_header != NULL) {
+        void *bss = (void *)elf_data.bss_section_header->sh_addr;
+        memset(bss, 0, elf_data.bss_section_header->sh_size);
+    }
 
     /* Jump to program */
     size_t *frame_pointer = (size_t *)argv - 1;
@@ -171,7 +179,7 @@ int main(int32_t argc, char **argv) {
     tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
     tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
     tiny_c_fprintf(log_handle, "------------running program------------\n");
-
+    loader_free_arena();
     run_asm(
         (size_t)inferior_frame_pointer,
         (size_t)stack_start,

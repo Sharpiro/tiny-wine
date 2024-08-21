@@ -16,3 +16,4 @@ tiny_wine
 *.core
 /dynamic
 a.out
+*.s
