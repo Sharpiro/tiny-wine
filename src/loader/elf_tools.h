@@ -13,12 +13,21 @@
 
 #endif
 
+struct SectionHeader {
+    const char *name;
+    size_t type;
+    size_t addr;
+    size_t offset;
+    size_t size;
+    size_t entry_size;
+};
+
 struct Symbol {
-    char *name;
+    const char *name;
     size_t value;
     size_t size;
     size_t type;
-    size_t bind;
+    size_t binding;
 };
 
 struct MemoryRegion {
@@ -37,8 +46,13 @@ struct ElfData {
     ELF_HEADER header;
     PROGRAM_HEADER *program_headers;
     size_t program_headers_len;
-    const SECTION_HEADER *bss_section_header;
+    struct SectionHeader *section_headers;
+    size_t section_headers_len;
     struct DynamicData *dynamic_data;
 };
 
 bool get_elf_data(int fd, struct ElfData *elf_data);
+
+const struct SectionHeader *find_section_header(
+    const struct SectionHeader *section_headers, size_t len, const char *name
+);

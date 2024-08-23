@@ -342,7 +342,7 @@ int tiny_c_strcmp(const void *buffer_a, const void *buffer_b) {
     for (size_t i = 0; true; i++) {
         u_int8_t a = ((u_int8_t *)buffer_a)[i];
         u_int8_t b = ((u_int8_t *)buffer_b)[i];
-        if (a == 0 || b == 0) {
+        if (a == 0 && b == 0) {
             break;
         }
         if (a != b) {

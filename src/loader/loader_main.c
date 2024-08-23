@@ -129,8 +129,8 @@ int main(int32_t argc, char **argv) {
 
     tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header.e_entry);
 
-    struct MemoryRegion *memory_regions = NULL;
-    size_t memory_regions_len = 0;
+    struct MemoryRegion *memory_regions;
+    size_t memory_regions_len;
     if (!get_memory_regions(&elf_data, &memory_regions, &memory_regions_len)) {
         BAIL("failed getting memory regions\n");
     }
@@ -166,9 +166,13 @@ int main(int32_t argc, char **argv) {
     }
 
     /* Initialize .bss */
-    if (elf_data.bss_section_header != NULL) {
-        void *bss = (void *)elf_data.bss_section_header->sh_addr;
-        memset(bss, 0, elf_data.bss_section_header->sh_size);
+    const struct SectionHeader *bss_section_header = find_section_header(
+        elf_data.section_headers, elf_data.section_headers_len, ".bss"
+    );
+    if (bss_section_header != NULL) {
+        tiny_c_fprintf(log_handle, "initializing .bss\n");
+        void *bss = (void *)bss_section_header->addr;
+        memset(bss, 0, bss_section_header->size);
     }
 
     /* Jump to program */

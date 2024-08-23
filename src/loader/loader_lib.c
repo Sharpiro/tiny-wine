@@ -1,6 +1,6 @@
 #include "loader_lib.h"
 
-#define LOADER_BUFFER_SIZE 1000
+#define LOADER_BUFFER_SIZE 4000
 
 static uint8_t loader_buffer[LOADER_BUFFER_SIZE] = {0};
 static size_t loader_heap_end = LOADER_BUFFER_SIZE;
