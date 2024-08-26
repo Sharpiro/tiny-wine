@@ -102,17 +102,23 @@ static bool get_dynamic_data(
         BAIL("dynamic_data was null\n");
     }
 
+    const struct SectionHeader *relocation_header =
+        find_section_header(section_headers, section_headers_len, ".rel.plt");
     const struct SectionHeader *dyn_sym_section_header =
         find_section_header(section_headers, section_headers_len, ".dynsym");
     const struct SectionHeader *dyn_str_section_header =
         find_section_header(section_headers, section_headers_len, ".dynstr");
     const struct SectionHeader *got_section_header =
         find_section_header(section_headers, section_headers_len, ".got");
-    if (dyn_sym_section_header == NULL) {
+    if (relocation_header == NULL) {
+        // BAIL("Could not find .rel.plt section header\n");
         return true;
     }
+    if (dyn_sym_section_header == NULL) {
+        BAIL("Could not find .dynsym section header\n");
+    }
     if (dyn_str_section_header == NULL) {
-        BAIL("Could not find dynamic string section header\n");
+        BAIL("Could not find .dynstr section header\n");
     }
     if (got_section_header == NULL) {
         BAIL("Could not find .got section header\n");
@@ -174,6 +180,7 @@ static bool get_dynamic_data(
         symbols[dyn_symbols_len++] = symbol;
     }
 
+    size_t got_len = got_section_header->size / got_section_header->entry_size;
     size_t *global_offset_table = tinyc_malloc_arena(got_section_header->size);
     if (global_offset_table == NULL) {
         BAIL("malloc failed\n")
@@ -185,6 +192,49 @@ static bool get_dynamic_data(
     read = tiny_c_read(fd, global_offset_table, got_section_header->size);
     if ((size_t)read != got_section_header->size) {
         BAIL("read failed\n")
+    }
+
+    struct GlobalOffsetTableEntry *got_entries =
+        tinyc_malloc_arena(sizeof(struct GlobalOffsetTableEntry) * got_len);
+    size_t got_base_addr = got_section_header->addr;
+    for (size_t i = 0; i < got_len; i++) {
+        size_t index = got_base_addr + i * got_section_header->entry_size;
+        size_t value = global_offset_table[i];
+        struct GlobalOffsetTableEntry got_entry = {
+            .index = index,
+            .value = value,
+        };
+        got_entries[i] = got_entry;
+    }
+
+    size_t relocations_len =
+        relocation_header->size / relocation_header->entry_size;
+    RELOCATION *elf_relocations = tinyc_malloc_arena(relocation_header->size);
+    if (elf_relocations == NULL) {
+        BAIL("malloc failed\n")
+    }
+    seeked = tinyc_lseek(fd, (off_t)relocation_header->offset, SEEK_SET);
+    if (seeked != (off_t)relocation_header->offset) {
+        BAIL("seek failed\n");
+    }
+    read = tiny_c_read(fd, elf_relocations, relocation_header->size);
+    if ((size_t)read != relocation_header->size) {
+        BAIL("read failed\n")
+    }
+
+    struct Relocation *relocations =
+        tinyc_malloc_arena(sizeof(struct Relocation) * relocations_len);
+    for (size_t i = 0; i < relocations_len; i++) {
+        RELOCATION *elf_relocation = &elf_relocations[i];
+        size_t type = elf_relocation->r_info & 0xff;
+        size_t symbol_index = elf_relocation->r_info >> 8;
+        struct Symbol symbol = symbols[symbol_index - 1];
+        struct Relocation relocation = {
+            .offset = elf_relocation->r_offset,
+            .type = type,
+            .symbol = symbol,
+        };
+        relocations[i] = relocation;
     }
 
     *dynamic_data = (struct DynamicData){

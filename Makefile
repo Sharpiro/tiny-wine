@@ -15,6 +15,7 @@ all: tiny_c \
 	programs/linux/env \
 	programs/linux/string \
 	programs/linux/tinyfetch \
+	programs/linux/static_pie \
 	programs/linux/dynamic
 
 tiny_c: src/tiny_c/tiny_c.c
@@ -90,6 +91,16 @@ programs/linux/tinyfetch:
 		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c
 	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
+
+programs/linux/static_pie:
+	@$(CC) $(CFLAGS) -g \
+		-D ARM32 \
+		-nostdlib -static-pie \
+		$(WARNINGS) \
+		-o static_pie src/programs/linux/static_pie/static_pie_main.c \
+		src/tiny_c/tinyc_sys.c \
+		src/tiny_c/tiny_c.c
+	@$(OBJDUMP) -D static_pie > static_pie.dump
 
 programs/linux/dynamic:
 	@$(CC) \

@@ -10,8 +10,14 @@
 #define PROGRAM_HEADER Elf32_Phdr
 #define SECTION_HEADER Elf32_Shdr
 #define SYMBOL Elf32_Sym
+#define RELOCATION Elf32_Rel
 
 #endif
+
+struct GlobalOffsetTableEntry {
+    size_t index;
+    size_t value;
+};
 
 struct SectionHeader {
     const char *name;
@@ -28,6 +34,12 @@ struct Symbol {
     size_t size;
     size_t type;
     size_t binding;
+};
+
+struct Relocation {
+    size_t offset;
+    size_t type;
+    struct Symbol symbol;
 };
 
 struct MemoryRegion {

@@ -17,3 +17,4 @@ tiny_wine
 /dynamic
 a.out
 *.s
+/static_pie

@@ -28,7 +28,10 @@ bool get_memory_regions(
             continue;
         }
         if (program_header->p_vaddr == 0) {
-            BAIL("dynamic relocations not supported\n")
+            tiny_c_fprintf(
+                STDERR, "WARNING: dynamic relocations not supported\n"
+            );
+            continue;
         }
 
         uint32_t file_offset = program_header->p_offset /
