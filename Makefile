@@ -12,6 +12,7 @@ WARNINGS = \
 all: tiny_c \
 	tiny_c_shared \
 	loader \
+	programs/linux/unit_test \
 	programs/linux/env \
 	programs/linux/string \
 	programs/linux/tinyfetch \
@@ -62,6 +63,16 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		src/tiny_c/tiny_c.c \
 		src/loader/elf_tools.c
 
+programs/linux/unit_test:
+	@$(CC) $(CFLAGS) -g \
+		-D ARM32 \
+		$(WARNINGS) \
+		-o unit_test src/programs/linux/unit_test/unit_test_main.c \
+		src/tiny_c/tinyc_sys.c \
+		src/tiny_c/tiny_c.c \
+		src/loader/memory_map.c \
+		src/loader/loader_lib.c
+
 programs/linux/env:
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
@@ -111,7 +122,7 @@ programs/linux/dynamic:
 		src/programs/linux/dynamic/dynamic_main.c
 	@$(CC) -g \
 		-D ARM32 \
-		-nostdlib \
+		-nostdlib -no-pie \
 		$(WARNINGS) \
 		-o dynamic \
 		./libtinyc.so \

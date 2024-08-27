@@ -6,9 +6,13 @@
 
 bool get_memory_regions(
     struct ElfData *elf_data,
+    // ELF_HEADER header,
     struct MemoryRegion **memory_regions_ptr,
     size_t *len
 ) {
+    if (elf_data == NULL) {
+        BAIL("elf_data cannot be null\n");
+    }
     if (memory_regions_ptr == NULL) {
         BAIL("memory_regions cannot be null\n");
     }

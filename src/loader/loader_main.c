@@ -127,6 +127,10 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
+    // if (elf_data.header.e_type != ET_EXEC) {
+    //     BAIL("Program type '%x' not supported\n", elf_data.header.e_type);
+    // }
+
     tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header.e_entry);
 
     struct MemoryRegion *memory_regions;

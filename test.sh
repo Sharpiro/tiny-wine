@@ -8,6 +8,10 @@ assert() {
     fi
 }
 
+# Unit Test
+./unit_test
+assert [$? == 0]
+
 # Env Test
 assert [ "`$PRELOADER ./loader ./env silent | wc -c`" == "24" ]
 assert [ "`$PRELOADER ./loader ./env silent`" == $'0x00000002\n./env\nsilent' ]

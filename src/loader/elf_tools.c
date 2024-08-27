@@ -249,17 +249,13 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
     ELF_HEADER elf_header;
     ssize_t header_read_len = tiny_c_read(fd, &elf_header, ELF_HEADER_LEN);
     if (header_read_len != ELF_HEADER_LEN) {
-        tiny_c_fprintf(STDERR, "read failed\n");
-        return false;
+        BAIL("read failed\n");
     }
-
     if (tiny_c_memcmp(elf_header.e_ident, ELF_MAGIC, 4)) {
-        tiny_c_fprintf(STDERR, "Program type not supported\n");
-        return false;
+        BAIL("Program type not supported\n");
     }
-
     if (elf_header.e_phoff != ELF_HEADER_LEN) {
-        BAIL("expected program headers after elf header\n")
+        BAIL("expected program headers after elf header\n");
     }
 
     size_t program_headers_size = elf_header.e_phnum * elf_header.e_phentsize;
