@@ -4,7 +4,9 @@ CC ?= clang
 OBJDUMP ?= objdump
 WARNINGS = \
 	-std=c99 \
-	-Wall -Wextra -Wpedantic -Wno-varargs -Wno-gnu-zero-variadic-macro-arguments \
+	-Wall -Wextra -Wpedantic -Wno-varargs \
+	-Wno-gnu-zero-variadic-macro-arguments \
+	-Wno-gnu-statement-expression-from-macro-expansion \
 	-Wconversion \
     -Werror=return-type \
     -Werror=incompatible-pointer-types \

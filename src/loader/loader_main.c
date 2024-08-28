@@ -88,12 +88,25 @@ void unknown_dynamic_linker_callback(void) {
     tiny_c_exit(-1);
 }
 
-// void dynamic_linker_callback(size_t a, size_t b, size_t c, size_t d) {
+// @todo: $fp is now broken and pointing to $sp
 void dynamic_linker_callback(void) {
-    size_t *stack_pointer = (size_t *)GET_REGISTER("sp");
-    size_t return_address = *stack_pointer;
-    size_t r12_scratch = GET_REGISTER("r12");
+    __asm__ volatile("mov r10, r0\n");
+    size_t r0 = GET_REGISTER("r10");
+    size_t r1 = GET_REGISTER("r1");
+    size_t r2 = GET_REGISTER("r2");
+    size_t r3 = GET_REGISTER("r3");
+    size_t r4 = GET_REGISTER("r4");
+    size_t r5 = GET_REGISTER("r5");
+    __asm__ volatile("mov r10, #0\n");
+    // @todo: restore r0?
+
     tiny_c_printf("dynamic linker callback\n");
+    size_t *frame_pointer = (size_t *)GET_REGISTER("r11");
+    size_t return_address = *(frame_pointer + 2);
+    size_t r12_scratch = GET_REGISTER("r12");
+    __asm__ volatile("add r11, #8\n"
+                     "mov sp, r11\n"
+                     "bx %0\n" ::"r"(return_address));
 }
 
 int main(int32_t argc, char **argv) {

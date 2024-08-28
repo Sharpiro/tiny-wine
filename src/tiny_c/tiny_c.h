@@ -54,10 +54,11 @@ off_t tinyc_lseek(int fd, off_t offset, int whence);
                 :);                                                            \
     }
 
+// @todo: doesn't work with r0
 #define GET_REGISTER(reg)                                                      \
     ({                                                                         \
         size_t result = 0;                                                     \
-        __asm__("mov %0, " reg : "=r"(result));                                \
+        __asm__ volatile("mov %0, " reg : "=r"(result));                       \
         result;                                                                \
     })
 
