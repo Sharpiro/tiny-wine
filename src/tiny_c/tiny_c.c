@@ -388,7 +388,7 @@ const char *tinyc_strerror(int32_t err_number) {
 
 // @todo: configurable logging
 void *tinyc_malloc_arena(size_t n) {
-    const int PAGE_SIZE = 0x1000;
+    const size_t PAGE_SIZE = 0x1000;
 
     if (tinyc_heap_start == 0) {
         // tiny_c_printf("requested start %x\n", 0);

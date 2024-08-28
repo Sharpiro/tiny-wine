@@ -52,6 +52,8 @@ struct MemoryRegion {
 struct DynamicData {
     struct Symbol *symbols;
     size_t symbols_len;
+    struct GlobalOffsetTableEntry *got_entries;
+    size_t got_len;
 };
 
 struct ElfData {

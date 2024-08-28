@@ -83,6 +83,19 @@ static void run_asm(
 
 #endif
 
+void unknown_dynamic_linker_callback(void) {
+    tiny_c_printf("unknown dynamic linker callback\n");
+    tiny_c_exit(-1);
+}
+
+// void dynamic_linker_callback(size_t a, size_t b, size_t c, size_t d) {
+void dynamic_linker_callback(void) {
+    size_t *stack_pointer = (size_t *)GET_REGISTER("sp");
+    size_t return_address = *stack_pointer;
+    size_t r12_scratch = GET_REGISTER("r12");
+    tiny_c_printf("dynamic linker callback\n");
+}
+
 int main(int32_t argc, char **argv) {
     int32_t null_file_handle = tiny_c_open("/dev/null", O_RDONLY);
     int32_t log_handle = STDERR;
@@ -135,8 +148,14 @@ int main(int32_t argc, char **argv) {
 
     struct MemoryRegion *memory_regions;
     size_t memory_regions_len;
-    if (!get_memory_regions(&elf_data, &memory_regions, &memory_regions_len)) {
-        BAIL("failed getting memory regions\n");
+    if (!get_memory_regions(
+            elf_data.program_headers,
+            elf_data.header.e_phnum,
+            &memory_regions,
+            &memory_regions_len
+        )) {
+        tiny_c_fprintf(STDERR, "failed getting memory regions\n");
+        return -1;
     }
 
     tiny_c_fprintf(log_handle, "memory regions: %x\n", memory_regions_len);
@@ -177,6 +196,19 @@ int main(int32_t argc, char **argv) {
         tiny_c_fprintf(log_handle, "initializing .bss\n");
         void *bss = (void *)bss_section_header->addr;
         memset(bss, 0, bss_section_header->size);
+    }
+
+    /* Initialize dynamic linker callback */
+    // @todo
+    struct DynamicData *dynamic_data = elf_data.dynamic_data;
+    if (dynamic_data != NULL) {
+        if (dynamic_data->got_len != 4) {
+            tiny_c_fprintf(STDERR, "@todo: got_len\n");
+        }
+        size_t *loader_entry_one = (void *)dynamic_data->got_entries[1].index;
+        *loader_entry_one = (size_t)unknown_dynamic_linker_callback;
+        size_t *loader_entry_two = (void *)dynamic_data->got_entries[2].index;
+        *loader_entry_two = (size_t)dynamic_linker_callback;
     }
 
     /* Jump to program */

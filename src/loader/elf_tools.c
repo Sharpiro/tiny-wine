@@ -240,6 +240,8 @@ static bool get_dynamic_data(
     *dynamic_data = (struct DynamicData){
         .symbols = symbols,
         .symbols_len = dyn_symbols_len,
+        .got_entries = got_entries,
+        .got_len = got_len,
     };
 
     return true;
