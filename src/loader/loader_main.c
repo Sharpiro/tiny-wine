@@ -8,6 +8,8 @@
 #include <string.h>
 #include <sys/mman.h>
 
+static struct ElfData elf_data;
+
 #ifdef AMD64
 
 #define ELF_HEADER Elf64_Ehdr
@@ -90,23 +92,29 @@ void unknown_dynamic_linker_callback(void) {
 
 // @todo: $fp is now broken and pointing to $sp
 void dynamic_linker_callback(void) {
-    __asm__ volatile("mov r10, r0\n");
+    __asm__("mov r10, r0\n");
     size_t r0 = GET_REGISTER("r10");
     size_t r1 = GET_REGISTER("r1");
     size_t r2 = GET_REGISTER("r2");
     size_t r3 = GET_REGISTER("r3");
     size_t r4 = GET_REGISTER("r4");
     size_t r5 = GET_REGISTER("r5");
-    __asm__ volatile("mov r10, #0\n");
-    // @todo: restore r0?
+    size_t r12 = GET_REGISTER("r12");
+    size_t function_address = *((size_t *)r12);
 
     tiny_c_printf("dynamic linker callback\n");
-    size_t *frame_pointer = (size_t *)GET_REGISTER("r11");
-    size_t return_address = *(frame_pointer + 2);
-    size_t r12_scratch = GET_REGISTER("r12");
-    __asm__ volatile("add r11, #8\n"
-                     "mov sp, r11\n"
-                     "bx %0\n" ::"r"(return_address));
+    tiny_c_printf("GOT index: %x\n", r12);
+    tiny_c_printf("GOT value: %x\n", function_address);
+    tiny_c_printf("p1: %x\n", r0);
+    tiny_c_printf("p2: %x\n", r1);
+    tiny_c_printf("p3: %x\n", r2);
+    tiny_c_printf("p4: %x\n", r3);
+    tiny_c_printf("p5: %x\n", r4);
+    tiny_c_printf("p6: %x\n", r5);
+
+    // @todo: restore r0, r10?
+    __asm__("mov sp, r11\n"
+            "pop {r11, r12, pc}\n");
 }
 
 int main(int32_t argc, char **argv) {
@@ -147,7 +155,6 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    struct ElfData elf_data;
     if (!get_elf_data(fd, &elf_data)) {
         tiny_c_fprintf(STDERR, "error parsing elf data\n");
         return -1;
@@ -232,7 +239,7 @@ int main(int32_t argc, char **argv) {
     tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
     tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
     tiny_c_fprintf(log_handle, "------------running program------------\n");
-    loader_free_arena();
+
     run_asm(
         (size_t)inferior_frame_pointer,
         (size_t)stack_start,
