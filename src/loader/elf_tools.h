@@ -11,6 +11,7 @@
 #define SECTION_HEADER Elf32_Shdr
 #define SYMBOL Elf32_Sym
 #define RELOCATION Elf32_Rel
+#define DYNAMIC_ENTRY Elf32_Dyn
 
 #endif
 
@@ -54,6 +55,10 @@ struct DynamicData {
     size_t symbols_len;
     struct GlobalOffsetTableEntry *got_entries;
     size_t got_len;
+    struct Relocation *relocations;
+    size_t relocations_len;
+    char **shared_libraries;
+    size_t shared_libraries_len;
 };
 
 struct ElfData {

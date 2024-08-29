@@ -110,6 +110,8 @@ static bool get_dynamic_data(
         find_section_header(section_headers, section_headers_len, ".dynstr");
     const struct SectionHeader *got_section_header =
         find_section_header(section_headers, section_headers_len, ".got");
+    const struct SectionHeader *dynamic_header =
+        find_section_header(section_headers, section_headers_len, ".dynamic");
     if (relocation_header == NULL) {
         // BAIL("Could not find .rel.plt section header\n");
         return true;
@@ -122,6 +124,9 @@ static bool get_dynamic_data(
     }
     if (got_section_header == NULL) {
         BAIL("Could not find .got section header\n");
+    }
+    if (dynamic_header == NULL) {
+        BAIL("Could not find .dynamic section header\n");
     }
 
     size_t dyn_sym_section_size = dyn_sym_section_header->size;
@@ -139,7 +144,7 @@ static bool get_dynamic_data(
         BAIL("read failed\n")
     }
 
-    uint8_t *dyn_strings = tinyc_malloc_arena(dyn_str_section_header->size);
+    char *dyn_strings = tinyc_malloc_arena(dyn_str_section_header->size);
     if (dyn_strings == NULL) {
         BAIL("malloc failed\n")
     }
@@ -167,7 +172,7 @@ static bool get_dynamic_data(
             continue;
         }
 
-        char *name = (char *)dyn_strings + dyn_elf_symbol.st_name;
+        char *name = dyn_strings + dyn_elf_symbol.st_name;
         size_t type = dyn_elf_symbol.st_info & 0x0f;
         size_t binding = dyn_elf_symbol.st_info >> 4;
         struct Symbol symbol = {
@@ -237,11 +242,46 @@ static bool get_dynamic_data(
         relocations[i] = relocation;
     }
 
+    size_t dynamic_entries_len =
+        dynamic_header->size / dynamic_header->entry_size;
+    DYNAMIC_ENTRY *dynamic_entries = tinyc_malloc_arena(dynamic_header->size);
+    if (dynamic_entries == NULL) {
+        BAIL("malloc failed\n")
+    }
+    seeked = tinyc_lseek(fd, (off_t)dynamic_header->offset, SEEK_SET);
+    if (seeked != (off_t)dynamic_header->offset) {
+        BAIL("seek failed\n");
+    }
+    read = tiny_c_read(fd, dynamic_entries, dynamic_header->size);
+    if ((size_t)read != dynamic_header->size) {
+        BAIL("read failed\n")
+    }
+
+    char **shared_libraries =
+        loader_malloc_arena(sizeof(char *) * dynamic_entries_len);
+    if (shared_libraries == NULL) {
+        BAIL("malloc failed\n")
+    }
+    size_t shared_libraries_len = 0;
+    for (size_t i = 0; i < dynamic_entries_len; i++) {
+        DYNAMIC_ENTRY *dynamic_entry = &dynamic_entries[i];
+        if (dynamic_entry->d_tag != 1) {
+            continue;
+        }
+
+        shared_libraries[shared_libraries_len++] =
+            dyn_strings + dynamic_entry->d_un.d_val;
+    }
+
     *dynamic_data = (struct DynamicData){
         .symbols = symbols,
         .symbols_len = dyn_symbols_len,
         .got_entries = got_entries,
         .got_len = got_len,
+        .relocations = relocations,
+        .relocations_len = relocations_len,
+        .shared_libraries = shared_libraries,
+        .shared_libraries_len = shared_libraries_len,
     };
 
     return true;

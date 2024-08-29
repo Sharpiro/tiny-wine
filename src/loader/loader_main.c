@@ -1,6 +1,5 @@
 #include "../tiny_c/tiny_c.h"
 #include "elf_tools.h"
-#include "loader_lib.h"
 #include "memory_map.h"
 #include <fcntl.h>
 #include <stddef.h>
@@ -100,11 +99,27 @@ void dynamic_linker_callback(void) {
     size_t r4 = GET_REGISTER("r4");
     size_t r5 = GET_REGISTER("r5");
     size_t r12 = GET_REGISTER("r12");
-    size_t function_address = *((size_t *)r12);
+    size_t *got_entry = (size_t *)r12;
 
-    tiny_c_printf("dynamic linker callback\n");
-    tiny_c_printf("GOT index: %x\n", r12);
-    tiny_c_printf("GOT value: %x\n", function_address);
+    struct Relocation *relocation = NULL;
+    for (size_t i = 0; i < elf_data.dynamic_data->relocations_len; i++) {
+        struct Relocation *current_relocation =
+            &elf_data.dynamic_data->relocations[i];
+        if (current_relocation->offset == r12) {
+            relocation = current_relocation;
+            break;
+        }
+    }
+    if (relocation == NULL) {
+        tiny_c_printf("couldn't find relocation\n");
+        tiny_c_exit(-1);
+    }
+
+    // @todo: set got_entry to function address
+    // *got_entry = ...;
+
+    tiny_c_printf("dynamically linking '%s'\n", relocation->symbol.name);
+    tiny_c_printf("GOT index: %x\n", got_entry);
     tiny_c_printf("p1: %x\n", r0);
     tiny_c_printf("p2: %x\n", r1);
     tiny_c_printf("p3: %x\n", r2);
@@ -218,12 +233,20 @@ int main(int32_t argc, char **argv) {
         memset(bss, 0, bss_section_header->size);
     }
 
+    /* Map shared libraries */
+    for (size_t i = 0; i < elf_data.dynamic_data->shared_libraries_len; i++) {
+        char *shared_library = elf_data.dynamic_data->shared_libraries[i];
+        tiny_c_fprintf(
+            log_handle, "mapping shared library '%s'\n", shared_library
+        );
+    }
+
     /* Initialize dynamic linker callback */
-    // @todo
     struct DynamicData *dynamic_data = elf_data.dynamic_data;
     if (dynamic_data != NULL) {
         if (dynamic_data->got_len != 4) {
             tiny_c_fprintf(STDERR, "@todo: got_len\n");
+            return -1;
         }
         size_t *loader_entry_one = (void *)dynamic_data->got_entries[1].index;
         *loader_entry_one = (size_t)unknown_dynamic_linker_callback;
