@@ -1,6 +1,9 @@
 # @todo: add fsanitize
 
-CC ?= clang
+ifeq ($(CC),cc)
+  CC := clang
+endif
+
 OBJDUMP ?= objdump
 WARNINGS = \
 	-std=c99 \
@@ -68,6 +71,7 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 programs/linux/unit_test:
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
+		-nostdlib -static \
 		$(WARNINGS) \
 		-o unit_test src/programs/linux/unit_test/unit_test_main.c \
 		src/tiny_c/tinyc_sys.c \

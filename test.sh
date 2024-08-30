@@ -8,9 +8,9 @@ assert() {
     fi
 }
 
-# # Unit Test
-# ./unit_test
-# assert [$? == 0]
+# Unit Test
+./unit_test
+assert [ $? == 0 ]
 
 # Env Test
 assert [ "`$PRELOADER ./loader ./env silent | wc -c`" == "24" ]

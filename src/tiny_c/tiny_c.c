@@ -386,6 +386,7 @@ const char *tinyc_strerror(int32_t err_number) {
 }
 
 // @todo: configurable logging
+// @todo: alignment
 void *tinyc_malloc_arena(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
@@ -442,6 +443,17 @@ uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
     }
 
     return count;
+}
+
+inline uint32_t divmod(uint32_t numerator, uint32_t denominator) {
+    uint32_t quotient = __aeabi_uidiv(numerator, denominator);
+    uint32_t remainder = numerator - quotient * denominator;
+    __asm__("mov r1, %0\n" : : "r"(remainder));
+    return quotient;
+}
+
+uint32_t __aeabi_uidivmod(uint32_t numerator, uint32_t denominator) {
+    return divmod(numerator, denominator);
 }
 
 void *memset(void *s_buffer, int c_value, size_t n_count) {

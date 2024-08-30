@@ -37,6 +37,7 @@ const char *tinyc_strerror(int32_t err_number);
 void *tinyc_malloc_arena(size_t n);
 void tinyc_free_arena(void);
 off_t tinyc_lseek(int fd, off_t offset, int whence);
+uint32_t divmod(uint32_t numerator, uint32_t denominator);
 
 #define BAIL(fmt, ...)                                                         \
     tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
