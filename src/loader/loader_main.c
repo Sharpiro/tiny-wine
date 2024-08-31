@@ -99,14 +99,13 @@ void dynamic_linker_callback(void) {
     size_t r3 = GET_REGISTER("r3");
     size_t r4 = GET_REGISTER("r4");
     size_t r5 = GET_REGISTER("r5");
-    size_t r12 = GET_REGISTER("r12");
-    size_t *got_entry = (size_t *)r12;
+    size_t *got_entry = (size_t *)GET_REGISTER("r12");
 
     struct Relocation *relocation = NULL;
     for (size_t i = 0; i < elf_data.dynamic_data->relocations_len; i++) {
         struct Relocation *current_relocation =
             &elf_data.dynamic_data->relocations[i];
-        if (current_relocation->offset == r12) {
+        if (current_relocation->offset == (size_t)got_entry) {
             relocation = current_relocation;
             break;
         }
@@ -116,21 +115,32 @@ void dynamic_linker_callback(void) {
         tiny_c_exit(-1);
     }
 
+    tiny_c_printf(
+        "dynamically linking %x: '%s'\n", got_entry, relocation->symbol.name
+    );
+    tiny_c_printf("params: %x, %x, %x, %x, %x, %x\n", r0, r1, r2, r3, r4, r5);
+
     // @todo: set got_entry to function address
-    // *got_entry = ...;
+    *got_entry = (size_t)tiny_c_printf;
 
-    tiny_c_printf("dynamically linking '%s'\n", relocation->symbol.name);
-    tiny_c_printf("GOT index: %x\n", got_entry);
-    tiny_c_printf("p1: %x\n", r0);
-    tiny_c_printf("p2: %x\n", r1);
-    tiny_c_printf("p3: %x\n", r2);
-    tiny_c_printf("p4: %x\n", r3);
-    tiny_c_printf("p5: %x\n", r4);
-    tiny_c_printf("p6: %x\n", r5);
-
-    // @todo: restore r0, r10?
-    __asm__("mov sp, r11\n"
-            "pop {r11, r12, pc}\n");
+    __asm__(
+        "mov r10, %0\n"
+        "mov r0, %1\n"
+        "mov r1, %2\n"
+        "mov r2, %3\n"
+        "mov r3, %4\n"
+        "mov r4, %5\n"
+        "mov r5, %6\n"
+        "mov sp, fp\n"
+        "pop {fp, r12, lr}\n"
+        "bx r10\n" ::"r"(*got_entry),
+        "r"(r0),
+        "r"(r1),
+        "r"(r2),
+        "r"(r3),
+        "r"(r4),
+        "r"(r5)
+    );
 }
 
 int initialize_dynamic_data(void) {
