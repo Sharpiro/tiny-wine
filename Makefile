@@ -14,7 +14,8 @@ WARNINGS = \
     -Werror=return-type \
     -Werror=incompatible-pointer-types \
 
-all: tiny_c \
+all: \
+	tiny_c \
 	tiny_c_shared \
 	loader \
 	programs/linux/unit_test \
@@ -24,7 +25,18 @@ all: tiny_c \
 	programs/linux/static_pie \
 	programs/linux/dynamic
 
-tiny_c: src/tiny_c/tiny_c.c
+tinyc_sys.o: src/tiny_c/tiny_c.c
+	@$(CC) $(CFLAGS) \
+		-c \
+		-O0 \
+		-nostdlib -static \
+		$(WARNINGS) \
+		-fno-stack-protector \
+		-g \
+		-DARM32 \
+		-o tinyc_sys.o src/tiny_c/tinyc_sys.c
+
+tiny_c.o: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
 		-c \
 		-O0 \
@@ -34,9 +46,11 @@ tiny_c: src/tiny_c/tiny_c.c
 		-g \
 		-DARM32 \
 		-o tiny_c.o src/tiny_c/tiny_c.c
-	@ar rcs libtinyc.a tiny_c.o
 
-tiny_c_shared: src/tiny_c/tiny_c.c
+tiny_c: tinyc_sys.o tiny_c.o
+	@ar rcs libtinyc.a tinyc_sys.o tiny_c.o
+
+tiny_c_shared: tinyc_sys.o tiny_c.o
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -46,9 +60,9 @@ tiny_c_shared: src/tiny_c/tiny_c.c
 		-nostdlib -static \
 		-shared \
 		-o libtinyc.so \
-		src/tiny_c/tinyc_sys.c \
-		src/tiny_c/tiny_c.c
-	@objdump -D libtinyc.so > libtinyc.so.dump
+		tinyc_sys.o \
+		tiny_c.o
+	@$(OBJDUMP) -D libtinyc.so > libtinyc.so.dump
 
 loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
@@ -64,39 +78,38 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		src/loader/loader_main.c \
 		src/loader/loader_lib.c \
 		src/loader/memory_map.c \
-		src/tiny_c/tinyc_sys.c \
-		src/tiny_c/tiny_c.c \
-		src/loader/elf_tools.c
+		src/loader/elf_tools.c \
+		libtinyc.a
 
 programs/linux/unit_test:
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \
 		$(WARNINGS) \
-		-o unit_test src/programs/linux/unit_test/unit_test_main.c \
-		src/tiny_c/tinyc_sys.c \
-		src/tiny_c/tiny_c.c \
+		-o unit_test \
+		src/programs/linux/unit_test/unit_test_main.c \
 		src/loader/memory_map.c \
-		src/loader/loader_lib.c
+		src/loader/loader_lib.c \
+		libtinyc.a
 
 programs/linux/env:
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \
 		$(WARNINGS) \
-		-o env src/programs/linux/env/env_main.c \
-		src/tiny_c/tinyc_sys.c \
-		src/tiny_c/tiny_c.c
-	@objdump -D env > env.dump
+		-o env \
+		src/programs/linux/env/env_main.c \
+		libtinyc.a
+	@$(OBJDUMP) -D env > env.dump
 
 programs/linux/string:
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \
 		$(WARNINGS) \
-		-o string src/programs/linux/string/string_main.c \
-		src/tiny_c/tinyc_sys.c \
-		src/tiny_c/tiny_c.c
+		-o string \
+		src/programs/linux/string/string_main.c \
+		libtinyc.a
 	@$(OBJDUMP) -D string > string.dump
 
 programs/linux/tinyfetch:
@@ -104,9 +117,9 @@ programs/linux/tinyfetch:
 		-D ARM32 \
 		-nostdlib -static \
 		$(WARNINGS) \
-		-o tinyfetch src/programs/linux/tinyfetch/tinyfetch_main.c \
-		src/tiny_c/tinyc_sys.c \
-		src/tiny_c/tiny_c.c
+		-o tinyfetch \
+		src/programs/linux/tinyfetch/tinyfetch_main.c \
+		libtinyc.a
 	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
 
 programs/linux/static_pie:
@@ -114,9 +127,9 @@ programs/linux/static_pie:
 		-D ARM32 \
 		-nostdlib -static-pie \
 		$(WARNINGS) \
-		-o static_pie src/programs/linux/static_pie/static_pie_main.c \
-		src/tiny_c/tinyc_sys.c \
-		src/tiny_c/tiny_c.c
+		-o static_pie \
+		src/programs/linux/static_pie/static_pie_main.c \
+		libtinyc.a
 	@$(OBJDUMP) -D static_pie > static_pie.dump
 
 programs/linux/dynamic:
@@ -133,7 +146,7 @@ programs/linux/dynamic:
 		-o dynamic \
 		./libtinyc.so \
 		src/programs/linux/dynamic/dynamic_main.c
-	@objdump -D dynamic > dynamic.dump
+	@$(OBJDUMP) -D dynamic > dynamic.dump
 
 clean:
 	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so *.dump \
