@@ -121,7 +121,7 @@ void dynamic_linker_callback(void) {
     tiny_c_printf("params: %x, %x, %x, %x, %x, %x\n", r0, r1, r2, r3, r4, r5);
 
     // @todo: set got_entry to function address
-    *got_entry = (size_t)tiny_c_printf;
+    *got_entry = (size_t)get_number;
 
     __asm__(
         "mov r10, %0\n"
@@ -143,29 +143,36 @@ void dynamic_linker_callback(void) {
     );
 }
 
-int initialize_dynamic_data(void) {
+bool initialize_dynamic_data(void) {
     tiny_c_fprintf(log_handle, "initializing dynamic data\n");
     struct DynamicData *dynamic_data = elf_data.dynamic_data;
 
     /* Map shared libraries */
     for (size_t i = 0; i < dynamic_data->shared_libraries_len; i++) {
-        char *shared_library = dynamic_data->shared_libraries[i];
+        char *shared_lib_name = dynamic_data->shared_libraries[i];
         tiny_c_fprintf(
-            log_handle, "mapping shared library '%s'\n", shared_library
+            log_handle, "mapping shared library '%s'\n", shared_lib_name
         );
+        int32_t shared_lib_file = tiny_c_open(shared_lib_name, O_RDONLY);
+        if (shared_lib_file == -1) {
+            BAIL("failed opening shared lib '%s'", shared_lib_name);
+        }
+        struct ElfData shared_lib_elf;
+        if (!get_elf_data(shared_lib_file, &shared_lib_elf)) {
+            BAIL("failed getting elf data for shared lib '%s'");
+        }
     }
 
     /* Initialize dynamic linker callback */
     if (dynamic_data->got_len != 4) {
-        tiny_c_fprintf(STDERR, "@todo: got_len\n");
-        return -1;
+        BAIL("@todo: got_len\n");
     }
     size_t *loader_entry_one = (void *)dynamic_data->got_entries[1].index;
     *loader_entry_one = (size_t)unknown_dynamic_linker_callback;
     size_t *loader_entry_two = (void *)dynamic_data->got_entries[2].index;
     *loader_entry_two = (size_t)dynamic_linker_callback;
 
-    return 0;
+    return true;
 }
 
 int main(int32_t argc, char **argv) {
@@ -269,7 +276,10 @@ int main(int32_t argc, char **argv) {
     }
 
     if (elf_data.dynamic_data != NULL) {
-        initialize_dynamic_data();
+        if (!initialize_dynamic_data()) {
+            tiny_c_fprintf(STDERR, "failed initializing dynamic data\n");
+            return -1;
+        }
     }
 
     /* Jump to program */

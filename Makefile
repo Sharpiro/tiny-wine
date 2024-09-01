@@ -39,16 +39,16 @@ tiny_c: src/tiny_c/tiny_c.c
 tiny_c_shared: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		-nostdlib -static \
 		$(WARNINGS) \
 		-fno-stack-protector \
 		-g \
 		-DARM32 \
+		-nostdlib -static \
 		-shared \
-		-fPIC \
 		-o libtinyc.so \
 		src/tiny_c/tinyc_sys.c \
 		src/tiny_c/tiny_c.c
+	@objdump -D libtinyc.so > libtinyc.so.dump
 
 loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \

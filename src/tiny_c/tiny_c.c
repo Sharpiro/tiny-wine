@@ -74,6 +74,10 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 
 #endif
 
+int32_t get_number(void) {
+    return 42;
+}
+
 void tiny_c_print_len(int32_t file_handle, const char *data, size_t size) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
@@ -83,7 +87,7 @@ void tiny_c_print_len(int32_t file_handle, const char *data, size_t size) {
     tiny_c_syscall(SYS_write, &args);
 }
 
-void tiny_c_print(int32_t file_handle, const char *data) {
+static void tiny_c_print(int32_t file_handle, const char *data) {
     if (data == NULL) {
         tiny_c_print_len(file_handle, "<null>", 6);
         return;
@@ -114,7 +118,7 @@ void tiny_c_puts(int32_t file_handle, const char *data) {
     tiny_c_newline(file_handle);
 }
 
-size_t tiny_c_pow(size_t x, size_t y) {
+static size_t tiny_c_pow(size_t x, size_t y) {
     size_t product = 1;
     for (size_t i = 0; i < y; i++) {
         product *= x;
@@ -123,7 +127,7 @@ size_t tiny_c_pow(size_t x, size_t y) {
     return product;
 }
 
-void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
+static void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *HEX_CHARS = "0123456789abcdef";
 
