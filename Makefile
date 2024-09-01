@@ -6,7 +6,7 @@ endif
 
 OBJDUMP ?= objdump
 WARNINGS = \
-	-std=c99 \
+	-std=gnu99 \
 	-Wall -Wextra -Wpedantic -Wno-varargs \
 	-Wno-gnu-zero-variadic-macro-arguments \
 	-Wno-gnu-statement-expression-from-macro-expansion \
