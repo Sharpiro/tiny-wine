@@ -101,6 +101,7 @@ static bool get_dynamic_data(
     if (dynamic_data_ptr == NULL) {
         BAIL("dynamic_data_ptr was null\n");
     }
+    *dynamic_data_ptr = NULL;
 
     const struct SectionHeader *relocation_header =
         find_section_header(section_headers, section_headers_len, ".rel.plt");
