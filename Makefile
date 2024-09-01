@@ -25,6 +25,10 @@ all: \
 	programs/linux/static_pie \
 	programs/linux/dynamic
 
+.PHONY: echo_hi
+echo_hi:
+	@echo hi
+
 tinyc_sys.o: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
 		-c \
@@ -133,13 +137,13 @@ programs/linux/static_pie:
 	@$(OBJDUMP) -D static_pie > static_pie.dump
 
 programs/linux/dynamic:
-	@$(CC) \
+	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		$(WARNINGS) \
 		-S \
 		-o dynamic.s \
 		src/programs/linux/dynamic/dynamic_main.c
-	@$(CC) -g \
+	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -no-pie \
 		$(WARNINGS) \
@@ -149,8 +153,9 @@ programs/linux/dynamic:
 	@$(OBJDUMP) -D dynamic > dynamic.dump
 
 clean:
-	@rm -f tiny_wine loader tiny_c.o libtinyc.a libtinyc.so *.dump \
-		env string tinyfetch dynamic *.s
+	@rm -f \
+	*.dump *.o *.s *.a *.so \
+	loader env string tinyfetch dynamic unit_test static_pie
 
 install: tiny_c tiny_c_shared
 	cp src/tiny_c/tiny_c.h /usr/local/include

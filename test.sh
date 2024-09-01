@@ -9,7 +9,7 @@ assert() {
 }
 
 # Unit Test
-./unit_test
+$PRELOADER ./unit_test
 assert [ $? == 0 ]
 
 # Env Test
