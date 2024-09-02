@@ -1,5 +1,6 @@
 #include "../tiny_c/tiny_c.h"
 #include "elf_tools.h"
+#include "loader_lib.h"
 #include "memory_map.h"
 #include <fcntl.h>
 #include <stddef.h>
@@ -8,7 +9,6 @@
 #include <sys/mman.h>
 
 static struct ElfData elf_data;
-int32_t log_handle = STDERR;
 
 #ifdef AMD64
 
@@ -115,10 +115,10 @@ void dynamic_linker_callback(void) {
         tiny_c_exit(-1);
     }
 
-    tiny_c_printf(
+    LOADER_LOG(
         "dynamically linking %x: '%s'\n", got_entry, relocation->symbol.name
     );
-    tiny_c_printf("params: %x, %x, %x, %x, %x, %x\n", r0, r1, r2, r3, r4, r5);
+    LOADER_LOG("params: %x, %x, %x, %x, %x, %x\n", r0, r1, r2, r3, r4, r5);
 
     // @todo: set got_entry to function address
     *got_entry = (size_t)get_number;
@@ -144,15 +144,13 @@ void dynamic_linker_callback(void) {
 }
 
 bool initialize_dynamic_data(void) {
-    tiny_c_fprintf(log_handle, "initializing dynamic data\n");
+    LOADER_LOG("initializing dynamic data\n");
     struct DynamicData *dynamic_data = elf_data.dynamic_data;
 
     /* Map shared libraries */
     for (size_t i = 0; i < dynamic_data->shared_libraries_len; i++) {
         char *shared_lib_name = dynamic_data->shared_libraries[i];
-        tiny_c_fprintf(
-            log_handle, "mapping shared library '%s'\n", shared_lib_name
-        );
+        LOADER_LOG("mapping shared library '%s'\n", shared_lib_name);
         int32_t shared_lib_file = tiny_c_open(shared_lib_name, O_RDONLY);
         if (shared_lib_file == -1) {
             BAIL("failed opening shared lib '%s'", shared_lib_name);
@@ -178,11 +176,11 @@ bool initialize_dynamic_data(void) {
 int main(int32_t argc, char **argv) {
     int32_t null_file_handle = tiny_c_open("/dev/null", O_RDONLY);
     if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
-        log_handle = null_file_handle;
+        loader_log_handle = null_file_handle;
     }
 
     int32_t pid = tiny_c_get_pid();
-    tiny_c_fprintf(log_handle, "pid: %x\n", pid);
+    LOADER_LOG("pid: %x\n", pid);
 
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -191,8 +189,8 @@ int main(int32_t argc, char **argv) {
 
     char *filename = argv[1];
 
-    tiny_c_fprintf(log_handle, "argc: %x\n", argc);
-    tiny_c_fprintf(log_handle, "filename: '%s'\n", filename);
+    LOADER_LOG("argc: %x\n", argc);
+    LOADER_LOG("filename: '%s'\n", filename);
 
     // @todo: old gcc maps this by default for some reason
     const size_t ADDRESS = 0x10000;
@@ -221,7 +219,7 @@ int main(int32_t argc, char **argv) {
     //     BAIL("Program type '%x' not supported\n", elf_data.header.e_type);
     // }
 
-    tiny_c_fprintf(log_handle, "program entry: %x\n", elf_data.header.e_entry);
+    LOADER_LOG("program entry: %x\n", elf_data.header.e_entry);
 
     struct MemoryRegion *memory_regions;
     size_t memory_regions_len;
@@ -235,34 +233,10 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    tiny_c_fprintf(log_handle, "memory regions: %x\n", memory_regions_len);
-    for (size_t i = 0; i < memory_regions_len; i++) {
-        struct MemoryRegion *memory_region = &memory_regions[i];
-        size_t memory_region_len = memory_region->end - memory_region->start;
-        size_t prot_read = (memory_region->permissions & 4) >> 2;
-        size_t prot_write = memory_region->permissions & 2;
-        size_t prot_execute = (memory_region->permissions & 1) << 2;
-        size_t map_protection = prot_read | prot_write | prot_execute;
-        uint8_t *addr = tiny_c_mmap(
-            memory_region->start,
-            memory_region_len,
-            map_protection,
-            MAP_PRIVATE | MAP_FIXED,
-            fd,
-            memory_region->file_offset
-        );
-        tiny_c_fprintf(
-            log_handle, "map address: %x, %x\n", memory_region->start, addr
-        );
-        if ((size_t)addr != memory_region->start) {
-            tiny_c_fprintf(
-                STDERR,
-                "map failed, %x, %s\n",
-                tinyc_errno,
-                tinyc_strerror(tinyc_errno)
-            );
-            return -1;
-        }
+    LOADER_LOG("loader memory regions: %x\n", memory_regions_len);
+    if (!map_memory_regions(fd, memory_regions, memory_regions_len)) {
+        tiny_c_fprintf(STDERR, "loader map memory regions failed\n");
+        return -1;
     }
 
     /* Initialize .bss */
@@ -270,7 +244,7 @@ int main(int32_t argc, char **argv) {
         elf_data.section_headers, elf_data.section_headers_len, ".bss"
     );
     if (bss_section_header != NULL) {
-        tiny_c_fprintf(log_handle, "initializing .bss\n");
+        LOADER_LOG("initializing .bss\n");
         void *bss = (void *)bss_section_header->addr;
         memset(bss, 0, bss_section_header->size);
     }
@@ -287,9 +261,9 @@ int main(int32_t argc, char **argv) {
     size_t *inferior_frame_pointer = frame_pointer + 1;
     *inferior_frame_pointer = (size_t)(argc - 1);
     size_t *stack_start = inferior_frame_pointer;
-    tiny_c_fprintf(log_handle, "frame_pointer: %x\n", frame_pointer);
-    tiny_c_fprintf(log_handle, "stack_start: %x\n", stack_start);
-    tiny_c_fprintf(log_handle, "------------running program------------\n");
+    LOADER_LOG("frame_pointer: %x\n", frame_pointer);
+    LOADER_LOG("stack_start: %x\n", stack_start);
+    LOADER_LOG("------------running program------------\n");
 
     run_asm(
         (size_t)inferior_frame_pointer,

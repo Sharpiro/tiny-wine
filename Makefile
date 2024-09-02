@@ -15,8 +15,8 @@ WARNINGS = \
     -Werror=incompatible-pointer-types \
 
 all: \
-	tiny_c \
-	tiny_c_shared \
+	libtinyc.a \
+	libtinyc.so \
 	loader \
 	programs/linux/unit_test \
 	programs/linux/env \
@@ -31,30 +31,32 @@ echo_hi:
 
 tinyc_sys.o: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
+		-g \
 		-c \
 		-O0 \
 		-nostdlib -static \
 		$(WARNINGS) \
+		-fPIC \
 		-fno-stack-protector \
-		-g \
 		-DARM32 \
 		-o tinyc_sys.o src/tiny_c/tinyc_sys.c
 
 tiny_c.o: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
+		-g \
 		-c \
 		-O0 \
 		-nostdlib -static \
 		$(WARNINGS) \
+		-fPIC \
 		-fno-stack-protector \
-		-g \
 		-DARM32 \
 		-o tiny_c.o src/tiny_c/tiny_c.c
 
-tiny_c: tinyc_sys.o tiny_c.o
+libtinyc.a: tinyc_sys.o tiny_c.o
 	@ar rcs libtinyc.a tinyc_sys.o tiny_c.o
 
-tiny_c_shared: tinyc_sys.o tiny_c.o
+libtinyc.so: tinyc_sys.o tiny_c.o
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -73,7 +75,6 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-O0 \
 		-nostdlib -static \
 		$(WARNINGS) \
-		-fPIE \
 		-Wl,--section-start=.text=7d7d0000 \
 		-fno-stack-protector \
 		-g \
@@ -96,7 +97,7 @@ programs/linux/unit_test:
 		src/loader/loader_lib.c \
 		libtinyc.a
 
-programs/linux/env:
+programs/linux/env: libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \
@@ -126,10 +127,11 @@ programs/linux/tinyfetch:
 		libtinyc.a
 	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
 
-programs/linux/static_pie:
+programs/linux/static_pie: libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
-		-nostdlib -static-pie \
+		-nostdlib \
+		-static-pie \
 		$(WARNINGS) \
 		-o static_pie \
 		src/programs/linux/static_pie/static_pie_main.c \
@@ -145,7 +147,8 @@ programs/linux/dynamic:
 		src/programs/linux/dynamic/dynamic_main.c
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
-		-nostdlib -no-pie \
+		-nostdlib \
+		-no-pie \
 		$(WARNINGS) \
 		-o dynamic \
 		./libtinyc.so \
@@ -157,6 +160,6 @@ clean:
 	*.dump *.o *.s *.a *.so \
 	loader env string tinyfetch dynamic unit_test static_pie
 
-install: tiny_c tiny_c_shared
+install: libtinyc.a libtinyc.so
 	cp src/tiny_c/tiny_c.h /usr/local/include
 	cp libtinyc.a libtinyc.so /usr/local/lib

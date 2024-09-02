@@ -3,6 +3,7 @@
 #include "elf_tools.h"
 #include "loader_lib.h"
 #include <stdint.h>
+#include <sys/mman.h>
 
 bool get_memory_regions(
     const PROGRAM_HEADER *program_headers,
@@ -31,9 +32,7 @@ bool get_memory_regions(
             continue;
         }
         if (program_header->p_vaddr == 0) {
-            tiny_c_fprintf(
-                STDERR, "WARNING: dynamic relocations not supported\n"
-            );
+            LOADER_LOG("WARNING: dynamic relocations not supported\n");
             continue;
         }
 
@@ -49,8 +48,8 @@ bool get_memory_regions(
         size_t max_region_address =
             start + program_header->p_offset + program_header->p_memsz;
         if (max_region_address > end) {
-            tiny_c_fprintf(
-                STDERR, "WARNING: non-zero file offset memory region\n"
+            LOADER_LOG(
+                "WARNING: memory region %x extended due to offset\n", start
             );
             end += 0x1000;
         }
@@ -64,5 +63,36 @@ bool get_memory_regions(
     }
 
     *memory_regions_len = j;
+    return true;
+}
+
+bool map_memory_regions(
+    int32_t fd,
+    const struct MemoryRegion *memory_regions,
+    size_t memory_regions_len
+) {
+    for (size_t i = 0; i < memory_regions_len; i++) {
+        const struct MemoryRegion *memory_region = &memory_regions[i];
+        size_t memory_region_len = memory_region->end - memory_region->start;
+        size_t prot_read = (memory_region->permissions & 4) >> 2;
+        size_t prot_write = memory_region->permissions & 2;
+        size_t prot_execute = (memory_region->permissions & 1) << 2;
+        size_t map_protection = prot_read | prot_write | prot_execute;
+        uint8_t *addr = tiny_c_mmap(
+            memory_region->start,
+            memory_region_len,
+            map_protection,
+            MAP_PRIVATE | MAP_FIXED,
+            fd,
+            memory_region->file_offset
+        );
+        LOADER_LOG("map address: %x, %x\n", memory_region->start, addr);
+        if ((size_t)addr != memory_region->start) {
+            BAIL(
+                "map failed, %x, %s\n", tinyc_errno, tinyc_strerror(tinyc_errno)
+            );
+        }
+    }
+
     return true;
 }
