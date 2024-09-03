@@ -8,7 +8,9 @@
 #include <string.h>
 #include <sys/mman.h>
 
-static struct ElfData elf_data;
+static struct ElfData inferior_elf;
+struct SharedLibrary *shared_libraries;
+size_t shared_libraries_len;
 
 #ifdef AMD64
 
@@ -85,8 +87,35 @@ static void run_asm(
 
 #endif
 
+bool find_symbol(
+    const char *symbol_name, struct Symbol *symbol, size_t *dynamic_offset
+) {
+    if (symbol == NULL) {
+        BAIL("symbol was null");
+    }
+    if (dynamic_offset == NULL) {
+        BAIL("dynamic_offset was null");
+    }
+
+    for (size_t i = 0; i < shared_libraries_len; i++) {
+        struct SharedLibrary curr_lib = shared_libraries[i];
+        size_t symbols_len = curr_lib.elf_data.dynamic_data->symbols_len;
+        for (size_t j = 0; j < symbols_len; j++) {
+            struct Symbol curr_symbol =
+                curr_lib.elf_data.dynamic_data->symbols[j];
+            if (tiny_c_strcmp(curr_symbol.name, symbol_name) == 0) {
+                *symbol = curr_symbol;
+                *dynamic_offset = curr_lib.dynamic_offset;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void unknown_dynamic_linker_callback(void) {
-    tiny_c_printf("unknown dynamic linker callback\n");
+    tiny_c_fprintf(STDERR, "unknown dynamic linker callback\n");
     tiny_c_exit(-1);
 }
 
@@ -102,26 +131,37 @@ void dynamic_linker_callback(void) {
     size_t *got_entry = (size_t *)GET_REGISTER("r12");
 
     struct Relocation *relocation = NULL;
-    for (size_t i = 0; i < elf_data.dynamic_data->relocations_len; i++) {
+    for (size_t i = 0; i < inferior_elf.dynamic_data->relocations_len; i++) {
         struct Relocation *current_relocation =
-            &elf_data.dynamic_data->relocations[i];
+            &inferior_elf.dynamic_data->relocations[i];
         if (current_relocation->offset == (size_t)got_entry) {
             relocation = current_relocation;
             break;
         }
     }
     if (relocation == NULL) {
-        tiny_c_printf("couldn't find relocation\n");
+        tiny_c_fprintf(STDERR, "couldn't find relocation\n");
         tiny_c_exit(-1);
     }
 
+    struct Symbol symbol;
+    size_t dynamic_offset;
+    if (!find_symbol(relocation->symbol.name, &symbol, &dynamic_offset)) {
+        tiny_c_fprintf(
+            STDERR, "symbol '%s' not found\n", relocation->symbol.name
+        );
+        tiny_c_exit(-1);
+    }
+
+    *got_entry = dynamic_offset + symbol.value;
+
     LOADER_LOG(
-        "dynamically linking %x: '%s'\n", got_entry, relocation->symbol.name
+        "dynamically linking %x:%x: '%s'\n",
+        got_entry,
+        *got_entry,
+        relocation->symbol.name
     );
     LOADER_LOG("params: %x, %x, %x, %x, %x, %x\n", r0, r1, r2, r3, r4, r5);
-
-    // @todo: set got_entry to function address
-    *got_entry = (size_t)get_number;
 
     __asm__(
         "mov r10, %0\n"
@@ -143,11 +183,23 @@ void dynamic_linker_callback(void) {
     );
 }
 
-bool initialize_dynamic_data(void) {
+bool initialize_dynamic_data(
+    struct SharedLibrary **shared_libraries, size_t *shared_libraries_len
+) {
     LOADER_LOG("initializing dynamic data\n");
-    struct DynamicData *dynamic_data = elf_data.dynamic_data;
+    if (shared_libraries == NULL) {
+        BAIL("shared_libraries was null\n");
+    }
+    if (shared_libraries_len == NULL) {
+        BAIL("shared_libraries_len was null\n");
+    }
+
+    struct DynamicData *dynamic_data = inferior_elf.dynamic_data;
 
     /* Map shared libraries */
+    *shared_libraries = loader_malloc_arena(
+        sizeof(struct SharedLibrary) * dynamic_data->shared_libraries_len
+    );
     for (size_t i = 0; i < dynamic_data->shared_libraries_len; i++) {
         char *shared_lib_name = dynamic_data->shared_libraries[i];
         LOADER_LOG("mapping shared library '%s'\n", shared_lib_name);
@@ -159,6 +211,36 @@ bool initialize_dynamic_data(void) {
         if (!get_elf_data(shared_lib_file, &shared_lib_elf)) {
             BAIL("failed getting elf data for shared lib '%s'");
         }
+
+        struct MemoryRegion *memory_regions;
+        size_t memory_regions_len;
+        size_t dynamic_offset = LOADER_SHARED_LIB_START + i * 0x2000;
+        if (!get_memory_regions(
+                shared_lib_elf.program_headers,
+                shared_lib_elf.header.e_phnum,
+                &memory_regions,
+                &memory_regions_len,
+                dynamic_offset
+            )) {
+            BAIL("failed getting memory regions\n");
+        }
+
+        if (!map_memory_regions(
+                shared_lib_file, memory_regions, memory_regions_len
+            )) {
+            BAIL("loader map memory regions failed\n");
+        }
+
+        // @todo: adjust library global offset table entries
+
+        struct SharedLibrary shared_library = {
+            .name = shared_lib_name,
+            .dynamic_offset = dynamic_offset,
+            .elf_data = shared_lib_elf,
+            .memory_regions = memory_regions,
+            .memory_regions_len = memory_regions_len,
+        };
+        (*shared_libraries)[i] = shared_library;
     }
 
     /* Initialize dynamic linker callback */
@@ -170,6 +252,7 @@ bool initialize_dynamic_data(void) {
     size_t *loader_entry_two = (void *)dynamic_data->got_entries[2].index;
     *loader_entry_two = (size_t)dynamic_linker_callback;
 
+    *shared_libraries_len = dynamic_data->shared_libraries_len;
     return true;
 }
 
@@ -210,7 +293,7 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    if (!get_elf_data(fd, &elf_data)) {
+    if (!get_elf_data(fd, &inferior_elf)) {
         tiny_c_fprintf(STDERR, "error parsing elf data\n");
         return -1;
     }
@@ -219,21 +302,21 @@ int main(int32_t argc, char **argv) {
     //     BAIL("Program type '%x' not supported\n", elf_data.header.e_type);
     // }
 
-    LOADER_LOG("program entry: %x\n", elf_data.header.e_entry);
+    LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);
 
     struct MemoryRegion *memory_regions;
     size_t memory_regions_len;
     if (!get_memory_regions(
-            elf_data.program_headers,
-            elf_data.header.e_phnum,
+            inferior_elf.program_headers,
+            inferior_elf.header.e_phnum,
             &memory_regions,
-            &memory_regions_len
+            &memory_regions_len,
+            0
         )) {
         tiny_c_fprintf(STDERR, "failed getting memory regions\n");
         return -1;
     }
 
-    LOADER_LOG("loader memory regions: %x\n", memory_regions_len);
     if (!map_memory_regions(fd, memory_regions, memory_regions_len)) {
         tiny_c_fprintf(STDERR, "loader map memory regions failed\n");
         return -1;
@@ -241,7 +324,7 @@ int main(int32_t argc, char **argv) {
 
     /* Initialize .bss */
     const struct SectionHeader *bss_section_header = find_section_header(
-        elf_data.section_headers, elf_data.section_headers_len, ".bss"
+        inferior_elf.section_headers, inferior_elf.section_headers_len, ".bss"
     );
     if (bss_section_header != NULL) {
         LOADER_LOG("initializing .bss\n");
@@ -249,8 +332,10 @@ int main(int32_t argc, char **argv) {
         memset(bss, 0, bss_section_header->size);
     }
 
-    if (elf_data.dynamic_data != NULL) {
-        if (!initialize_dynamic_data()) {
+    if (inferior_elf.dynamic_data != NULL) {
+        if (!initialize_dynamic_data(
+                &shared_libraries, &shared_libraries_len
+            )) {
             tiny_c_fprintf(STDERR, "failed initializing dynamic data\n");
             return -1;
         }
@@ -268,6 +353,6 @@ int main(int32_t argc, char **argv) {
     run_asm(
         (size_t)inferior_frame_pointer,
         (size_t)stack_start,
-        elf_data.header.e_entry
+        inferior_elf.header.e_entry
     );
 }

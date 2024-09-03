@@ -1,15 +1,18 @@
 #pragma once
 
+#include "elf_tools.h"
 #include <stdint.h>
 #include <stdlib.h>
+
+#define LOADER_BUFFER_ADDRESS 0x7d7e0000
+#define LOADER_BUFFER_LEN 0x2000
+#define LOADER_SHARED_LIB_START LOADER_BUFFER_ADDRESS + LOADER_BUFFER_LEN
 
 extern int32_t loader_log_handle;
 
 void *loader_malloc_arena(size_t n);
 
 void loader_free_arena(void);
-
-// #define LOADER_LOG(fmt, ...)
 
 #ifdef VERBOSE
 
@@ -18,17 +21,17 @@ void loader_free_arena(void);
 
 #else
 
-// #define LOADER_LOG(fmt, ...)                                                   \
-//     do {                                                                       \
-//         (void)(fmt);                                                           \
-//         if (0) {                                                               \
-//             (void)0, ##__VA_ARGS__;                                            \
-//         }                                                                      \
-//     } while (0)
-
 #define LOADER_LOG(fmt, ...)                                                   \
     if (0) {                                                                   \
         (void)0, ##__VA_ARGS__;                                                \
     }
 
 #endif
+
+struct SharedLibrary {
+    const char *name;
+    size_t dynamic_offset;
+    struct ElfData elf_data;
+    struct MemoryRegion *memory_regions;
+    size_t memory_regions_len;
+};

@@ -74,10 +74,6 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 
 #endif
 
-int32_t get_number(void) {
-    return 42;
-}
-
 void tiny_c_print_len(int32_t file_handle, const char *data, size_t size) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
@@ -118,7 +114,7 @@ void tiny_c_puts(int32_t file_handle, const char *data) {
     tiny_c_newline(file_handle);
 }
 
-static size_t tiny_c_pow(size_t x, size_t y) {
+size_t tiny_c_pow(size_t x, size_t y) {
     size_t product = 1;
     for (size_t i = 0; i < y; i++) {
         product *= x;
@@ -389,23 +385,18 @@ const char *tinyc_strerror(int32_t err_number) {
     }
 }
 
-// @todo: configurable logging
 // @todo: alignment
 void *tinyc_malloc_arena(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
     if (tinyc_heap_start == 0) {
-        // tiny_c_printf("requested start %x\n", 0);
         tinyc_heap_start = tinyc_sys_brk(0);
-        // tiny_c_printf("actual start %x\n", tinyc_heap_start);
         tinyc_heap_end = tinyc_heap_start;
         tinyc_heap_index = tinyc_heap_start;
     }
     if (tinyc_heap_index + n > tinyc_heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        // tiny_c_printf("requested end %x\n", tinyc_heap_end + extend_size);
         tinyc_heap_end = tinyc_sys_brk(tinyc_heap_end + extend_size);
-        // tiny_c_printf("actual end %x\n", tinyc_heap_end);
         if (tinyc_heap_end <= tinyc_heap_start) {
             return NULL;
         }

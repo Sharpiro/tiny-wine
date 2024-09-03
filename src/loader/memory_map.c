@@ -9,7 +9,8 @@ bool get_memory_regions(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
     struct MemoryRegion **memory_regions_ptr,
-    size_t *memory_regions_len
+    size_t *memory_regions_len,
+    size_t address_offset
 ) {
     if (program_headers == NULL) {
         BAIL("program_headers cannot be null\n");
@@ -32,8 +33,7 @@ bool get_memory_regions(
             continue;
         }
         if (program_header->p_vaddr == 0) {
-            LOADER_LOG("WARNING: dynamic relocations not supported\n");
-            continue;
+            LOADER_LOG("WARNING: dynamic relocation detected\n");
         }
 
         size_t file_offset = program_header->p_offset /
@@ -55,8 +55,8 @@ bool get_memory_regions(
         }
 
         memory_regions[j++] = (struct MemoryRegion){
-            .start = start,
-            .end = end,
+            .start = start + address_offset,
+            .end = end + address_offset,
             .file_offset = file_offset,
             .permissions = program_header->p_flags,
         };

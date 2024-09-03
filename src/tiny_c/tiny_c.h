@@ -14,7 +14,7 @@
 
 extern int32_t tinyc_errno;
 
-int32_t get_number(void);
+size_t tiny_c_pow(size_t x, size_t y);
 void tiny_c_print_len(int32_t file_handle, const char *data, size_t size);
 void tiny_c_fprintf(int32_t file_handle, const char *format, ...);
 void tiny_c_printf(const char *format, ...);

@@ -3,9 +3,6 @@
 #include <stddef.h>
 #include <sys/mman.h>
 
-#define LOADER_BUFFER_ADDRESS 0x7d7e0000
-#define LOADER_BUFFER_LEN 0x2000
-
 int32_t loader_log_handle = STDERR;
 
 static uint8_t *loader_buffer = NULL;

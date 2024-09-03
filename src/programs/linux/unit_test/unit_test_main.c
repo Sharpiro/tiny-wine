@@ -38,7 +38,8 @@ void get_memory_regions_basic_test(void) {
         program_headers,
         sizeof(program_headers) / sizeof(PROGRAM_HEADER),
         &memory_regions,
-        &memory_regions_len
+        &memory_regions_len,
+        0
     );
 
     assert(result);
@@ -77,7 +78,8 @@ void get_memory_regions_offset_test(void) {
         program_headers,
         sizeof(program_headers) / sizeof(PROGRAM_HEADER),
         &memory_regions,
-        &memory_regions_len
+        &memory_regions_len,
+        0
     );
 
     assert(result);
