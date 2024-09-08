@@ -23,10 +23,10 @@ void *loader_malloc_arena(size_t n) {
         }
     }
 
-    size_t pointer_size = sizeof(size_t);
-    size_t alignment_mod = n % pointer_size;
+    const size_t POINTER_SIZE = sizeof(size_t);
+    size_t alignment_mod = n % POINTER_SIZE;
     size_t aligned_end =
-        alignment_mod == 0 ? n : n + pointer_size - alignment_mod;
+        alignment_mod == 0 ? n : n + POINTER_SIZE - alignment_mod;
     if (loader_heap_index + aligned_end > LOADER_BUFFER_LEN) {
         return NULL;
     }

@@ -14,5 +14,8 @@ struct SysArgs {
     size_t param_seven;
 };
 
+size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args);
+
 size_t tinyc_sys_brk(size_t brk);
+
 off_t tinyc_sys_lseek(uint32_t fd, off_t offset, uint32_t whence);
