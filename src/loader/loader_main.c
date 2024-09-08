@@ -114,6 +114,44 @@ bool find_symbol(
     return false;
 }
 
+bool find_relocation(
+    size_t offset, struct Relocation **relocation
+    // , size_t *dynamic_offset
+) {
+    if (relocation == NULL) {
+        BAIL("relocation was null");
+    }
+    // if (dynamic_offset == NULL) {
+    //     BAIL("dynamic_offset was null");
+    // }
+
+    for (size_t i = 0; i < inferior_elf.dynamic_data->relocations_len; i++) {
+        struct Relocation *current_relocation =
+            &inferior_elf.dynamic_data->relocations[i];
+        if (current_relocation->offset == offset) {
+            *relocation = current_relocation;
+            // *dynamic_offset = 0;
+            return true;
+        }
+    }
+
+    for (size_t i = 0; i < shared_libraries_len; i++) {
+        struct SharedLibrary curr_lib = shared_libraries[i];
+        size_t rel_len = curr_lib.elf_data.dynamic_data->relocations_len;
+        for (size_t j = 0; j < rel_len; j++) {
+            struct Relocation *curr_relocation =
+                &curr_lib.elf_data.dynamic_data->relocations[j];
+            if (curr_relocation->offset + curr_lib.dynamic_offset == offset) {
+                *relocation = curr_relocation;
+                // *dynamic_offset = curr_lib.dynamic_offset;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void unknown_dynamic_linker_callback(void) {
     tiny_c_fprintf(STDERR, "unknown dynamic linker callback\n");
     tiny_c_exit(-1);
@@ -130,38 +168,41 @@ void dynamic_linker_callback(void) {
     size_t r5 = GET_REGISTER("r5");
     size_t *got_entry = (size_t *)GET_REGISTER("r12");
 
-    struct Relocation *relocation = NULL;
-    for (size_t i = 0; i < inferior_elf.dynamic_data->relocations_len; i++) {
-        struct Relocation *current_relocation =
-            &inferior_elf.dynamic_data->relocations[i];
-        if (current_relocation->offset == (size_t)got_entry) {
-            relocation = current_relocation;
-            break;
-        }
-    }
-    if (relocation == NULL) {
+    LOADER_LOG(
+        "dynamically linking %x:%x from %x\n",
+        got_entry,
+        *got_entry,
+        dynamic_linker_callback
+    );
+
+    struct Relocation *relocation;
+    // size_t rel_dynamic_offset;
+    if (!find_relocation((size_t)got_entry, &relocation)) {
         tiny_c_fprintf(STDERR, "couldn't find relocation\n");
         tiny_c_exit(-1);
     }
 
     struct Symbol symbol;
-    size_t dynamic_offset;
-    if (!find_symbol(relocation->symbol.name, &symbol, &dynamic_offset)) {
+    size_t sym_dynamic_offset;
+    if (!find_symbol(relocation->symbol.name, &symbol, &sym_dynamic_offset)) {
         tiny_c_fprintf(
             STDERR, "symbol '%s' not found\n", relocation->symbol.name
         );
         tiny_c_exit(-1);
     }
 
-    *got_entry = dynamic_offset + symbol.value;
+    *got_entry = sym_dynamic_offset + symbol.value;
 
     LOADER_LOG(
-        "dynamically linking %x:%x: '%s'\n",
-        got_entry,
-        *got_entry,
-        relocation->symbol.name
+        "%s(%x, %x, %x, %x, %x, %x)\n",
+        relocation->symbol.name,
+        r0,
+        r1,
+        r2,
+        r3,
+        r4,
+        r5
     );
-    LOADER_LOG("params: %x, %x, %x, %x, %x, %x\n", r0, r1, r2, r3, r4, r5);
 
     __asm__(
         "mov r10, %0\n"
@@ -231,7 +272,17 @@ bool initialize_dynamic_data(
             BAIL("loader map memory regions failed\n");
         }
 
-        // @todo: adjust library global offset table entries
+        for (size_t i = 0; i < shared_lib_elf.dynamic_data->got_len; i++) {
+            struct GlobalOffsetTableEntry *table_entry =
+                &shared_lib_elf.dynamic_data->got_entries[i];
+            size_t *shared_got_entry =
+                (size_t *)(table_entry->index + dynamic_offset);
+            if (table_entry->value == 0) {
+                *shared_got_entry = (size_t)dynamic_linker_callback;
+            } else {
+                *shared_got_entry = table_entry->value + dynamic_offset;
+            }
+        }
 
         struct SharedLibrary shared_library = {
             .name = shared_lib_name,
@@ -244,12 +295,9 @@ bool initialize_dynamic_data(
     }
 
     /* Initialize dynamic linker callback */
-    if (dynamic_data->got_len != 4) {
-        BAIL("@todo: got_len\n");
-    }
-    size_t *loader_entry_one = (void *)dynamic_data->got_entries[1].index;
+    size_t *loader_entry_one = (size_t *)dynamic_data->got_entries[1].index;
     *loader_entry_one = (size_t)unknown_dynamic_linker_callback;
-    size_t *loader_entry_two = (void *)dynamic_data->got_entries[2].index;
+    size_t *loader_entry_two = (size_t *)dynamic_data->got_entries[2].index;
     *loader_entry_two = (size_t)dynamic_linker_callback;
 
     *shared_libraries_len = dynamic_data->shared_libraries_len;
@@ -298,9 +346,9 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    // if (elf_data.header.e_type != ET_EXEC) {
-    //     BAIL("Program type '%x' not supported\n", elf_data.header.e_type);
-    // }
+    if (inferior_elf.header.e_type != ET_EXEC) {
+        BAIL("Program type '%x' not supported\n", inferior_elf.header.e_type);
+    }
 
     LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);
 
