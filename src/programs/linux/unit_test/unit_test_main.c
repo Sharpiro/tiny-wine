@@ -116,10 +116,14 @@ void aeabi_uidivmod_test(
     assert(remainder == expected_remainder);
 }
 
+void find_relocation_test(void) {
+}
+
 int main(void) {
     get_memory_regions_basic_test();
     get_memory_regions_offset_test();
     loader_malloc_arena_align_test();
     aeabi_uidivmod_test(13, 2, 6, 1);
     aeabi_uidivmod_test(12, 2, 6, 0);
+    find_relocation_test();
 }

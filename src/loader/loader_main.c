@@ -11,6 +11,8 @@
 static struct ElfData inferior_elf;
 struct SharedLibrary *shared_libraries;
 size_t shared_libraries_len;
+struct TempRelocation *total_relocations;
+size_t total_relocations_len;
 
 #ifdef AMD64
 
@@ -97,6 +99,9 @@ bool find_symbol(
         BAIL("dynamic_offset was null");
     }
 
+    // @todo: probably need to search inferior_elf like relocation search
+    //        probably only needed for PIE exectuable
+
     for (size_t i = 0; i < shared_libraries_len; i++) {
         struct SharedLibrary curr_lib = shared_libraries[i];
         size_t symbols_len = curr_lib.elf_data.dynamic_data->symbols_len;
@@ -115,9 +120,21 @@ bool find_symbol(
 }
 
 bool find_relocation(
-    size_t offset, struct Relocation **relocation
-    // , size_t *dynamic_offset
+    const struct TempRelocation *relocations,
+    size_t relocations_len,
+    size_t offset,
+    const struct TempRelocation **relocation
+    // const struct Relocation *inferior_relocations,
+    // const size_t inferior_relocations_len,
+    // const struct Relocation *shared_lib_relocations,
+    // size_t *dynamic_offset
 ) {
+    if (relocations == NULL) {
+        BAIL("relocations was null\n");
+    }
+    // if (shared_lib_relocations == NULL) {
+    //     BAIL("shared_lib_relocations was null");
+    // }
     if (relocation == NULL) {
         BAIL("relocation was null");
     }
@@ -125,27 +142,25 @@ bool find_relocation(
     //     BAIL("dynamic_offset was null");
     // }
 
-    for (size_t i = 0; i < inferior_elf.dynamic_data->relocations_len; i++) {
-        struct Relocation *current_relocation =
-            &inferior_elf.dynamic_data->relocations[i];
-        if (current_relocation->offset == offset) {
-            *relocation = current_relocation;
-            // *dynamic_offset = 0;
-            return true;
-        }
-    }
+    // for (size_t i = 0; i < shared_libraries_len; i++) {
+    //     struct SharedLibrary curr_lib = shared_libraries[i];
+    //     for (size_t j = 0; j < relocations_len; j++) {
+    //         const struct TempRelocation *curr_relocation = &relocations[j];
+    //         if (curr_relocation->mapped_lib_address +
+    //             curr_relocation->relocation.offset) {
+    //             *relocation = curr_relocation;
+    //             return true;
+    //         }
+    //     }
+    // }
 
-    for (size_t i = 0; i < shared_libraries_len; i++) {
-        struct SharedLibrary curr_lib = shared_libraries[i];
-        size_t rel_len = curr_lib.elf_data.dynamic_data->relocations_len;
-        for (size_t j = 0; j < rel_len; j++) {
-            struct Relocation *curr_relocation =
-                &curr_lib.elf_data.dynamic_data->relocations[j];
-            if (curr_relocation->offset + curr_lib.dynamic_offset == offset) {
-                *relocation = curr_relocation;
-                // *dynamic_offset = curr_lib.dynamic_offset;
-                return true;
-            }
+    for (size_t j = 0; j < relocations_len; j++) {
+        const struct TempRelocation *curr_relocation = &relocations[j];
+        size_t computed_address = curr_relocation->mapped_lib_address +
+            curr_relocation->relocation.offset;
+        if (computed_address == offset) {
+            *relocation = curr_relocation;
+            return true;
         }
     }
 
@@ -175,18 +190,26 @@ void dynamic_linker_callback(void) {
         dynamic_linker_callback
     );
 
-    struct Relocation *relocation;
-    // size_t rel_dynamic_offset;
-    if (!find_relocation((size_t)got_entry, &relocation)) {
+    const struct TempRelocation *relocation;
+    if (!find_relocation(
+            total_relocations,
+            total_relocations_len,
+            (size_t)got_entry,
+            &relocation
+        )) {
         tiny_c_fprintf(STDERR, "couldn't find relocation\n");
         tiny_c_exit(-1);
     }
 
     struct Symbol symbol;
     size_t sym_dynamic_offset;
-    if (!find_symbol(relocation->symbol.name, &symbol, &sym_dynamic_offset)) {
+    if (!find_symbol(
+            relocation->relocation.symbol.name, &symbol, &sym_dynamic_offset
+        )) {
         tiny_c_fprintf(
-            STDERR, "symbol '%s' not found\n", relocation->symbol.name
+            STDERR,
+            "symbol '%s' not found\n",
+            relocation->relocation.symbol.name
         );
         tiny_c_exit(-1);
     }
@@ -195,7 +218,7 @@ void dynamic_linker_callback(void) {
 
     LOADER_LOG(
         "%s(%x, %x, %x, %x, %x, %x)\n",
-        relocation->symbol.name,
+        relocation->relocation.symbol.name,
         r0,
         r1,
         r2,
@@ -235,14 +258,19 @@ bool initialize_dynamic_data(
         BAIL("shared_libraries_len was null\n");
     }
 
-    struct DynamicData *dynamic_data = inferior_elf.dynamic_data;
+    struct DynamicData *inferior_dyn_data = inferior_elf.dynamic_data;
 
     /* Map shared libraries */
+    total_relocations_len = inferior_dyn_data->relocations_len;
     *shared_libraries = loader_malloc_arena(
-        sizeof(struct SharedLibrary) * dynamic_data->shared_libraries_len
+        sizeof(struct SharedLibrary) * inferior_dyn_data->shared_libraries_len
     );
-    for (size_t i = 0; i < dynamic_data->shared_libraries_len; i++) {
-        char *shared_lib_name = dynamic_data->shared_libraries[i];
+    if (shared_libraries == NULL) {
+        BAIL("malloc failed\n");
+    }
+
+    for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
+        char *shared_lib_name = inferior_dyn_data->shared_libraries[i];
         LOADER_LOG("mapping shared library '%s'\n", shared_lib_name);
         int32_t shared_lib_file = tiny_c_open(shared_lib_name, O_RDONLY);
         if (shared_lib_file == -1) {
@@ -251,6 +279,9 @@ bool initialize_dynamic_data(
         struct ElfData shared_lib_elf;
         if (!get_elf_data(shared_lib_file, &shared_lib_elf)) {
             BAIL("failed getting elf data for shared lib '%s'");
+        }
+        if (shared_lib_elf.dynamic_data == NULL) {
+            BAIL("Expected shared library to have dynamic data\n");
         }
 
         struct MemoryRegion *memory_regions;
@@ -284,6 +315,7 @@ bool initialize_dynamic_data(
             }
         }
 
+        total_relocations_len += shared_lib_elf.dynamic_data->relocations_len;
         struct SharedLibrary shared_library = {
             .name = shared_lib_name,
             .dynamic_offset = dynamic_offset,
@@ -294,13 +326,48 @@ bool initialize_dynamic_data(
         (*shared_libraries)[i] = shared_library;
     }
 
+    /** Flatten relocations */
+    total_relocations = loader_malloc_arena(
+        sizeof(struct TempRelocation) * total_relocations_len
+    );
+    if (total_relocations == NULL) {
+        BAIL("malloc failed\n");
+    }
+
+    for (size_t i = 0; i < inferior_dyn_data->relocations_len; i++) {
+        struct Relocation curr_relocation = inferior_dyn_data->relocations[i];
+        struct TempRelocation temp_relocation = {
+            .relocation = curr_relocation,
+            .mapped_lib_address = 0,
+
+        };
+        total_relocations[i] = temp_relocation;
+    }
+    for (size_t i = 0; i < *shared_libraries_len; i++) {
+        struct SharedLibrary *curr_lib = &(*shared_libraries)[i];
+        struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
+        for (size_t j = 0; j < shared_dyn_data->relocations_len; j++) {
+            struct Relocation curr_relocation = shared_dyn_data->relocations[j];
+            struct TempRelocation temp_relocation = {
+                .relocation = curr_relocation,
+                .mapped_lib_address = curr_lib->dynamic_offset,
+
+            };
+            size_t relocation_index =
+                inferior_dyn_data->relocations_len + i * j;
+            total_relocations[relocation_index] = temp_relocation;
+        }
+    }
+
     /* Initialize dynamic linker callback */
-    size_t *loader_entry_one = (size_t *)dynamic_data->got_entries[1].index;
+    size_t *loader_entry_one =
+        (size_t *)inferior_dyn_data->got_entries[1].index;
     *loader_entry_one = (size_t)unknown_dynamic_linker_callback;
-    size_t *loader_entry_two = (size_t *)dynamic_data->got_entries[2].index;
+    size_t *loader_entry_two =
+        (size_t *)inferior_dyn_data->got_entries[2].index;
     *loader_entry_two = (size_t)dynamic_linker_callback;
 
-    *shared_libraries_len = dynamic_data->shared_libraries_len;
+    *shared_libraries_len = inferior_dyn_data->shared_libraries_len;
     return true;
 }
 

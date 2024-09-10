@@ -35,3 +35,8 @@ struct SharedLibrary {
     struct MemoryRegion *memory_regions;
     size_t memory_regions_len;
 };
+
+struct TempRelocation {
+    struct Relocation relocation;
+    size_t mapped_lib_address;
+};
