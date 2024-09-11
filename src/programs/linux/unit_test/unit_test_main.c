@@ -117,6 +117,10 @@ void aeabi_uidivmod_test(
 }
 
 void find_relocation_test(void) {
+    struct RuntimeRelocation runtime_relocations[] = {
+        {.relocation = {0}, .mapped_lib_address = 0},
+        {.relocation = {0}, .mapped_lib_address = 0x7d7e4000},
+    };
 }
 
 int main(void) {

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #define LOADER_BUFFER_ADDRESS 0x7d7e0000
-#define LOADER_BUFFER_LEN 0x2000
+#define LOADER_BUFFER_LEN 0x4000
 #define LOADER_SHARED_LIB_START LOADER_BUFFER_ADDRESS + LOADER_BUFFER_LEN
 
 extern int32_t loader_log_handle;
@@ -36,7 +36,12 @@ struct SharedLibrary {
     size_t memory_regions_len;
 };
 
-struct TempRelocation {
+struct RuntimeRelocation {
     struct Relocation relocation;
+    size_t mapped_lib_address;
+};
+
+struct RuntimeSymbol {
+    struct Symbol symbol;
     size_t mapped_lib_address;
 };
