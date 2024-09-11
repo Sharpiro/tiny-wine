@@ -86,7 +86,7 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		src/loader/elf_tools.c \
 		libtinyc.a
 
-programs/linux/unit_test:
+programs/linux/unit_test: libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \

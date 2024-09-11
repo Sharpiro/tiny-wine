@@ -40,3 +40,66 @@ void *loader_malloc_arena(size_t n) {
 void loader_free_arena(void) {
     loader_heap_index = 0;
 }
+
+bool get_runtime_function(
+    const struct RuntimeRelocation *runtime_relocations,
+    size_t runtime_relocations_len,
+    const struct RuntimeSymbol *runtime_symbols,
+    size_t runtime_symbols_len,
+    size_t relocation_offset,
+    size_t *relocation_address,
+    const char **relocation_name
+) {
+    if (runtime_relocations == NULL) {
+        BAIL("runtime_relocations was null\n");
+    }
+    if (runtime_symbols == NULL) {
+        BAIL("runtime_symbols was null");
+    }
+    if (relocation_address == NULL) {
+        BAIL("relocation_address was null");
+    }
+    if (relocation_name == NULL) {
+        BAIL("relocation_name was null");
+    }
+
+    const struct RuntimeRelocation *runtime_relocation = NULL;
+    for (size_t j = 0; j < runtime_relocations_len; j++) {
+        const struct RuntimeRelocation *curr_relocation =
+            &runtime_relocations[j];
+        size_t computed_address = curr_relocation->mapped_lib_address +
+            curr_relocation->relocation.offset;
+        if (computed_address == relocation_offset) {
+            runtime_relocation = curr_relocation;
+            break;
+        }
+    }
+
+    if (runtime_relocation == NULL) {
+        BAIL("relocation not found\n");
+    }
+
+    *relocation_name = runtime_relocation->relocation.symbol.name;
+    if (runtime_relocation->relocation.symbol.value != 0) {
+        *relocation_address = runtime_relocation->relocation.symbol.value +
+            runtime_relocation->mapped_lib_address;
+        return true;
+    }
+
+    for (size_t j = 0; j < runtime_symbols_len; j++) {
+        const struct RuntimeSymbol *curr_runtime_symbol = &runtime_symbols[j];
+        if (curr_runtime_symbol->symbol.value == 0) {
+            continue;
+        }
+        if (tiny_c_strcmp(
+                curr_runtime_symbol->symbol.name,
+                runtime_relocation->relocation.symbol.name
+            ) == 0) {
+            *relocation_address = curr_runtime_symbol->symbol.value +
+                curr_runtime_symbol->mapped_lib_address;
+            return true;
+        }
+    }
+
+    BAIL("relocation '%s' not found\n", *relocation_name);
+}

@@ -116,11 +116,73 @@ void aeabi_uidivmod_test(
     assert(remainder == expected_remainder);
 }
 
-void find_relocation_test(void) {
+void get_runtime_function_local_lib_test(void) {
     struct RuntimeRelocation runtime_relocations[] = {
-        {.relocation = {0}, .mapped_lib_address = 0},
-        {.relocation = {0}, .mapped_lib_address = 0x7d7e4000},
+        {
+            .relocation =
+                {
+                    .offset = 0x300c,
+                    .symbol = {.name = "tiny_c_pow", .value = 0x9d8},
+                },
+            .mapped_lib_address = 0,
+        },
     };
+    struct RuntimeSymbol runtime_symbols[] = {0};
+
+    size_t relocation_address;
+    const char *relocation_name;
+    bool result = get_runtime_function(
+        runtime_relocations,
+        1,
+        runtime_symbols,
+        0,
+        0x300c,
+        &relocation_address,
+        &relocation_name
+    );
+
+    assert(result);
+    assert(relocation_address == 0x9d8);
+    assert(tiny_c_strcmp(relocation_name, "tiny_c_pow") == 0);
+}
+
+void get_runtime_function_shared_lib_test(void) {
+    struct RuntimeRelocation runtime_relocations[] = {
+        {
+            .relocation =
+                {
+                    .offset = 0x1200c,
+                    .symbol = {.name = "tiny_c_pow"},
+                },
+            .mapped_lib_address = 0,
+        },
+    };
+    struct RuntimeSymbol runtime_symbols[] = {
+        {
+            .symbol = {.name = "tiny_c_pow"},
+            .mapped_lib_address = 0,
+        },
+        {
+            .symbol = {.name = "tiny_c_pow", .value = 0x9d8},
+            .mapped_lib_address = 0x20000,
+        },
+    };
+
+    size_t relocation_address;
+    const char *relocation_name;
+    bool result = get_runtime_function(
+        runtime_relocations,
+        1,
+        runtime_symbols,
+        2,
+        0x1200c,
+        &relocation_address,
+        &relocation_name
+    );
+
+    assert(result);
+    assert(relocation_address == 0x209d8);
+    assert(tiny_c_strcmp(relocation_name, "tiny_c_pow") == 0);
 }
 
 int main(void) {
@@ -129,5 +191,6 @@ int main(void) {
     loader_malloc_arena_align_test();
     aeabi_uidivmod_test(13, 2, 6, 1);
     aeabi_uidivmod_test(12, 2, 6, 0);
-    find_relocation_test();
+    get_runtime_function_local_lib_test();
+    get_runtime_function_shared_lib_test();
 }

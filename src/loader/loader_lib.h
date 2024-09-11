@@ -45,3 +45,13 @@ struct RuntimeSymbol {
     struct Symbol symbol;
     size_t mapped_lib_address;
 };
+
+bool get_runtime_function(
+    const struct RuntimeRelocation *runtime_relocations,
+    size_t runtime_relocations_len,
+    const struct RuntimeSymbol *runtime_symbols,
+    size_t runtime_symbols_len,
+    size_t relocation_offset,
+    size_t *relocation_address,
+    const char **relocation_name
+);

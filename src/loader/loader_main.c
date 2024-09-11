@@ -91,62 +91,6 @@ static void run_asm(
 
 #endif
 
-bool find_mapped_symbol(
-    const struct RuntimeSymbol *runtime_symbols,
-    size_t symbols_len,
-    const char *name,
-    const struct RuntimeSymbol **runtime_symbol
-) {
-    if (runtime_symbols == NULL) {
-        BAIL("runtime_symbols was null");
-    }
-    if (name == NULL) {
-        BAIL("name was null");
-    }
-    if (runtime_symbol == NULL) {
-        BAIL("runtime_symbol was null");
-    }
-
-    for (size_t j = 0; j < symbols_len; j++) {
-        const struct RuntimeSymbol *curr_runtime_symbol = &runtime_symbols[j];
-        if (curr_runtime_symbol->symbol.value == 0) {
-            continue;
-        }
-        if (tiny_c_strcmp(curr_runtime_symbol->symbol.name, name) == 0) {
-            *runtime_symbol = curr_runtime_symbol;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool find_relocation(
-    const struct RuntimeRelocation *relocations,
-    size_t relocations_len,
-    size_t offset,
-    const struct RuntimeRelocation **relocation
-) {
-    if (relocations == NULL) {
-        BAIL("relocations was null\n");
-    }
-    if (relocation == NULL) {
-        BAIL("relocation was null");
-    }
-
-    for (size_t j = 0; j < relocations_len; j++) {
-        const struct RuntimeRelocation *curr_relocation = &relocations[j];
-        size_t computed_address = curr_relocation->mapped_lib_address +
-            curr_relocation->relocation.offset;
-        if (computed_address == offset) {
-            *relocation = curr_relocation;
-            return true;
-        }
-    }
-
-    return false;
-}
-
 void unknown_dynamic_linker_callback(void) {
     tiny_c_fprintf(STDERR, "unknown dynamic linker callback\n");
     tiny_c_exit(-1);
@@ -170,44 +114,24 @@ void dynamic_linker_callback(void) {
         dynamic_linker_callback
     );
 
-    const struct RuntimeRelocation *runtime_relocation;
-    if (!find_relocation(
-            relocations, relocations_len, (size_t)got_entry, &runtime_relocation
+    const char *relocation_name;
+    if (!get_runtime_function(
+            relocations,
+            relocations_len,
+            dyn_symbols,
+            dyn_symbols_len,
+            (size_t)got_entry,
+            got_entry,
+            &relocation_name
         )) {
-        tiny_c_fprintf(STDERR, "couldn't find relocation\n");
+        tiny_c_fprintf(STDERR, "couldn't find runtime address\n");
         tiny_c_exit(-1);
     }
 
-    size_t mapped_function_addr;
-    if (runtime_relocation->relocation.symbol.value != 0) {
-        mapped_function_addr = runtime_relocation->relocation.symbol.value +
-            runtime_relocation->mapped_lib_address;
-    } else {
-        const struct RuntimeSymbol *runtime_symbol;
-        if (!find_mapped_symbol(
-                dyn_symbols,
-                dyn_symbols_len,
-                runtime_relocation->relocation.symbol.name,
-                &runtime_symbol
-            )) {
-            tiny_c_fprintf(
-                STDERR,
-                "mapped symbol '%s' not found\n",
-                runtime_relocation->relocation.symbol.name
-            );
-            tiny_c_exit(-1);
-        }
-
-        mapped_function_addr =
-            runtime_symbol->symbol.value + runtime_symbol->mapped_lib_address;
-    }
-
-    *got_entry = mapped_function_addr;
-
     LOADER_LOG(
         "%x: %s(%x, %x, %x, %x, %x, %x)\n",
-        mapped_function_addr,
-        runtime_relocation->relocation.symbol.name,
+        *got_entry,
+        relocation_name,
         r0,
         r1,
         r2,
