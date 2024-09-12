@@ -211,12 +211,13 @@ bool initialize_dynamic_data(
             BAIL("failed getting memory regions\n");
         }
 
+        LOADER_LOG("Mapping library memory regions\n");
         if (!map_memory_regions(
                 shared_lib_file, memory_regions, memory_regions_len
             )) {
             BAIL("loader map memory regions failed\n");
         }
-
+        LOADER_LOG("Initializing library global offset table\n");
         for (size_t i = 0; i < shared_lib_elf.dynamic_data->got_len; i++) {
             struct GlobalOffsetTableEntry *table_entry =
                 &shared_lib_elf.dynamic_data->got_entries[i];
@@ -323,9 +324,6 @@ int main(int32_t argc, char **argv) {
         loader_log_handle = null_file_handle;
     }
 
-    int32_t pid = tiny_c_get_pid();
-    LOADER_LOG("pid: %x\n", pid);
-
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
         return -1;
@@ -333,8 +331,10 @@ int main(int32_t argc, char **argv) {
 
     char *filename = argv[1];
 
-    LOADER_LOG("argc: %x\n", argc);
-    LOADER_LOG("filename: '%s'\n", filename);
+    LOADER_LOG("Starting loader, %s, %x\n", filename, argc);
+
+    int32_t pid = tiny_c_get_pid();
+    LOADER_LOG("pid: %x\n", pid);
 
     // @todo: old gcc maps this by default for some reason
     const size_t ADDRESS = 0x10000;

@@ -78,6 +78,7 @@ bool map_memory_regions(
         size_t prot_write = memory_region->permissions & 2;
         size_t prot_execute = (memory_region->permissions & 1) << 2;
         size_t map_protection = prot_read | prot_write | prot_execute;
+        LOADER_LOG("mapping address: %x\n", memory_region->start);
         uint8_t *addr = tiny_c_mmap(
             memory_region->start,
             memory_region_len,
@@ -86,7 +87,6 @@ bool map_memory_regions(
             fd,
             memory_region->file_offset
         );
-        LOADER_LOG("map address: %x, %x\n", memory_region->start, addr);
         if ((size_t)addr != memory_region->start) {
             BAIL(
                 "map failed, %x, %s\n", tinyc_errno, tinyc_strerror(tinyc_errno)
