@@ -37,13 +37,14 @@ struct SharedLibrary {
 };
 
 struct RuntimeRelocation {
-    struct Relocation relocation;
-    size_t mapped_lib_address;
+    size_t offset;
+    size_t value;
+    const char *name;
 };
 
 struct RuntimeSymbol {
-    struct Symbol symbol;
-    size_t mapped_lib_address;
+    size_t value;
+    const char *name;
 };
 
 bool get_runtime_function(

@@ -67,9 +67,7 @@ bool get_runtime_function(
     for (size_t j = 0; j < runtime_relocations_len; j++) {
         const struct RuntimeRelocation *curr_relocation =
             &runtime_relocations[j];
-        size_t computed_address = curr_relocation->mapped_lib_address +
-            curr_relocation->relocation.offset;
-        if (computed_address == relocation_offset) {
+        if (curr_relocation->offset == relocation_offset) {
             runtime_relocation = curr_relocation;
             break;
         }
@@ -79,24 +77,21 @@ bool get_runtime_function(
         BAIL("relocation not found\n");
     }
 
-    *relocation_name = runtime_relocation->relocation.symbol.name;
-    if (runtime_relocation->relocation.symbol.value != 0) {
-        *relocation_address = runtime_relocation->relocation.symbol.value +
-            runtime_relocation->mapped_lib_address;
+    *relocation_name = runtime_relocation->name;
+    if (runtime_relocation->value != 0) {
+        *relocation_address = runtime_relocation->value;
         return true;
     }
 
     for (size_t j = 0; j < runtime_symbols_len; j++) {
         const struct RuntimeSymbol *curr_runtime_symbol = &runtime_symbols[j];
-        if (curr_runtime_symbol->symbol.value == 0) {
+        if (curr_runtime_symbol->value == 0) {
             continue;
         }
         if (tiny_c_strcmp(
-                curr_runtime_symbol->symbol.name,
-                runtime_relocation->relocation.symbol.name
+                curr_runtime_symbol->name, runtime_relocation->name
             ) == 0) {
-            *relocation_address = curr_runtime_symbol->symbol.value +
-                curr_runtime_symbol->mapped_lib_address;
+            *relocation_address = curr_runtime_symbol->value;
             return true;
         }
     }

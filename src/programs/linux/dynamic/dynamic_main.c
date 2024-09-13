@@ -12,4 +12,8 @@ int main(void) {
     tiny_c_print_len(STDOUT, "2nd call\n", 9);
 
     tiny_c_printf("%x + %x = %x\n", num1, num2, num1 + num2);
+
+    // Test .bss variable
+    // tinyc_errno = 42;
+    // tiny_c_printf("errno: %x \n", tinyc_errno);
 }
