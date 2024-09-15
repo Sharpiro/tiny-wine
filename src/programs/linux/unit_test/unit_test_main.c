@@ -117,36 +117,23 @@ void aeabi_uidivmod_test(
 }
 
 void get_runtime_function_local_lib_test(void) {
-    struct RuntimeRelocation runtime_relocations[] = {
-        {.offset = 0x300c, .value = 0x9d8, .name = "tiny_c_pow"}
+    struct RuntimeSymbol runtime_symbols[] = {
+        {.value = 0x9d8, .name = "tiny_c_pow"},
     };
-    struct RuntimeSymbol runtime_symbols[] = {0};
 
-    size_t relocation_address;
-    const char *relocation_name;
-    bool result = get_runtime_function(
-        runtime_relocations,
-        1,
+    size_t runtime_address;
+    bool result = get_runtime_address(
+        "tiny_c_pow",
         runtime_symbols,
-        0,
-        0x300c,
-        &relocation_address,
-        &relocation_name
+        sizeof(runtime_symbols) / sizeof(struct RuntimeSymbol),
+        &runtime_address
     );
 
     assert(result);
-    assert(relocation_address == 0x9d8);
-    assert(tiny_c_strcmp(relocation_name, "tiny_c_pow") == 0);
+    assert(runtime_address == 0x9d8);
 }
 
 void get_runtime_function_shared_lib_test(void) {
-    struct RuntimeRelocation runtime_relocations[] = {
-        {
-            .offset = 0x1200c,
-            .value = 0,
-            .name = "tiny_c_pow",
-        },
-    };
     struct RuntimeSymbol runtime_symbols[] = {
         {
             .value = 0,
@@ -158,21 +145,16 @@ void get_runtime_function_shared_lib_test(void) {
         },
     };
 
-    size_t relocation_address;
-    const char *relocation_name;
-    bool result = get_runtime_function(
-        runtime_relocations,
-        1,
+    size_t runtime_address;
+    bool result = get_runtime_address(
+        "tiny_c_pow",
         runtime_symbols,
-        2,
-        0x1200c,
-        &relocation_address,
-        &relocation_name
+        sizeof(runtime_symbols) / sizeof(struct RuntimeSymbol),
+        &runtime_address
     );
 
     assert(result);
-    assert(relocation_address == 0x209d8);
-    assert(tiny_c_strcmp(relocation_name, "tiny_c_pow") == 0);
+    assert(runtime_address == 0x209d8);
 }
 
 int main(void) {

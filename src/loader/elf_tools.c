@@ -103,8 +103,10 @@ static bool get_dynamic_data(
     }
     *dynamic_data_ptr = NULL;
 
-    const struct SectionHeader *relocation_header =
+    const struct SectionHeader *func_reloc_header =
         find_section_header(section_headers, section_headers_len, ".rel.plt");
+    const struct SectionHeader *var_reloc_header =
+        find_section_header(section_headers, section_headers_len, ".rel.dyn");
     const struct SectionHeader *dyn_sym_section_header =
         find_section_header(section_headers, section_headers_len, ".dynsym");
     const struct SectionHeader *dyn_str_section_header =
@@ -113,7 +115,7 @@ static bool get_dynamic_data(
         find_section_header(section_headers, section_headers_len, ".got");
     const struct SectionHeader *dynamic_header =
         find_section_header(section_headers, section_headers_len, ".dynamic");
-    if (relocation_header == NULL) {
+    if (func_reloc_header == NULL) {
         return true;
     }
     if (dyn_sym_section_header == NULL) {
@@ -216,24 +218,25 @@ static bool get_dynamic_data(
         got_entries[i] = got_entry;
     }
 
-    size_t relocations_len =
-        relocation_header->size / relocation_header->entry_size;
-    RELOCATION *elf_relocations = loader_malloc_arena(relocation_header->size);
+    /* Load function relocations */
+    RELOCATION *elf_relocations = loader_malloc_arena(func_reloc_header->size);
     if (elf_relocations == NULL) {
         BAIL("malloc failed\n");
     }
-    seeked = tinyc_lseek(fd, (off_t)relocation_header->offset, SEEK_SET);
-    if (seeked != (off_t)relocation_header->offset) {
+    seeked = tinyc_lseek(fd, (off_t)func_reloc_header->offset, SEEK_SET);
+    if (seeked != (off_t)func_reloc_header->offset) {
         BAIL("seek failed\n");
     }
-    read = tiny_c_read(fd, elf_relocations, relocation_header->size);
-    if ((size_t)read != relocation_header->size) {
+    read = tiny_c_read(fd, elf_relocations, func_reloc_header->size);
+    if ((size_t)read != func_reloc_header->size) {
         BAIL("read failed\n");
     }
 
-    struct Relocation *relocations =
-        loader_malloc_arena(sizeof(struct Relocation) * relocations_len);
-    for (size_t i = 0; i < relocations_len; i++) {
+    size_t func_relocations_len =
+        func_reloc_header->size / func_reloc_header->entry_size;
+    struct Relocation *func_relocations =
+        loader_malloc_arena(sizeof(struct Relocation) * func_relocations_len);
+    for (size_t i = 0; i < func_relocations_len; i++) {
         RELOCATION *elf_relocation = &elf_relocations[i];
         size_t type = elf_relocation->r_info & 0xff;
         size_t symbol_index = elf_relocation->r_info >> 8;
@@ -243,9 +246,42 @@ static bool get_dynamic_data(
             .type = type,
             .symbol = symbol,
         };
-        relocations[i] = relocation;
+        func_relocations[i] = relocation;
     }
 
+    /* Load variable relocations */
+    RELOCATION *var_elf_relocations =
+        loader_malloc_arena(var_reloc_header->size);
+    if (elf_relocations == NULL) {
+        BAIL("malloc failed\n");
+    }
+    seeked = tinyc_lseek(fd, (off_t)var_reloc_header->offset, SEEK_SET);
+    if (seeked != (off_t)var_reloc_header->offset) {
+        BAIL("seek failed\n");
+    }
+    read = tiny_c_read(fd, var_elf_relocations, var_reloc_header->size);
+    if ((size_t)read != var_reloc_header->size) {
+        BAIL("read failed\n");
+    }
+
+    size_t var_relocations_len =
+        var_reloc_header->size / var_reloc_header->entry_size;
+    struct Relocation *var_relocations =
+        loader_malloc_arena(sizeof(struct Relocation) * var_relocations_len);
+    for (size_t i = 0; i < var_relocations_len; i++) {
+        RELOCATION *elf_relocation = &var_elf_relocations[i];
+        size_t type = elf_relocation->r_info & 0xff;
+        size_t symbol_index = elf_relocation->r_info >> 8;
+        struct Symbol symbol = dyn_symbols[symbol_index];
+        struct Relocation relocation = {
+            .offset = elf_relocation->r_offset,
+            .type = type,
+            .symbol = symbol,
+        };
+        var_relocations[i] = relocation;
+    }
+
+    /* Load dynamic entries */
     size_t dynamic_entries_len =
         dynamic_header->size / dynamic_header->entry_size;
     DYNAMIC_ENTRY *dynamic_entries = loader_malloc_arena(dynamic_header->size);
@@ -283,8 +319,10 @@ static bool get_dynamic_data(
         .symbols_len = dyn_symbols_len,
         .got_entries = got_entries,
         .got_len = got_len,
-        .relocations = relocations,
-        .relocations_len = relocations_len,
+        .func_relocations = func_relocations,
+        .func_relocations_len = func_relocations_len,
+        .var_relocations = var_relocations,
+        .var_relocations_len = var_relocations_len,
         .shared_libraries = shared_libraries,
         .shared_libraries_len = shared_libraries_len,
     };

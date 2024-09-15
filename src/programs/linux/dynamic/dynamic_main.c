@@ -13,7 +13,8 @@ int main(void) {
 
     tiny_c_printf("%x + %x = %x\n", num1, num2, num1 + num2);
 
-    // Test .bss variable
-    // tinyc_errno = 42;
-    // tiny_c_printf("errno: %x \n", tinyc_errno);
+    /* Manipulate dynamic variable */
+    int32_t *dynamic_var = &tinyc_errno;
+    *dynamic_var = 42;
+    tiny_c_printf("dynamic_var: %x\n", *dynamic_var);
 }

@@ -47,12 +47,16 @@ struct RuntimeSymbol {
     const char *name;
 };
 
-bool get_runtime_function(
+bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,
     size_t runtime_relocations_len,
+    size_t relocation_offset,
+    const struct RuntimeRelocation **runtime_relocation
+);
+
+bool get_runtime_address(
+    const char *relocation_name,
     const struct RuntimeSymbol *runtime_symbols,
     size_t runtime_symbols_len,
-    size_t relocation_offset,
-    size_t *relocation_address,
-    const char **relocation_name
+    size_t *relocation_address
 );

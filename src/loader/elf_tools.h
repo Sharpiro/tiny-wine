@@ -56,8 +56,10 @@ struct DynamicData {
     size_t symbols_len;
     struct GotEntry *got_entries;
     size_t got_len;
-    struct Relocation *relocations;
-    size_t relocations_len;
+    struct Relocation *func_relocations;
+    size_t func_relocations_len;
+    struct Relocation *var_relocations;
+    size_t var_relocations_len;
     char **shared_libraries;
     size_t shared_libraries_len;
 };
