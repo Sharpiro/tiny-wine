@@ -43,7 +43,7 @@ uint32_t divmod(uint32_t numerator, uint32_t denominator);
 
 #define BAIL(fmt, ...)                                                         \
     tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
-    return false;
+    return false
 
 #ifdef ARM32
 

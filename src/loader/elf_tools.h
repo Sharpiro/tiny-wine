@@ -15,9 +15,10 @@
 
 #endif
 
-struct GlobalOffsetTableEntry {
+struct GotEntry {
     size_t index;
     size_t value;
+    bool is_loader_callback;
 };
 
 struct SectionHeader {
@@ -53,7 +54,7 @@ struct MemoryRegion {
 struct DynamicData {
     struct Symbol *symbols;
     size_t symbols_len;
-    struct GlobalOffsetTableEntry *got_entries;
+    struct GotEntry *got_entries;
     size_t got_len;
     struct Relocation *relocations;
     size_t relocations_len;

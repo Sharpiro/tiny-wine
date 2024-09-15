@@ -30,11 +30,11 @@ static bool get_section_headers(
     SECTION_HEADER *elf_section_headers =
         loader_malloc_arena(section_headers_size);
     if (elf_section_headers == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     ssize_t read = tiny_c_read(fd, elf_section_headers, section_headers_size);
     if ((size_t)read != section_headers_size) {
-        BAIL("read failed\n")
+        BAIL("read failed\n");
     }
 
     SECTION_HEADER *shstr_table_header =
@@ -45,18 +45,18 @@ static bool get_section_headers(
     }
     uint8_t *shstr_table = loader_malloc_arena(shstr_table_header->sh_size);
     if (shstr_table == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     read = tiny_c_read(fd, shstr_table, shstr_table_header->sh_size);
     if ((size_t)read != shstr_table_header->sh_size) {
-        BAIL("read failed\n")
+        BAIL("read failed\n");
     }
 
     *section_headers_len = elf_header->e_shnum;
     *section_headers_ptr =
         loader_malloc_arena(sizeof(struct SectionHeader) * elf_header->e_shnum);
     if (section_headers_ptr == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
 
     struct SectionHeader *section_headers = *section_headers_ptr;
@@ -132,7 +132,7 @@ static bool get_dynamic_data(
     size_t dyn_sym_section_size = dyn_sym_section_header->size;
     SYMBOL *dyn_elf_symbols = loader_malloc_arena(dyn_sym_section_size);
     if (dyn_elf_symbols == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     off_t seeked =
         tinyc_lseek(fd, (off_t)dyn_sym_section_header->offset, SEEK_SET);
@@ -141,12 +141,12 @@ static bool get_dynamic_data(
     }
     ssize_t read = tiny_c_read(fd, dyn_elf_symbols, dyn_sym_section_size);
     if ((size_t)read != dyn_sym_section_size) {
-        BAIL("read failed\n")
+        BAIL("read failed\n");
     }
 
     char *dyn_strings = loader_malloc_arena(dyn_str_section_header->size);
     if (dyn_strings == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     seeked = tinyc_lseek(fd, (off_t)dyn_str_section_header->offset, SEEK_SET);
     if (seeked != (off_t)dyn_str_section_header->offset) {
@@ -154,7 +154,7 @@ static bool get_dynamic_data(
     }
     read = tiny_c_read(fd, dyn_strings, dyn_str_section_header->size);
     if ((size_t)read != dyn_str_section_header->size) {
-        BAIL("read failed\n")
+        BAIL("read failed\n");
     }
 
     size_t dyn_sym_table_len =
@@ -162,7 +162,7 @@ static bool get_dynamic_data(
     struct Symbol *dyn_symbols =
         loader_malloc_arena(sizeof(struct Symbol) * dyn_sym_table_len);
     if (dyn_symbols == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
 
     size_t dyn_symbols_len = 0;
@@ -181,10 +181,9 @@ static bool get_dynamic_data(
         dyn_symbols[dyn_symbols_len++] = symbol;
     }
 
-    size_t got_len = got_section_header->size / got_section_header->entry_size;
     size_t *global_offset_table = loader_malloc_arena(got_section_header->size);
     if (global_offset_table == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     seeked = tinyc_lseek(fd, (off_t)got_section_header->offset, SEEK_SET);
     if (seeked != (off_t)got_section_header->offset) {
@@ -192,18 +191,27 @@ static bool get_dynamic_data(
     }
     read = tiny_c_read(fd, global_offset_table, got_section_header->size);
     if ((size_t)read != got_section_header->size) {
-        BAIL("read failed\n")
+        BAIL("read failed\n");
     }
 
-    struct GlobalOffsetTableEntry *got_entries =
-        loader_malloc_arena(sizeof(struct GlobalOffsetTableEntry) * got_len);
+    size_t got_len = got_section_header->size / got_section_header->entry_size;
+    if (got_len < 3) {
+        BAIL(
+            "unsupported GOT length %x, unknown loader callback location\n",
+            got_len
+        );
+    }
+
+    struct GotEntry *got_entries =
+        loader_malloc_arena(sizeof(struct GotEntry) * got_len);
     size_t got_base_addr = got_section_header->addr;
     for (size_t i = 0; i < got_len; i++) {
         size_t index = got_base_addr + i * got_section_header->entry_size;
         size_t value = global_offset_table[i];
-        struct GlobalOffsetTableEntry got_entry = {
+        struct GotEntry got_entry = {
             .index = index,
             .value = value,
+            .is_loader_callback = i == 2,
         };
         got_entries[i] = got_entry;
     }
@@ -212,7 +220,7 @@ static bool get_dynamic_data(
         relocation_header->size / relocation_header->entry_size;
     RELOCATION *elf_relocations = loader_malloc_arena(relocation_header->size);
     if (elf_relocations == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     seeked = tinyc_lseek(fd, (off_t)relocation_header->offset, SEEK_SET);
     if (seeked != (off_t)relocation_header->offset) {
@@ -220,7 +228,7 @@ static bool get_dynamic_data(
     }
     read = tiny_c_read(fd, elf_relocations, relocation_header->size);
     if ((size_t)read != relocation_header->size) {
-        BAIL("read failed\n")
+        BAIL("read failed\n");
     }
 
     struct Relocation *relocations =
@@ -242,7 +250,7 @@ static bool get_dynamic_data(
         dynamic_header->size / dynamic_header->entry_size;
     DYNAMIC_ENTRY *dynamic_entries = loader_malloc_arena(dynamic_header->size);
     if (dynamic_entries == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     seeked = tinyc_lseek(fd, (off_t)dynamic_header->offset, SEEK_SET);
     if (seeked != (off_t)dynamic_header->offset) {
@@ -250,13 +258,13 @@ static bool get_dynamic_data(
     }
     read = tiny_c_read(fd, dynamic_entries, dynamic_header->size);
     if ((size_t)read != dynamic_header->size) {
-        BAIL("read failed\n")
+        BAIL("read failed\n");
     }
 
     char **shared_libraries =
         loader_malloc_arena(sizeof(char *) * dynamic_entries_len);
     if (shared_libraries == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     size_t shared_libraries_len = 0;
     for (size_t i = 0; i < dynamic_entries_len; i++) {
@@ -300,12 +308,12 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
     size_t program_headers_size = elf_header.e_phnum * elf_header.e_phentsize;
     PROGRAM_HEADER *program_headers = loader_malloc_arena(program_headers_size);
     if (program_headers == NULL) {
-        BAIL("malloc failed\n")
+        BAIL("malloc failed\n");
     }
     ssize_t ph_read_len =
         tiny_c_read(fd, program_headers, program_headers_size);
     if ((size_t)ph_read_len != program_headers_size) {
-        BAIL("read failed\n")
+        BAIL("read failed\n");
     }
 
     struct SectionHeader *section_headers;
@@ -313,14 +321,14 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
     if (!get_section_headers(
             &elf_header, fd, &section_headers, &section_headers_len
         )) {
-        BAIL("section headers failed\n")
+        BAIL("section headers failed\n");
     }
 
     struct DynamicData *dynamic_data;
     if (!get_dynamic_data(
             section_headers, elf_header.e_shnum, fd, &dynamic_data
         )) {
-        BAIL("failed getting dynamic data\n")
+        BAIL("failed getting dynamic data\n");
     }
 
     *elf_data = (struct ElfData){
