@@ -22,5 +22,5 @@ int main(void) {
 
     /* 42 */
     size_t var42 = get42();
-    tiny_c_printf("var42: %x\n", var42);
+    tiny_c_printf("shared lib: %x\n", var42);
 }
