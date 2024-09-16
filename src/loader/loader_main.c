@@ -413,12 +413,12 @@ static bool initialize_dynamic_data(
     for (size_t i = 0; i < runtime_var_relocations_len; i++) {
         struct RuntimeRelocation *runtime_relocation =
             &runtime_var_relocations[i];
-        size_t relocation_address;
+        size_t runtime_address;
         if (!get_runtime_address(
                 runtime_relocation->name,
                 runtime_dyn_symbols,
                 runtime_dyn_symbols_len,
-                &relocation_address
+                &runtime_address
             )) {
             BAIL(
                 "runtime variable relocation '%s' not found\n",
@@ -429,10 +429,10 @@ static bool initialize_dynamic_data(
         LOADER_LOG(
             "Varaible relocation: %x:%x\n",
             runtime_relocation->offset,
-            relocation_address
+            runtime_address
         );
         size_t *got_pointer = (size_t *)runtime_relocation->offset;
-        *got_pointer = relocation_address;
+        *got_pointer = runtime_address;
     }
 
     return true;

@@ -103,23 +103,20 @@ static bool get_dynamic_data(
     }
     *dynamic_data_ptr = NULL;
 
+    const struct SectionHeader *dyn_sym_section_header =
+        find_section_header(section_headers, section_headers_len, ".dynsym");
     const struct SectionHeader *func_reloc_header =
         find_section_header(section_headers, section_headers_len, ".rel.plt");
     const struct SectionHeader *var_reloc_header =
         find_section_header(section_headers, section_headers_len, ".rel.dyn");
-    const struct SectionHeader *dyn_sym_section_header =
-        find_section_header(section_headers, section_headers_len, ".dynsym");
     const struct SectionHeader *dyn_str_section_header =
         find_section_header(section_headers, section_headers_len, ".dynstr");
     const struct SectionHeader *got_section_header =
         find_section_header(section_headers, section_headers_len, ".got");
     const struct SectionHeader *dynamic_header =
         find_section_header(section_headers, section_headers_len, ".dynamic");
-    if (func_reloc_header == NULL) {
-        return true;
-    }
     if (dyn_sym_section_header == NULL) {
-        BAIL("Could not find .dynsym section header\n");
+        return true;
     }
     if (dyn_str_section_header == NULL) {
         BAIL("Could not find .dynstr section header\n");
@@ -219,66 +216,76 @@ static bool get_dynamic_data(
     }
 
     /* Load function relocations */
-    RELOCATION *elf_relocations = loader_malloc_arena(func_reloc_header->size);
-    if (elf_relocations == NULL) {
-        BAIL("malloc failed\n");
-    }
-    seeked = tinyc_lseek(fd, (off_t)func_reloc_header->offset, SEEK_SET);
-    if (seeked != (off_t)func_reloc_header->offset) {
-        BAIL("seek failed\n");
-    }
-    read = tiny_c_read(fd, elf_relocations, func_reloc_header->size);
-    if ((size_t)read != func_reloc_header->size) {
-        BAIL("read failed\n");
-    }
+    struct Relocation *func_relocations = NULL;
+    size_t func_relocations_len = 0;
+    if (func_reloc_header) {
+        RELOCATION *elf_func_relocations =
+            loader_malloc_arena(func_reloc_header->size);
+        if (elf_func_relocations == NULL) {
+            BAIL("malloc failed\n");
+        }
+        seeked = tinyc_lseek(fd, (off_t)func_reloc_header->offset, SEEK_SET);
+        if (seeked != (off_t)func_reloc_header->offset) {
+            BAIL("seek failed\n");
+        }
+        read = tiny_c_read(fd, elf_func_relocations, func_reloc_header->size);
+        if ((size_t)read != func_reloc_header->size) {
+            BAIL("read failed\n");
+        }
 
-    size_t func_relocations_len =
-        func_reloc_header->size / func_reloc_header->entry_size;
-    struct Relocation *func_relocations =
-        loader_malloc_arena(sizeof(struct Relocation) * func_relocations_len);
-    for (size_t i = 0; i < func_relocations_len; i++) {
-        RELOCATION *elf_relocation = &elf_relocations[i];
-        size_t type = elf_relocation->r_info & 0xff;
-        size_t symbol_index = elf_relocation->r_info >> 8;
-        struct Symbol symbol = dyn_symbols[symbol_index];
-        struct Relocation relocation = {
-            .offset = elf_relocation->r_offset,
-            .type = type,
-            .symbol = symbol,
-        };
-        func_relocations[i] = relocation;
+        func_relocations_len =
+            func_reloc_header->size / func_reloc_header->entry_size;
+        func_relocations = loader_malloc_arena(
+            sizeof(struct Relocation) * func_relocations_len
+        );
+        for (size_t i = 0; i < func_relocations_len; i++) {
+            RELOCATION *elf_relocation = &elf_func_relocations[i];
+            size_t type = elf_relocation->r_info & 0xff;
+            size_t symbol_index = elf_relocation->r_info >> 8;
+            struct Symbol symbol = dyn_symbols[symbol_index];
+            struct Relocation relocation = {
+                .offset = elf_relocation->r_offset,
+                .type = type,
+                .symbol = symbol,
+            };
+            func_relocations[i] = relocation;
+        }
     }
-
     /* Load variable relocations */
-    RELOCATION *var_elf_relocations =
-        loader_malloc_arena(var_reloc_header->size);
-    if (elf_relocations == NULL) {
-        BAIL("malloc failed\n");
-    }
-    seeked = tinyc_lseek(fd, (off_t)var_reloc_header->offset, SEEK_SET);
-    if (seeked != (off_t)var_reloc_header->offset) {
-        BAIL("seek failed\n");
-    }
-    read = tiny_c_read(fd, var_elf_relocations, var_reloc_header->size);
-    if ((size_t)read != var_reloc_header->size) {
-        BAIL("read failed\n");
-    }
+    struct Relocation *var_relocations = NULL;
+    size_t var_relocations_len = 0;
+    if (var_reloc_header) {
+        RELOCATION *elf_var_relocations =
+            loader_malloc_arena(var_reloc_header->size);
+        if (elf_var_relocations == NULL) {
+            BAIL("malloc failed\n");
+        }
+        seeked = tinyc_lseek(fd, (off_t)var_reloc_header->offset, SEEK_SET);
+        if (seeked != (off_t)var_reloc_header->offset) {
+            BAIL("seek failed\n");
+        }
+        read = tiny_c_read(fd, elf_var_relocations, var_reloc_header->size);
+        if ((size_t)read != var_reloc_header->size) {
+            BAIL("read failed\n");
+        }
 
-    size_t var_relocations_len =
-        var_reloc_header->size / var_reloc_header->entry_size;
-    struct Relocation *var_relocations =
-        loader_malloc_arena(sizeof(struct Relocation) * var_relocations_len);
-    for (size_t i = 0; i < var_relocations_len; i++) {
-        RELOCATION *elf_relocation = &var_elf_relocations[i];
-        size_t type = elf_relocation->r_info & 0xff;
-        size_t symbol_index = elf_relocation->r_info >> 8;
-        struct Symbol symbol = dyn_symbols[symbol_index];
-        struct Relocation relocation = {
-            .offset = elf_relocation->r_offset,
-            .type = type,
-            .symbol = symbol,
-        };
-        var_relocations[i] = relocation;
+        var_relocations_len =
+            var_reloc_header->size / var_reloc_header->entry_size;
+        var_relocations = loader_malloc_arena(
+            sizeof(struct Relocation) * var_relocations_len
+        );
+        for (size_t i = 0; i < var_relocations_len; i++) {
+            RELOCATION *elf_relocation = &elf_var_relocations[i];
+            size_t type = elf_relocation->r_info & 0xff;
+            size_t symbol_index = elf_relocation->r_info >> 8;
+            struct Symbol symbol = dyn_symbols[symbol_index];
+            struct Relocation relocation = {
+                .offset = elf_relocation->r_offset,
+                .type = type,
+                .symbol = symbol,
+            };
+            var_relocations[i] = relocation;
+        }
     }
 
     /* Load dynamic entries */

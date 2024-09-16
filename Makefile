@@ -139,6 +139,17 @@ programs/linux/static_pie: libtinyc.a
 	@$(OBJDUMP) -D static_pie > static_pie.dump
 
 programs/linux/dynamic:
+	@$(CC) $(CFLAGS) \
+		-O0 \
+		$(WARNINGS) \
+		-fno-stack-protector \
+		-g \
+		-DARM32 \
+		-nostdlib -static \
+		-shared \
+		-o libdynamic.so \
+		src/programs/linux/dynamic/dynamic_lib.c
+	@$(OBJDUMP) -D libdynamic.so > libdynamic.so.dump
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		$(WARNINGS) \
@@ -152,6 +163,7 @@ programs/linux/dynamic:
 		$(WARNINGS) \
 		-o dynamic \
 		./libtinyc.so \
+		./libdynamic.so \
 		src/programs/linux/dynamic/dynamic_main.c
 	@$(OBJDUMP) -D dynamic > dynamic.dump
 

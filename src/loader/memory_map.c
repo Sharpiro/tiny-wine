@@ -32,9 +32,6 @@ bool get_memory_regions(
         if (program_header->p_type != PT_LOAD) {
             continue;
         }
-        if (program_header->p_vaddr == 0) {
-            LOADER_LOG("WARNING: dynamic relocation detected\n");
-        }
 
         size_t file_offset = program_header->p_offset /
             program_header->p_align * program_header->p_align;
