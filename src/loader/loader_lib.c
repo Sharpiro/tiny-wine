@@ -1,5 +1,6 @@
 #include "loader_lib.h"
 #include "../tiny_c/tiny_c.h"
+#include "elf_tools.h"
 #include <stddef.h>
 #include <sys/mman.h>
 
@@ -73,13 +74,13 @@ bool get_runtime_address(
     size_t *relocation_address
 ) {
     if (relocation_name == NULL) {
-        BAIL("relocation_name was null");
+        BAIL("relocation_name was null\n");
     }
     if (runtime_symbols == NULL) {
-        BAIL("runtime_symbols was null");
+        BAIL("runtime_symbols was null\n");
     }
     if (relocation_address == NULL) {
-        BAIL("relocation_address was null");
+        BAIL("relocation_address was null\n");
     }
 
     for (size_t j = 0; j < runtime_symbols_len; j++) {
@@ -89,6 +90,30 @@ bool get_runtime_address(
         }
         if (tiny_c_strcmp(curr_runtime_symbol->name, relocation_name) == 0) {
             *relocation_address = curr_runtime_symbol->value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool find_got_entry(
+    const struct GotEntry *got_entries,
+    size_t got_entries_len,
+    size_t offset,
+    struct GotEntry **got_entry
+) {
+    if (got_entries == NULL) {
+        BAIL("got_entries was null\n");
+    }
+    if (got_entry == NULL) {
+        BAIL("got_entry was null");
+    }
+
+    for (size_t j = 0; j < got_entries_len; j++) {
+        const struct GotEntry *curr_got_entry = &got_entries[j];
+        if (curr_got_entry->index == offset) {
+            *got_entry = (struct GotEntry *)curr_got_entry;
             return true;
         }
     }

@@ -60,3 +60,10 @@ bool get_runtime_address(
     size_t runtime_symbols_len,
     size_t *relocation_address
 );
+
+bool find_got_entry(
+    const struct GotEntry *got_entries,
+    size_t got_entries_len,
+    size_t offset,
+    struct GotEntry **got_entry
+);

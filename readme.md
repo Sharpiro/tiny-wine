@@ -1,15 +1,14 @@
 # Tiny Wine
 
-A Project to help me understand how linkers and Wine work.
+A Project to help understand how linkers and Wine work.
 
 Very basic support for jumping to other static Linux ELF programs.
 
-## Limitations (A lot)
+## Limitations
 
-- Arm32 only
-- Linux Elf only (yes, no windows support despite being called 'Tiny Wine')
-- Statically linked only
-- Can only do basic things found in "tiny_c"
+- Arm32
+- Linux
+- No standard libary
 
 ## Prerequisites
 
