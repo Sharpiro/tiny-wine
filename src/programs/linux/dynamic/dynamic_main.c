@@ -17,6 +17,7 @@ int main(void) {
 
     /* Manipulate dynamic variable */
     int32_t *dynamic_var = &tinyc_errno;
+    tiny_c_printf("dynamic_var: %x\n", *dynamic_var);
     *dynamic_var = 42;
     tiny_c_printf("dynamic_var: %x\n", *dynamic_var);
 

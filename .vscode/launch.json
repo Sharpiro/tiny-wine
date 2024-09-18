@@ -6,7 +6,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/loader",
-      "args": ["./dynamic"],
+      "args": ["./tinyfetch"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],

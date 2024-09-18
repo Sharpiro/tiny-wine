@@ -75,7 +75,9 @@ bool map_memory_regions(
         size_t prot_write = memory_region->permissions & 2;
         size_t prot_execute = (memory_region->permissions & 1) << 2;
         size_t map_protection = prot_read | prot_write | prot_execute;
-        LOADER_LOG("mapping address: %x\n", memory_region->start);
+        LOADER_LOG(
+            "mapping address: %x:%x\n", memory_region->start, memory_region->end
+        );
         uint8_t *addr = tiny_c_mmap(
             memory_region->start,
             memory_region_len,

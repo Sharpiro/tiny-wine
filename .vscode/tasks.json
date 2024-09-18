@@ -4,7 +4,7 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "make clean && make"
+            "command": "make clean && CFLAGS='-DVERBOSE' make"
         }
     ]
 }

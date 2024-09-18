@@ -212,7 +212,8 @@ static bool initialize_dynamic_data(
 
         struct MemoryRegion *memory_regions;
         size_t memory_regions_len;
-        size_t dynamic_offset = LOADER_SHARED_LIB_START + i * 0x2000;
+        // @todo: smarter offset so big libraries don't overlap
+        size_t dynamic_offset = LOADER_SHARED_LIB_START + i * 0x5000;
         if (!get_memory_regions(
                 shared_lib_elf.program_headers,
                 shared_lib_elf.header.e_phnum,
@@ -375,7 +376,7 @@ static bool initialize_dynamic_data(
 
     /** Get runtime GOT */
     runtime_got_entries =
-        tinyc_malloc_arena(sizeof(struct GotEntry) * runtime_got_entries_len);
+        loader_malloc_arena(sizeof(struct GotEntry) * runtime_got_entries_len);
     if (runtime_got_entries == NULL) {
         BAIL("malloc failed\n");
     }
@@ -420,7 +421,8 @@ static bool initialize_dynamic_data(
         struct RuntimeRelocation *runtime_var_relocation =
             &runtime_var_relocations[i];
         LOADER_LOG(
-            "Varaible relocation: %x:%x\n",
+            "Varaible relocation: %x: %x:%x\n",
+            i + 1,
             runtime_var_relocation->offset,
             runtime_var_relocation->value
         );
@@ -438,18 +440,26 @@ static bool initialize_dynamic_data(
         }
 
         runtime_got_entry->value = runtime_var_relocation->value;
+        runtime_got_entry->is_variable = true;
     }
 
     /** Initialize GOT */
+    LOADER_LOG("GOT entries: %x\n", runtime_got_entries_len);
     for (size_t i = 0; i < runtime_got_entries_len; i++) {
         struct GotEntry *runtime_got_entry = &runtime_got_entries[i];
         LOADER_LOG(
-            "GOT entry %x == %x\n",
+            "GOT entry %x: %x == %x\n",
+            i + 1,
             runtime_got_entry->index,
             runtime_got_entry->value
         );
         size_t *got_pointer = (size_t *)runtime_got_entry->index;
         *got_pointer = runtime_got_entry->value;
+
+        if (runtime_got_entry->is_variable) {
+            size_t *var_pointer = (size_t *)runtime_got_entry->value;
+            *var_pointer = 0;
+        }
     }
 
     return true;

@@ -70,6 +70,19 @@ libtinyc.so: tinyc_sys.o tiny_c.o
 		tiny_c.o
 	@$(OBJDUMP) -D libtinyc.so > libtinyc.so.dump
 
+libdynamic.so:
+	@$(CC) $(CFLAGS) \
+		-O0 \
+		$(WARNINGS) \
+		-fno-stack-protector \
+		-g \
+		-DARM32 \
+		-nostdlib -static \
+		-shared \
+		-o libdynamic.so \
+		src/programs/linux/dynamic/dynamic_lib.c
+	@$(OBJDUMP) -D libdynamic.so > libdynamic.so.dump
+
 loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -117,14 +130,16 @@ programs/linux/string:
 		libtinyc.a
 	@$(OBJDUMP) -D string > string.dump
 
-programs/linux/tinyfetch:
+programs/linux/tinyfetch: libdynamic.so
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
-		-nostdlib -static \
+		-nostdlib \
+		-no-pie \
 		$(WARNINGS) \
 		-o tinyfetch \
-		src/programs/linux/tinyfetch/tinyfetch_main.c \
-		libtinyc.a
+		./libdynamic.so \
+		./libtinyc.so \
+		src/programs/linux/tinyfetch/tinyfetch_main.c
 	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
 
 programs/linux/static_pie: libtinyc.a
@@ -138,18 +153,7 @@ programs/linux/static_pie: libtinyc.a
 		libtinyc.a
 	@$(OBJDUMP) -D static_pie > static_pie.dump
 
-programs/linux/dynamic:
-	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(WARNINGS) \
-		-fno-stack-protector \
-		-g \
-		-DARM32 \
-		-nostdlib -static \
-		-shared \
-		-o libdynamic.so \
-		src/programs/linux/dynamic/dynamic_lib.c
-	@$(OBJDUMP) -D libdynamic.so > libdynamic.so.dump
+programs/linux/dynamic: libdynamic.so
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		$(WARNINGS) \

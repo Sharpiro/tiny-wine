@@ -36,6 +36,7 @@ expected=`cat <<EOF
 1st call
 2nd call
 0x00000010 + 0x00000010 = 0x00000020
+dynamic_var: 0x00000000
 dynamic_var: 0x0000002a
 shared lib: 0x0000002a
 EOF

@@ -1,6 +1,7 @@
 #include "../../../tiny_c/tiny_c.h"
 #include <fcntl.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 ARM32_START_FUNCTION
 
@@ -29,6 +30,9 @@ int main(void) {
     tiny_c_printf("pid: %x\n", pid);
 
     char *cwd_buffer = tinyc_malloc_arena(0x100);
+    if (cwd_buffer == NULL) {
+        BAIL("malloc failed");
+    }
     const char *cwd = tiny_c_get_cwd(cwd_buffer, 100);
     tiny_c_printf("cwd: '%s'\n", cwd);
 
@@ -41,15 +45,17 @@ int main(void) {
 
     char *kernel;
     if (!read_to_string("/proc/sys/kernel/osrelease", &kernel)) {
-        BAIL("kernel failed");
+        BAIL("read failed");
     }
     tiny_c_printf("Kernel: %s\n", kernel);
 
     char *uptime;
     if (!read_to_string("/proc/uptime", &uptime)) {
-        BAIL("kernel failed");
+        BAIL("read failed");
     }
-    tiny_c_printf("Kernel: %s\n", uptime);
+    tiny_c_printf("Uptime: %s\n", uptime);
+    // size_t x = (size_t)atol("1");
+    // tiny_c_printf("atol: %x\n", x);
 
     tinyc_free_arena();
 }
