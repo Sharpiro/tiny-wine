@@ -3,8 +3,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-ARM32_START_FUNCTION
-
 int main(int argc, char *argv[]) {
     tiny_c_printf("%x\n", argc);
 

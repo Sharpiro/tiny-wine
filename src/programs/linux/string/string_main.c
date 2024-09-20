@@ -14,8 +14,6 @@ char *data_string = "string";
 int bss_int = 0;
 char *bss_string = NULL;
 
-ARM32_START_FUNCTION
-
 int main(void) {
     tiny_c_printf("inline string\n");
 

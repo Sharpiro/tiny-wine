@@ -1,8 +1,6 @@
 #include "../../../tiny_c/tiny_c.h"
 #include <string.h>
 
-ARM32_START_FUNCTION
-
 int main(void) {
     /* Call dynamic function leaf */
     size_t num1 = tiny_c_pow(2, 4);

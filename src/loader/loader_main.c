@@ -62,8 +62,6 @@ static void run_asm(size_t stack_start, size_t program_entry) {
 
 #ifdef ARM32
 
-ARM32_START_FUNCTION
-
 static void run_asm(
     size_t frame_start, size_t stack_start, size_t program_entry
 ) {

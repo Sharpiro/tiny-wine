@@ -2,8 +2,6 @@
 #include "../../../loader/memory_map.h"
 #include "../../../tiny_c/tiny_c.h"
 
-ARM32_START_FUNCTION
-
 #define assert(expr)                                                           \
     if (!(expr)) {                                                             \
         tiny_c_fprintf(STDERR, "%s:%x\n", __FILE__, __LINE__);                 \

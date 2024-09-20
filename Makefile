@@ -29,6 +29,19 @@ all: \
 echo_hi:
 	@echo hi
 
+tinyc_start.o: src/tiny_c/tinyc_start.c
+	@$(CC) $(CFLAGS) \
+		-g \
+		-c \
+		-O0 \
+		-nostdlib -static \
+		$(WARNINGS) \
+		-fPIC \
+		-fno-stack-protector \
+		-DARM32 \
+		-o tinyc_start.o \
+		src/tiny_c/tinyc_start.c
+
 tinyc_sys.o: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
 		-g \
@@ -83,7 +96,7 @@ libdynamic.so:
 		src/programs/linux/dynamic/dynamic_lib.c
 	@$(OBJDUMP) -D libdynamic.so > libdynamic.so.dump
 
-loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
+loader: tinyc_start.o libtinyc.a src/loader/loader_main.c src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
@@ -97,9 +110,10 @@ loader: src/loader/loader_main.c src/tiny_c/tiny_c.c
 		src/loader/loader_lib.c \
 		src/loader/memory_map.c \
 		src/loader/elf_tools.c \
+		tinyc_start.o \
 		libtinyc.a
 
-programs/linux/unit_test: libtinyc.a
+programs/linux/unit_test: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \
@@ -108,15 +122,17 @@ programs/linux/unit_test: libtinyc.a
 		src/programs/linux/unit_test/unit_test_main.c \
 		src/loader/memory_map.c \
 		src/loader/loader_lib.c \
+		tinyc_start.o \
 		libtinyc.a
 
-programs/linux/env: libtinyc.a
+programs/linux/env: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib -static \
 		$(WARNINGS) \
 		-o env \
 		src/programs/linux/env/env_main.c \
+		tinyc_start.o \
 		libtinyc.a
 	@$(OBJDUMP) -D env > env.dump
 
@@ -127,22 +143,24 @@ programs/linux/string:
 		$(WARNINGS) \
 		-o string \
 		src/programs/linux/string/string_main.c \
+		tinyc_start.o \
 		libtinyc.a
 	@$(OBJDUMP) -D string > string.dump
 
-programs/linux/tinyfetch: libdynamic.so
+programs/linux/tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib \
 		-no-pie \
 		$(WARNINGS) \
 		-o tinyfetch \
-		./libdynamic.so \
 		./libtinyc.so \
-		src/programs/linux/tinyfetch/tinyfetch_main.c
+		./libdynamic.so \
+		src/programs/linux/tinyfetch/tinyfetch_main.c \
+		tinyc_start.o
 	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
 
-programs/linux/static_pie: libtinyc.a
+programs/linux/static_pie: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-D ARM32 \
 		-nostdlib \
@@ -150,6 +168,7 @@ programs/linux/static_pie: libtinyc.a
 		$(WARNINGS) \
 		-o static_pie \
 		src/programs/linux/static_pie/static_pie_main.c \
+		tinyc_start.o \
 		libtinyc.a
 	@$(OBJDUMP) -D static_pie > static_pie.dump
 
@@ -168,7 +187,8 @@ programs/linux/dynamic: libdynamic.so
 		-o dynamic \
 		./libtinyc.so \
 		./libdynamic.so \
-		src/programs/linux/dynamic/dynamic_main.c
+		src/programs/linux/dynamic/dynamic_main.c \
+		tinyc_start.o
 	@$(OBJDUMP) -D dynamic > dynamic.dump
 
 clean:
