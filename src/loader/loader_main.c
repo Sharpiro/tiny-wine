@@ -271,8 +271,11 @@ static bool initialize_dynamic_data(
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
         for (size_t i = 0; i < shared_dyn_data->symbols_len; i++) {
             struct Symbol *curr_symbol = &shared_dyn_data->symbols[i];
+            size_t value = curr_symbol->value == 0
+                ? 0
+                : curr_lib->dynamic_offset + curr_symbol->value;
             struct RuntimeSymbol runtime_symbol = {
-                .value = curr_lib->dynamic_offset + curr_symbol->value,
+                .value = value,
                 .name = curr_symbol->name,
 
             };

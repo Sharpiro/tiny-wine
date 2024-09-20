@@ -83,8 +83,8 @@ bool get_runtime_address(
         BAIL("relocation_address was null\n");
     }
 
-    for (size_t j = 0; j < runtime_symbols_len; j++) {
-        const struct RuntimeSymbol *curr_runtime_symbol = &runtime_symbols[j];
+    for (size_t i = 0; i < runtime_symbols_len; i++) {
+        const struct RuntimeSymbol *curr_runtime_symbol = &runtime_symbols[i];
         if (curr_runtime_symbol->value == 0) {
             continue;
         }

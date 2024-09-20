@@ -11,8 +11,6 @@
 #include <sys/types.h>
 
 int32_t tinyc_errno = 0;
-
-// @todo: 0 initial value doesn't work
 size_t tinyc_heap_start = 0;
 size_t tinyc_heap_end = 0;
 size_t tinyc_heap_index = 0;

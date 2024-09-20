@@ -1,8 +1,7 @@
 #include "../../../tiny_c/tiny_c.h"
+#include <string.h>
 
 ARM32_START_FUNCTION
-
-size_t get42(void);
 
 int main(void) {
     /* Call dynamic function leaf */
@@ -21,7 +20,7 @@ int main(void) {
     *dynamic_var = 42;
     tiny_c_printf("dynamic_var: %x\n", *dynamic_var);
 
-    /* 42 */
-    size_t var42 = get42();
-    tiny_c_printf("shared lib: %x\n", var42);
+    /* 2nd shared lib */
+    const char *str = "how now brown cow";
+    tiny_c_printf("2nd shared lib length of '%s': %x\n", str, strlen(str));
 }
