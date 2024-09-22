@@ -52,6 +52,13 @@ struct MemoryRegion {
     size_t permissions;
 };
 
+struct MemoryRegionsInfo {
+    size_t start;
+    size_t end;
+    struct MemoryRegion *memory_regions;
+    size_t memory_regions_len;
+};
+
 struct DynamicData {
     struct Symbol *symbols;
     size_t symbols_len;

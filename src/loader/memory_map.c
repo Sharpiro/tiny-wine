@@ -8,25 +8,22 @@
 bool get_memory_regions(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
-    struct MemoryRegion **memory_regions_ptr,
-    size_t *memory_regions_len,
-    size_t address_offset
+    size_t address_offset,
+    struct MemoryRegionsInfo *memory_regions_info
 ) {
     if (program_headers == NULL) {
         BAIL("program_headers cannot be null\n");
     }
-    if (memory_regions_ptr == NULL) {
-        BAIL("memory_regions cannot be null\n");
-    }
-    if (memory_regions_len == NULL) {
-        BAIL("len cannot be null\n");
+    if (memory_regions_info == NULL) {
+        BAIL("memory_regions_info cannot be null\n");
     }
 
-    *memory_regions_ptr =
+    struct MemoryRegion *memory_regions =
         loader_malloc_arena(sizeof(struct MemoryRegion) * program_headers_len);
 
     size_t j = 0;
-    struct MemoryRegion *memory_regions = *memory_regions_ptr;
+    size_t regions_info_start = 0;
+    size_t regions_info_end = 0;
     for (size_t i = 0; i < program_headers_len; i++) {
         const PROGRAM_HEADER *program_header = &program_headers[i];
         if (program_header->p_type != PT_LOAD) {
@@ -51,6 +48,13 @@ bool get_memory_regions(
             end += 0x1000;
         }
 
+        start = start + address_offset;
+        end = end + address_offset;
+        regions_info_end = end;
+        if (regions_info_start == 0) {
+            regions_info_start = start;
+        }
+
         memory_regions[j++] = (struct MemoryRegion){
             .start = start + address_offset,
             .end = end + address_offset,
@@ -59,7 +63,12 @@ bool get_memory_regions(
         };
     }
 
-    *memory_regions_len = j;
+    *memory_regions_info = (struct MemoryRegionsInfo){
+        .start = regions_info_start,
+        .end = regions_info_end,
+        .memory_regions = memory_regions,
+        .memory_regions_len = j,
+    };
     return true;
 }
 

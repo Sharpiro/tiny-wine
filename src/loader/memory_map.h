@@ -6,9 +6,8 @@
 bool get_memory_regions(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
-    struct MemoryRegion **memory_regions_ptr,
-    size_t *memory_regions_len,
-    size_t address_offset
+    size_t address_offset,
+    struct MemoryRegionsInfo *memory_regions_info
 );
 
 bool map_memory_regions(
