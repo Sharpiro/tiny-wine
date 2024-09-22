@@ -208,23 +208,23 @@ static bool initialize_dynamic_data(
             BAIL("Expected shared library to have dynamic data\n");
         }
 
-        struct MemoryRegion *memory_regions;
-        size_t memory_regions_len;
         // @todo: smarter offset so big libraries don't overlap
+        struct MemoryRegionsInfo memory_regions_info;
         size_t dynamic_offset = LOADER_SHARED_LIB_START + i * 0x5000;
-        if (!get_memory_regions(
+        if (!get_memory_regions_nifo(
                 shared_lib_elf.program_headers,
                 shared_lib_elf.header.e_phnum,
-                &memory_regions,
-                &memory_regions_len,
-                dynamic_offset
+                dynamic_offset,
+                &memory_regions_info
             )) {
             BAIL("failed getting memory regions\n");
         }
 
         LOADER_LOG("Mapping library memory regions\n");
         if (!map_memory_regions(
-                shared_lib_file, memory_regions, memory_regions_len
+                shared_lib_file,
+                memory_regions_info.memory_regions,
+                memory_regions_info.memory_regions_len
             )) {
             BAIL("loader map memory regions failed\n");
         }
@@ -242,8 +242,7 @@ static bool initialize_dynamic_data(
             .name = shared_lib_name,
             .dynamic_offset = dynamic_offset,
             .elf_data = shared_lib_elf,
-            .memory_regions = memory_regions,
-            .memory_regions_len = memory_regions_len,
+            .memory_regions_info = memory_regions_info,
         };
         (*shared_libraries)[i] = shared_library;
     }
@@ -520,20 +519,22 @@ int main(int32_t argc, char **argv) {
 
     LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);
 
-    struct MemoryRegion *memory_regions;
-    size_t memory_regions_len;
-    if (!get_memory_regions(
+    struct MemoryRegionsInfo memory_regions_info;
+    if (!get_memory_regions_nifo(
             inferior_elf.program_headers,
             inferior_elf.header.e_phnum,
-            &memory_regions,
-            &memory_regions_len,
-            0
+            0,
+            &memory_regions_info
         )) {
         tiny_c_fprintf(STDERR, "failed getting memory regions\n");
         return -1;
     }
 
-    if (!map_memory_regions(fd, memory_regions, memory_regions_len)) {
+    if (!map_memory_regions(
+            fd,
+            memory_regions_info.memory_regions,
+            memory_regions_info.memory_regions_len
+        )) {
         tiny_c_fprintf(STDERR, "loader map memory regions failed\n");
         return -1;
     }

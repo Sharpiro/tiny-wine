@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-bool get_memory_regions(
+bool get_memory_regions_info(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
     size_t address_offset,
@@ -56,8 +56,8 @@ bool get_memory_regions(
         }
 
         memory_regions[j++] = (struct MemoryRegion){
-            .start = start + address_offset,
-            .end = end + address_offset,
+            .start = start,
+            .end = end,
             .file_offset = file_offset,
             .permissions = program_header->p_flags,
         };

@@ -144,6 +144,6 @@ bool print_memory_regions(void) {
         BAIL("read failed\n");
     }
 
-    tiny_c_printf("Mapped address regions:\n%s\n", maps_buffer);
+    LOADER_LOG("Mapped address regions:\n%s\n", maps_buffer);
     return true;
 }

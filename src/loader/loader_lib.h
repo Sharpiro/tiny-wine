@@ -36,8 +36,7 @@ struct SharedLibrary {
     const char *name;
     size_t dynamic_offset;
     struct ElfData elf_data;
-    struct MemoryRegion *memory_regions;
-    size_t memory_regions_len;
+    struct MemoryRegionsInfo memory_regions_info;
 };
 
 struct RuntimeRelocation {
