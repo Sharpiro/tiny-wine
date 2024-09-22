@@ -1,6 +1,7 @@
 #include "../../../tiny_c/tiny_c.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 #include <sys/types.h>
 
 extern char **environ;
@@ -33,9 +34,6 @@ long atol(const char *data) {
 
         size_t exponent = tiny_c_pow(10, (num_len - i - 1));
         result += current_digit * (ssize_t)exponent;
-        // tiny_c_fprintf(STDERR, "char %x: %x\n", i, current_digit);
-        // tiny_c_fprintf(STDERR, "exp  %x: %x\n", i, exponent);
-        // tiny_c_fprintf(STDERR, "res  %x: %x\n", i, result);
     }
 
     return result;
@@ -75,7 +73,33 @@ char *strstr(const char *haystack, const char *needle) {
     return NULL;
 }
 
+int strncmp(const char *buffer_a, const char *buffer_b, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        char a = buffer_a[i];
+        char b = buffer_b[i];
+        if (a == 0 && b == 0) {
+            break;
+        }
+        if (a != b) {
+            return a - b;
+        }
+    }
+
+    return 0;
+}
+
 char *getenv(const char *name) {
-    // tiny_c_printf("environ: %x, %x, %s\n", environ, *environ, *environ);
-    return *environ;
+    for (size_t i = 0; true; i++) {
+        char *var = environ[i];
+        if (var == NULL) {
+            break;
+        }
+        size_t name_len = strlen(name);
+        char *equals_offset = var + name_len;
+        if (strncmp(var, name, name_len) == 0 && *equals_offset == '=') {
+            return equals_offset + 1;
+        }
+    }
+
+    return NULL;
 }

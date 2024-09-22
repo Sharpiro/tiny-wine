@@ -290,10 +290,10 @@ int tiny_c_memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
     return 0;
 }
 
-int tiny_c_strcmp(const void *buffer_a, const void *buffer_b) {
+int tiny_c_strcmp(const char *buffer_a, const char *buffer_b) {
     for (size_t i = 0; true; i++) {
-        u_int8_t a = ((u_int8_t *)buffer_a)[i];
-        u_int8_t b = ((u_int8_t *)buffer_b)[i];
+        char a = buffer_a[i];
+        char b = buffer_b[i];
         if (a == 0 && b == 0) {
             break;
         }
