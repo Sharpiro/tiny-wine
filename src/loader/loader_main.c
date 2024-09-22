@@ -193,6 +193,7 @@ static bool initialize_dynamic_data(
         BAIL("malloc failed\n");
     }
 
+    size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
         char *shared_lib_name = inferior_dyn_data->shared_libraries[i];
         LOADER_LOG("mapping shared library '%s'\n", shared_lib_name);
@@ -208,13 +209,11 @@ static bool initialize_dynamic_data(
             BAIL("Expected shared library to have dynamic data\n");
         }
 
-        // @todo: smarter offset so big libraries don't overlap
         struct MemoryRegionsInfo memory_regions_info;
-        size_t dynamic_offset = LOADER_SHARED_LIB_START + i * 0x5000;
-        if (!get_memory_regions_nifo(
+        if (!get_memory_regions_info(
                 shared_lib_elf.program_headers,
                 shared_lib_elf.header.e_phnum,
-                dynamic_offset,
+                dynamic_lib_offset,
                 &memory_regions_info
             )) {
             BAIL("failed getting memory regions\n");
@@ -240,11 +239,12 @@ static bool initialize_dynamic_data(
         runtime_got_entries_len += shared_lib_elf.dynamic_data->got_len;
         struct SharedLibrary shared_library = {
             .name = shared_lib_name,
-            .dynamic_offset = dynamic_offset,
+            .dynamic_offset = dynamic_lib_offset,
             .elf_data = shared_lib_elf,
             .memory_regions_info = memory_regions_info,
         };
         (*shared_libraries)[i] = shared_library;
+        dynamic_lib_offset = memory_regions_info.end;
     }
 
     /** Get runtime symbols */
@@ -520,7 +520,7 @@ int main(int32_t argc, char **argv) {
     LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);
 
     struct MemoryRegionsInfo memory_regions_info;
-    if (!get_memory_regions_nifo(
+    if (!get_memory_regions_info(
             inferior_elf.program_headers,
             inferior_elf.header.e_phnum,
             0,
