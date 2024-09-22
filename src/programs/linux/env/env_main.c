@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+extern char **environ;
+
 int main(int argc, char *argv[]) {
     tiny_c_printf("%x\n", argc);
 
@@ -16,7 +18,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Print env vars
-    char **envv = argv + argc + 1;
+    char **envv = environ;
     char *env;
     while ((env = *envv++) != NULL) {
         tiny_c_printf("%s\n", env);
