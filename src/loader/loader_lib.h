@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #define LOADER_BUFFER_ADDRESS 0x7d8d0000
-#define LOADER_BUFFER_LEN 0x16000
+#define LOADER_BUFFER_LEN 0x8000
 #define LOADER_SHARED_LIB_START 0x500000
 
 extern int32_t loader_log_handle;
@@ -13,6 +13,10 @@ extern int32_t loader_log_handle;
 void *loader_malloc_arena(size_t n);
 
 void loader_free_arena(void);
+
+bool read_to_string(const char *path, char **content, size_t size);
+
+bool print_memory_regions(void);
 
 #ifdef VERBOSE
 

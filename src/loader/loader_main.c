@@ -229,6 +229,9 @@ static bool initialize_dynamic_data(
             BAIL("loader map memory regions failed\n");
         }
 
+        tiny_c_close(shared_lib_file);
+        print_memory_regions();
+
         runtime_dyn_symbols_len += shared_lib_elf.dynamic_data->symbols_len;
         runtime_func_relocations_len +=
             shared_lib_elf.dynamic_data->func_relocations_len;
@@ -446,21 +449,17 @@ static bool initialize_dynamic_data(
     }
 
     /* Print memory regions */
-    char *maps_buffer = loader_malloc_arena(0x1000);
-    if (!read_to_string("/proc/self/maps", &maps_buffer)) {
-        BAIL("read failed\n");
-    }
-    tiny_c_printf("Mapped address regions:\n%s\n", maps_buffer);
 
     /** Initialize GOT */
     LOADER_LOG("GOT entries: %x\n", runtime_got_entries_len);
     for (size_t i = 0; i < runtime_got_entries_len; i++) {
         struct GotEntry *runtime_got_entry = &runtime_got_entries[i];
         LOADER_LOG(
-            "GOT entry %x: %x == %x\n",
+            "GOT entry %x: %x == %x, variable: %s\n",
             i + 1,
             runtime_got_entry->index,
-            runtime_got_entry->value
+            runtime_got_entry->value,
+            runtime_got_entry->is_variable ? "true" : "false"
         );
         size_t *got_pointer = (size_t *)runtime_got_entry->index;
         *got_pointer = runtime_got_entry->value;
