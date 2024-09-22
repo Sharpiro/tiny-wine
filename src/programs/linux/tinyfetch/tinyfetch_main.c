@@ -10,7 +10,7 @@
 bool read_to_string(const char *path, char **content) {
     char *buffer = tinyc_malloc_arena(READ_SIZE);
     if (buffer == NULL) {
-        BAIL("malloc failed");
+        BAIL("malloc failed\n");
     }
 
     int32_t fd = tiny_c_open(path, O_RDONLY);
@@ -39,8 +39,7 @@ int main(void) {
     if (!read_to_string("/proc/self/maps", &maps_buffer)) {
         BAIL("read failed");
     }
-    tiny_c_printf("Mapped address regions:\n");
-    tiny_c_printf("%s\n", maps_buffer);
+    tiny_c_printf("Mapped address regions:\n%s\n", maps_buffer);
 
     /* OS */
     char *os_release_buffer = tinyc_malloc_arena(0x1000);

@@ -418,6 +418,7 @@ static bool initialize_dynamic_data(
         }
     }
 
+    LOADER_LOG("Variable relocations: %x\n", runtime_var_relocations_len);
     for (size_t i = 0; i < runtime_var_relocations_len; i++) {
         struct RuntimeRelocation *runtime_var_relocation =
             &runtime_var_relocations[i];
@@ -443,6 +444,13 @@ static bool initialize_dynamic_data(
         runtime_got_entry->value = runtime_var_relocation->value;
         runtime_got_entry->is_variable = true;
     }
+
+    /* Print memory regions */
+    char *maps_buffer = loader_malloc_arena(0x1000);
+    if (!read_to_string("/proc/self/maps", &maps_buffer)) {
+        BAIL("read failed\n");
+    }
+    tiny_c_printf("Mapped address regions:\n%s\n", maps_buffer);
 
     /** Initialize GOT */
     LOADER_LOG("GOT entries: %x\n", runtime_got_entries_len);

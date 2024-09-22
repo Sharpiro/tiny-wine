@@ -1,6 +1,7 @@
 #include "loader_lib.h"
 #include "../tiny_c/tiny_c.h"
 #include "elf_tools.h"
+#include <fcntl.h>
 #include <stddef.h>
 #include <sys/mman.h>
 
@@ -20,6 +21,7 @@ void *loader_malloc_arena(size_t n) {
             0
         );
         if (loader_buffer == MAP_FAILED) {
+            LOADER_LOG("map failed\n");
             return NULL;
         }
     }
@@ -29,6 +31,7 @@ void *loader_malloc_arena(size_t n) {
     size_t aligned_end =
         alignment_mod == 0 ? n : n + POINTER_SIZE - alignment_mod;
     if (loader_heap_index + aligned_end > LOADER_BUFFER_LEN) {
+        LOADER_LOG("size exceeded\n");
         return NULL;
     }
 
@@ -119,4 +122,18 @@ bool find_got_entry(
     }
 
     return false;
+}
+
+bool read_to_string(const char *path, char **content, size_t size) {
+    char *buffer = loader_malloc_arena(size);
+    if (buffer == NULL) {
+        BAIL("malloc failed\n");
+    }
+
+    int32_t fd = tiny_c_open(path, O_RDONLY);
+    tiny_c_read(fd, buffer, size);
+    tiny_c_close(fd);
+    *content = buffer;
+
+    return true;
 }
