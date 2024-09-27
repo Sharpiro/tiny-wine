@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
     if (user_info == NULL) {
         BAIL("getpwuid failed: %x\n", tinyc_errno);
     }
-    tiny_c_printf("%x@%s\n", 0, user_info->pw_name, uname.nodename);
-    tiny_c_printf("--------------\n", 0, uname.nodename);
+    tiny_c_printf("%s@%s\n", user_info->pw_name, uname.nodename);
+    tiny_c_printf("--------------\n");
 
     /* OS */
     char *os_release_buffer = tinyc_malloc_arena(0x1000);
