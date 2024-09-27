@@ -32,6 +32,17 @@ docker run --rm -v $PWD:/root/tiny_wine tinywine make
 docker run --rm -v $PWD:/root/tiny_wine tinywine qemu-arm ./loader ./tinyfetch
 ```
 
+### Example Output
+
+```txt
+root@3db29f0a588e
+--------------
+OS: Ubuntu 22.04.4 LTS armv7l
+Kernel: 6.10.5-100.fc39.x86_64
+Uptime: 0x00000024 days, 0x00000016 hours, 0x00000033 minutes
+Shell: <null>
+```
+
 ## Tests
 
 ```sh
