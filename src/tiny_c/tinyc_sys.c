@@ -76,3 +76,11 @@ off_t tinyc_sys_lseek(uint32_t fd, off_t offset, uint32_t whence) {
     off_t result_offset = (off_t)result;
     return result_offset;
 }
+
+size_t tinyc_sys_uname(struct utsname *uname) {
+    struct SysArgs args = {
+        .param_one = (size_t)uname,
+    };
+    size_t result = tiny_c_syscall(SYS_uname, &args);
+    return result;
+}

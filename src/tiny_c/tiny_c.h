@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 
 #define STDOUT 1
 #define STDERR 2
@@ -40,6 +41,7 @@ void *tinyc_malloc_arena(size_t n);
 void tinyc_free_arena(void);
 off_t tinyc_lseek(int fd, off_t offset, int whence);
 uint32_t divmod(uint32_t numerator, uint32_t denominator);
+int32_t tinyc_uname(struct utsname *uname);
 
 #define BAIL(fmt, ...)                                                         \
     tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \

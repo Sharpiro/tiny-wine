@@ -369,6 +369,16 @@ off_t tinyc_lseek(int fd, off_t offset, int whence) {
     return tinyc_sys_lseek((size_t)fd, offset, (size_t)whence);
 }
 
+int32_t tinyc_uname(struct utsname *uname) {
+    int32_t result = (int32_t)tinyc_sys_uname(uname);
+    if (result < 0) {
+        tinyc_errno = -result;
+        return -1;
+    }
+
+    return result;
+}
+
 #ifdef ARM32
 
 uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {

@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 #define READ_SIZE 0x1000
@@ -41,6 +42,16 @@ int main(void) {
     }
     tiny_c_printf("Mapped address regions:\n%s\n", maps_buffer);
 
+    /* Unix name */
+    struct utsname uname;
+    if (tinyc_uname(&uname) == -1) {
+        BAIL("uname failed");
+    }
+
+    /* User */
+    tiny_c_printf("%s@%s\n", 0, uname.nodename);
+    tiny_c_printf("--------------\n", 0, uname.nodename);
+
     /* OS */
     char *os_release_buffer = tinyc_malloc_arena(0x1000);
     if (!read_to_string("/etc/os-release", &os_release_buffer)) {
@@ -63,14 +74,10 @@ int main(void) {
         pretty_name_start,
         (size_t)(pretty_name_end - pretty_name_start)
     );
-    tiny_c_printf("OS: %s\n", pretty_name);
+    tiny_c_printf("OS: %s %s\n", pretty_name, uname.machine);
 
     /* Kernel */
-    char *kernel;
-    if (!read_to_string("/proc/sys/kernel/osrelease", &kernel)) {
-        BAIL("read failed");
-    }
-    tiny_c_printf("Kernel: %s", kernel);
+    tiny_c_printf("Kernel: %s\n", uname.release);
 
     /* Uptime */
     char *uptime;
@@ -90,8 +97,6 @@ int main(void) {
         (size_t)uptime_hours,
         (size_t)uptime_minutes
     );
-
-    // struct utsname x = {0};
 
     /* Shell */
     const char *shell = getenv("SHELL");
