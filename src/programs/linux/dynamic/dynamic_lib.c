@@ -1,8 +1,11 @@
 #include "../../../tiny_c/tiny_c.h"
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 #include <sys/types.h>
+
+#define READ_SIZE 0x1000
 
 extern char **environ;
 
@@ -99,6 +102,69 @@ char *getenv(const char *name) {
         if (strncmp(var, name, name_len) == 0 && *equals_offset == '=') {
             return equals_offset + 1;
         }
+    }
+
+    return NULL;
+}
+
+bool read_to_string(const char *path, char **content) {
+    char *buffer = tinyc_malloc_arena(READ_SIZE);
+    if (buffer == NULL) {
+        BAIL("malloc failed\n");
+    }
+
+    int32_t fd = tiny_c_open(path, O_RDONLY);
+    tiny_c_read(fd, buffer, READ_SIZE);
+    tiny_c_close(fd);
+    *content = buffer;
+
+    return true;
+}
+
+struct Line {
+    size_t start;
+    size_t end;
+};
+
+bool string_split_lines(
+    const char *str, struct Line **lines, size_t *lines_len
+) {
+    const int MAX_LINES = 100;
+
+    *lines = tinyc_malloc_arena(sizeof(struct Line) * MAX_LINES);
+    size_t len = strlen(str);
+    size_t lines_index = 0;
+    size_t line_start = 0;
+    for (size_t i = 0; i < len; i++) {
+        const char curr_char = str[i];
+        if (curr_char == '\n') {
+            (*lines)[lines_index++] = (struct Line){
+                .start = line_start,
+                .end = i,
+            };
+            if (lines_index == MAX_LINES) {
+                BAIL("max lines exceeded\n");
+            }
+            line_start = i + 1;
+        }
+    }
+
+    *lines_len = lines_index;
+    return true;
+}
+
+struct passwd *getpwuid(uid_t uid) {
+    char *passwd_file;
+    if (!read_to_string("/etc/passwd", &passwd_file)) {
+        tinyc_errno = ENOENT;
+        return NULL;
+    }
+
+    struct Line *lines;
+    size_t line_len;
+    if (!string_split_lines(passwd_file, &lines, &line_len)) {
+        tinyc_errno = ENOENT;
+        return NULL;
     }
 
     return NULL;

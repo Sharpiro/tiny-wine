@@ -29,7 +29,7 @@ docker run --rm -v $PWD:/root/tiny_wine tinywine make
 ## Running
 
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine qemu-arm ./loader ./env always be closing
+docker run --rm -v $PWD:/root/tiny_wine tinywine qemu-arm ./loader ./tinyfetch
 ```
 
 ## Tests

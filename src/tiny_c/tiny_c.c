@@ -379,6 +379,12 @@ int32_t tinyc_uname(struct utsname *uname) {
     return result;
 }
 
+uid_t tinyc_getuid(void) {
+    struct SysArgs args = {0};
+    uid_t result = (uid_t)tiny_c_syscall(SYS_getuid, &args);
+    return result;
+}
+
 #ifdef ARM32
 
 uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {

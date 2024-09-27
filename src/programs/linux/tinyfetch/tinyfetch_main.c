@@ -1,46 +1,35 @@
 #include "../../../tiny_c/tiny_c.h"
 #include <fcntl.h>
+#include <pwd.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 
-#define READ_SIZE 0x1000
+bool read_to_string(const char *path, char **content);
 
-bool read_to_string(const char *path, char **content) {
-    char *buffer = tinyc_malloc_arena(READ_SIZE);
-    if (buffer == NULL) {
-        BAIL("malloc failed\n");
+int main(int argc, char **argv) {
+    if (argc > 1 && tiny_c_strcmp(argv[1], "--extra") == 0) {
+        /* PID */
+        int32_t pid = tiny_c_get_pid();
+        tiny_c_printf("PID: %x\n", pid);
+
+        /* CWD */
+        char *cwd_buffer = tinyc_malloc_arena(0x100);
+        if (cwd_buffer == NULL) {
+            BAIL("malloc failed");
+        }
+        const char *cwd = tiny_c_get_cwd(cwd_buffer, 100);
+        tiny_c_printf("CWD: %s\n", cwd);
+
+        /* Memory regions */
+        char *maps_buffer = tinyc_malloc_arena(0x1000);
+        if (!read_to_string("/proc/self/maps", &maps_buffer)) {
+            BAIL("read failed");
+        }
+        tiny_c_printf("Mapped address regions:\n%s\n", maps_buffer);
     }
-
-    int32_t fd = tiny_c_open(path, O_RDONLY);
-    tiny_c_read(fd, buffer, READ_SIZE);
-    tiny_c_close(fd);
-    *content = buffer;
-
-    return true;
-}
-
-int main(void) {
-    /* PID */
-    int32_t pid = tiny_c_get_pid();
-    tiny_c_printf("PID: %x\n", pid);
-
-    /* CWD */
-    char *cwd_buffer = tinyc_malloc_arena(0x100);
-    if (cwd_buffer == NULL) {
-        BAIL("malloc failed");
-    }
-    const char *cwd = tiny_c_get_cwd(cwd_buffer, 100);
-    tiny_c_printf("CWD: %s\n", cwd);
-
-    /* Memory regions */
-    char *maps_buffer = tinyc_malloc_arena(0x1000);
-    if (!read_to_string("/proc/self/maps", &maps_buffer)) {
-        BAIL("read failed");
-    }
-    tiny_c_printf("Mapped address regions:\n%s\n", maps_buffer);
 
     /* Unix name */
     struct utsname uname;
@@ -49,7 +38,12 @@ int main(void) {
     }
 
     /* User */
-    tiny_c_printf("%s@%s\n", 0, uname.nodename);
+    uid_t uid = tinyc_getuid();
+    struct passwd *user_info = getpwuid(uid);
+    if (user_info == NULL) {
+        BAIL("getpwuid failed: %x\n", tinyc_errno);
+    }
+    tiny_c_printf("%x@%s\n", 0, user_info->pw_name, uname.nodename);
     tiny_c_printf("--------------\n", 0, uname.nodename);
 
     /* OS */
