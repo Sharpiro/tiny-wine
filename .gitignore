@@ -19,3 +19,4 @@ a.out
 *.s
 /static_pie
 /unit_test
+/baby64

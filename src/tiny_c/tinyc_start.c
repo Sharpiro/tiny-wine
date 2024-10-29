@@ -16,6 +16,19 @@ __attribute__((naked)) void _start(void) {
 
 #endif
 
+#ifdef AMD64
+
+__attribute__((naked)) void _start(void) {
+    __asm__("mov rax, [rax]\n");
+    // __asm__("ldr r0, [sp]\n"
+    //         "add r1, sp, #4\n"
+    //         "bl tinyc_init\n"
+    //         "mov r7, #1\n"
+    //         "svc #0\n");
+}
+
+#endif
+
 __attribute__((used)) static int tinyc_init(int argc, char **argv) {
     environ = argv + argc + 1;
 

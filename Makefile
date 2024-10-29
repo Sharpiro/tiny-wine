@@ -38,9 +38,23 @@ tinyc_start.o: src/tiny_c/tinyc_start.c
 		$(WARNINGS) \
 		-fPIC \
 		-fno-stack-protector \
-		-DARM32 \
+		-DAMD64 \
+		-masm=intel \
 		-o tinyc_start.o \
 		src/tiny_c/tinyc_start.c
+
+baby64: tinyc_start.o
+	@$(CC) $(CFLAGS) \
+		-g \
+		-O0 \
+		-nostdlib -static \
+		$(WARNINGS) \
+		-fPIC \
+		-fno-stack-protector \
+		-DAMD64 \
+		-o baby64 \
+		tinyc_start.o \
+		src/programs/linux/baby64/baby64_main.c
 
 tinyc_sys.o: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
@@ -195,7 +209,7 @@ programs/linux/dynamic: libdynamic.so
 clean:
 	@rm -f \
 	*.dump *.o *.s *.a *.so \
-	loader env string tinyfetch dynamic unit_test static_pie
+	loader env string tinyfetch dynamic unit_test static_pie baby64
 
 install: libtinyc.a libtinyc.so
 	cp src/tiny_c/tiny_c.h /usr/local/include
