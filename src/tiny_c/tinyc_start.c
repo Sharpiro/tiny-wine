@@ -19,12 +19,12 @@ __attribute__((naked)) void _start(void) {
 #ifdef AMD64
 
 __attribute__((naked)) void _start(void) {
-    __asm__("mov rax, [rax]\n");
-    // __asm__("ldr r0, [sp]\n"
-    //         "add r1, sp, #4\n"
-    //         "bl tinyc_init\n"
-    //         "mov r7, #1\n"
-    //         "svc #0\n");
+    __asm__("mov rdi, [rsp]\n"
+            "lea rsi, [rsp + 8]\n"
+            "call tinyc_init\n"
+            "mov rdi, rax\n"
+            "mov rax, 0x3c\n"
+            "syscall\n");
 }
 
 #endif

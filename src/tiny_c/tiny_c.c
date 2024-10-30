@@ -252,21 +252,26 @@ void *tiny_c_mmap(
 }
 
 // @todo: x64 convention disrespect could be a register clobber bug
+void *tiny_c_mmapx86(
+    size_t address,
+    size_t length,
+    size_t prot,
+    size_t flags,
+    int32_t fd,
+    size_t offset
+) {
+    struct SysArgs args = {
+        .param_one = address,
+        .param_two = length,
+        .param_three = prot,
+        .param_seven = flags, // @note: disrespects x64 calling convention
+        .param_five = (size_t)fd,
+        .param_six = offset,
+    };
+    void *result = (void *)tiny_c_syscall(MMAP, &args);
 
-// void *tiny_c_mmap(size_t address, size_t length, size_t prot, size_t
-// flags,
-//                   size_t fd, size_t offset) {
-//     struct SysArgs args = {
-//         .param_one = address,
-//         .param_two = length,
-//         .param_three = prot,
-//         .param_seven = flags, // @note: disrespects x64 calling
-//         convention .param_five = fd, .param_six = offset,
-//     };
-//     void *result = (void *)tiny_c_syscall(MMAP, &args);
-
-//     return result;
-// }
+    return result;
+}
 
 size_t tiny_c_munmap(size_t address, size_t length) {
     struct SysArgs args = {
@@ -365,8 +370,8 @@ void tinyc_free_arena(void) {
     tinyc_heap_index = tinyc_heap_start;
 }
 
-off_t tinyc_lseek(int fd, off_t offset, int whence) {
-    return tinyc_sys_lseek((size_t)fd, offset, (size_t)whence);
+off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence) {
+    return tinyc_sys_lseek((uint32_t)fd, offset, (uint32_t)whence);
 }
 
 int32_t tinyc_uname(struct utsname *uname) {
@@ -383,6 +388,21 @@ uid_t tinyc_getuid(void) {
     struct SysArgs args = {0};
     uid_t result = (uid_t)tiny_c_syscall(SYS_getuid, &args);
     return result;
+}
+
+void *memset(void *s_buffer, int c_value, size_t n_count) {
+    for (size_t i = 0; i < n_count; i++) {
+        ((uint8_t *)s_buffer)[i] = (uint8_t)c_value;
+    }
+    return s_buffer;
+}
+
+void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        ((uint8_t *)dest)[i] = ((uint8_t *)src)[i];
+    }
+
+    return NULL;
 }
 
 #ifdef ARM32
@@ -418,21 +438,6 @@ inline uint32_t divmod(uint32_t numerator, uint32_t denominator) {
 
 uint32_t __aeabi_uidivmod(uint32_t numerator, uint32_t denominator) {
     return divmod(numerator, denominator);
-}
-
-void *memset(void *s_buffer, int c_value, size_t n_count) {
-    for (size_t i = 0; i < n_count; i++) {
-        ((uint8_t *)s_buffer)[i] = (uint8_t)c_value;
-    }
-    return s_buffer;
-}
-
-void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        ((uint8_t *)dest)[i] = ((uint8_t *)src)[i];
-    }
-
-    return NULL;
 }
 
 #endif

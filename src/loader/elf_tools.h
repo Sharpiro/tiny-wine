@@ -15,6 +15,17 @@
 
 #endif
 
+#ifdef AMD64
+
+#define ELF_HEADER Elf64_Ehdr
+#define PROGRAM_HEADER Elf64_Phdr
+#define SECTION_HEADER Elf64_Shdr
+#define SYMBOL Elf64_Sym
+#define RELOCATION Elf64_Rel
+#define DYNAMIC_ENTRY Elf64_Dyn
+
+#endif
+
 struct GotEntry {
     size_t index;
     size_t value;

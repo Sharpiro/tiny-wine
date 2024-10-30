@@ -25,10 +25,6 @@ all: \
 	programs/linux/static_pie \
 	programs/linux/dynamic
 
-.PHONY: echo_hi
-echo_hi:
-	@echo hi
-
 tinyc_start.o: src/tiny_c/tinyc_start.c
 	@$(CC) $(CFLAGS) \
 		-g \
@@ -43,19 +39,6 @@ tinyc_start.o: src/tiny_c/tinyc_start.c
 		-o tinyc_start.o \
 		src/tiny_c/tinyc_start.c
 
-baby64: tinyc_start.o
-	@$(CC) $(CFLAGS) \
-		-g \
-		-O0 \
-		-nostdlib -static \
-		$(WARNINGS) \
-		-fPIC \
-		-fno-stack-protector \
-		-DAMD64 \
-		-o baby64 \
-		tinyc_start.o \
-		src/programs/linux/baby64/baby64_main.c
-
 tinyc_sys.o: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
 		-g \
@@ -65,7 +48,8 @@ tinyc_sys.o: src/tiny_c/tiny_c.c
 		$(WARNINGS) \
 		-fPIC \
 		-fno-stack-protector \
-		-DARM32 \
+		-DAMD64 \
+		-masm=intel \
 		-o tinyc_sys.o src/tiny_c/tinyc_sys.c
 
 tiny_c.o: src/tiny_c/tiny_c.c
@@ -77,7 +61,8 @@ tiny_c.o: src/tiny_c/tiny_c.c
 		$(WARNINGS) \
 		-fPIC \
 		-fno-stack-protector \
-		-DARM32 \
+		-DAMD64 \
+		-masm=intel \
 		-o tiny_c.o src/tiny_c/tiny_c.c
 
 libtinyc.a: tinyc_sys.o tiny_c.o
@@ -89,7 +74,7 @@ libtinyc.so: tinyc_sys.o tiny_c.o
 		$(WARNINGS) \
 		-fno-stack-protector \
 		-g \
-		-DARM32 \
+		-DAMD64 \
 		-nostdlib -static \
 		-shared \
 		-o libtinyc.so \
@@ -119,7 +104,8 @@ loader: tinyc_start.o libtinyc.a src/loader/loader_main.c src/tiny_c/tiny_c.c
 		-Wl,--section-start=.text=7d7d0000 \
 		-fno-stack-protector \
 		-g \
-		-DARM32 \
+		-DAMD64 \
+		-masm=intel \
 		-o loader \
 		src/loader/loader_main.c \
 		src/loader/loader_lib.c \
@@ -205,6 +191,21 @@ programs/linux/dynamic: libdynamic.so
 		src/programs/linux/dynamic/dynamic_main.c \
 		tinyc_start.o
 	@$(OBJDUMP) -D dynamic > dynamic.dump
+
+baby64: tinyc_start.o libtinyc.a
+	@$(CC) $(CFLAGS) \
+		-g \
+		-O0 \
+		-nostdlib -static \
+		$(WARNINGS) \
+		-fPIC \
+		-fno-stack-protector \
+		-DAMD64 \
+		-o baby64 \
+		tinyc_start.o \
+		src/programs/linux/baby64/baby64_main.c \
+		libtinyc.a
+	@$(OBJDUMP) -D baby64 > baby64.dump
 
 clean:
 	@rm -f \
