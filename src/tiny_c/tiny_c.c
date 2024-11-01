@@ -78,7 +78,7 @@ size_t tiny_c_pow(size_t x, size_t y) {
 
 static void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
-    const char *HEX_CHARS = "0123456789abcdef";
+    const char *NUMBER_CHARS = "0123456789abcdef";
 
     char num_buffer[32] = {0};
     num_buffer[0] = '0';
@@ -88,7 +88,7 @@ static void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
     size_t buffer_index = 2;
     for (size_t i = 0; i < MAX_DIGITS; i++, buffer_index++) {
         size_t digit = num / current_base;
-        num_buffer[buffer_index] = HEX_CHARS[digit];
+        num_buffer[buffer_index] = NUMBER_CHARS[digit];
         size_t digit_value = digit * current_base;
         num -= digit_value;
         current_base >>= 4;
@@ -98,6 +98,33 @@ static void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
         .param_one = (size_t)file_handle,
         .param_two = (size_t)num_buffer,
         .param_three = buffer_index,
+    };
+    tiny_c_syscall(SYS_write, &args);
+}
+
+static void tiny_c_print_number_decimal(int32_t file_handle, size_t num) {
+    const size_t MAX_DIGITS = sizeof(num) * 2;
+    const char *NUMBER_CHARS = "0123456789";
+
+    char num_buffer[32] = {0};
+    size_t current_base = tiny_c_pow(10, MAX_DIGITS - 1);
+    size_t num_start = 0;
+    size_t i;
+    for (i = 0; i < MAX_DIGITS; i++) {
+        size_t digit = num / current_base;
+        if (num_start == 0 && digit > 0) {
+            num_start = i;
+        }
+        num_buffer[i] = NUMBER_CHARS[digit];
+        size_t digit_value = digit * current_base;
+        num -= digit_value;
+        current_base /= 10;
+    }
+
+    struct SysArgs args = {
+        .param_one = (size_t)file_handle,
+        .param_two = (size_t)num_buffer + num_start,
+        .param_three = i,
     };
     tiny_c_syscall(SYS_write, &args);
 }
@@ -158,6 +185,11 @@ static void tiny_c_fprintf_internal(
         case 'x': {
             size_t data = va_arg(var_args, size_t);
             tiny_c_print_number_hex(file_handle, data);
+            break;
+        }
+        case 'd': {
+            size_t data = va_arg(var_args, size_t);
+            tiny_c_print_number_decimal(file_handle, data);
             break;
         }
         case 0x00: {

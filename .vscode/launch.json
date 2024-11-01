@@ -77,7 +77,7 @@
         },
         { "text": "set output-radix 16" }
       ],
-      "preLaunchTask": "build"
+      "preLaunchTask": "build_test"
     }
   ]
 }

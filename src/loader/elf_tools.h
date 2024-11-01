@@ -59,6 +59,7 @@ struct Relocation {
 struct MemoryRegion {
     size_t start;
     size_t end;
+    bool is_file_map;
     size_t file_offset;
     size_t permissions;
 };
@@ -66,8 +67,8 @@ struct MemoryRegion {
 struct MemoryRegionsInfo {
     size_t start;
     size_t end;
-    struct MemoryRegion *memory_regions;
-    size_t memory_regions_len;
+    struct MemoryRegion *regions;
+    size_t regions_len;
 };
 
 struct DynamicData {

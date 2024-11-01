@@ -250,7 +250,7 @@ static bool initialize_dynamic_data(
         }
 
         struct MemoryRegionsInfo memory_regions_info;
-        if (!get_memory_regions_info(
+        if (!get_memory_regions_info2(
                 shared_lib_elf.program_headers,
                 shared_lib_elf.header.e_phnum,
                 dynamic_lib_offset,
@@ -260,12 +260,8 @@ static bool initialize_dynamic_data(
         }
 
         LOADER_LOG("Mapping library memory regions\n");
-        if (!map_memory_regions(
-                shared_lib_file,
-                memory_regions_info.memory_regions,
-                memory_regions_info.memory_regions_len
-            )) {
-            BAIL("loader map memory regions failed\n");
+        if (!map_memory_regions(shared_lib_file, &memory_regions_info)) {
+            BAIL("loader lib map memory regions failed\n");
         }
 
         tiny_c_close(shared_lib_file);
@@ -545,7 +541,7 @@ int main(int32_t argc, char **argv) {
     LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);
 
     struct MemoryRegionsInfo memory_regions_info;
-    if (!get_memory_regions_info(
+    if (!get_memory_regions_info2(
             inferior_elf.program_headers,
             inferior_elf.header.e_phnum,
             0,
@@ -555,11 +551,7 @@ int main(int32_t argc, char **argv) {
         return -1;
     }
 
-    if (!map_memory_regions(
-            fd,
-            memory_regions_info.memory_regions,
-            memory_regions_info.memory_regions_len
-        )) {
+    if (!map_memory_regions(fd, &memory_regions_info)) {
         tiny_c_fprintf(STDERR, "loader map memory regions failed\n");
         return -1;
     }
