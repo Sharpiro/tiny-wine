@@ -22,24 +22,21 @@ size_t runtime_got_entries_len = 0;
 
 #ifdef AMD64
 
-static void run_asm(
-    size_t frame_start, size_t stack_start, size_t program_entry
-) {
+// @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
+//        does arm?
+static void run_asm(size_t _, size_t stack_start, size_t program_entry) {
     __asm__("mov rbx, 0x00\n"
-            // set stack pointer
             "mov rsp, %[stack_start]\n"
 
-            //  clear 'PF' flag
+            /* clear 'PF' flag */
             "mov r15, 0xff\n"
             "xor r15, 1\n"
 
-            // clear registers
             "mov rax, 0x00\n"
             "mov rcx, 0x00\n"
             "mov rdx, 0x00\n"
             "mov rsi, 0x00\n"
             "mov rdi, 0x00\n"
-            //  "mov rbp, 0x00\n"
             "mov r8, 0x00\n"
             "mov r9, 0x00\n"
             "mov r10, 0x00\n"
@@ -51,8 +48,8 @@ static void run_asm(
             :
             : [stack_start] "r"(stack_start));
 
-    // jump to program
-    __asm__("jmp %[program_entry]\n"
+    __asm__("mov rbp, 0\n"
+            "jmp %[program_entry]\n"
             :
             : [program_entry] "r"(program_entry)
             : "rax");
@@ -131,7 +128,7 @@ bool compute_variable_relocations(void) {
 
 #endif
 
-// @todo: $fp is now broken and pointing to $sp
+// @todo: $fp is now broken and pointing to $sp in arm32?
 // void dynamic_linker_callback(void) {
 //     __asm__("mov r10, r0\n");
 //     size_t r0 = GET_REGISTER("r10");
@@ -250,7 +247,7 @@ static bool initialize_dynamic_data(
         }
 
         struct MemoryRegionsInfo memory_regions_info;
-        if (!get_memory_regions_info2(
+        if (!get_memory_regions_info_x86(
                 shared_lib_elf.program_headers,
                 shared_lib_elf.header.e_phnum,
                 dynamic_lib_offset,
@@ -541,7 +538,7 @@ int main(int32_t argc, char **argv) {
     LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);
 
     struct MemoryRegionsInfo memory_regions_info;
-    if (!get_memory_regions_info2(
+    if (!get_memory_regions_info_x86(
             inferior_elf.program_headers,
             inferior_elf.header.e_phnum,
             0,

@@ -2,12 +2,12 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build",
+      "label": "build_x86",
       "type": "shell",
-      "command": "make clean && CFLAGS='-DVERBOSE' make"
+      "command": "make clean && CFLAGS='-DVERBOSE' make all_x86"
     },
     {
-      "label": "build_test",
+      "label": "build_unit_test",
       "type": "shell",
       "command": "make clean && CFLAGS='-DVERBOSE' make programs/linux/unit_test"
     }

@@ -5,82 +5,80 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-// bool get_memory_regions_info(
-//     const PROGRAM_HEADER *program_headers,
-//     size_t program_headers_len,
-//     size_t address_offset,
-//     struct MemoryRegionsInfo *memory_regions_info
-// ) {
-//     if (program_headers == NULL) {
-//         BAIL("program_headers cannot be null\n");
-//     }
-//     if (memory_regions_info == NULL) {
-//         BAIL("memory_regions_info cannot be null\n");
-//     }
+bool get_memory_regions_info_arm(
+    const PROGRAM_HEADER *program_headers,
+    size_t program_headers_len,
+    size_t address_offset,
+    struct MemoryRegionsInfo *memory_regions_info
+) {
+    if (program_headers == NULL) {
+        BAIL("program_headers cannot be null\n");
+    }
+    if (memory_regions_info == NULL) {
+        BAIL("memory_regions_info cannot be null\n");
+    }
 
-//     struct MemoryRegion *memory_regions =
-//         loader_malloc_arena(sizeof(struct MemoryRegion) *
-//         program_headers_len);
+    struct MemoryRegion *memory_regions =
+        loader_malloc_arena(sizeof(struct MemoryRegion) * program_headers_len);
 
-//     size_t j = 0;
-//     size_t regions_info_start = 0;
-//     size_t regions_info_end = 0;
-//     for (size_t i = 0; i < program_headers_len; i++) {
-//         const PROGRAM_HEADER *program_header = &program_headers[i];
-//         if (program_header->p_type != PT_LOAD) {
-//             continue;
-//         }
-//         if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
-//             BAIL(
-//                 "PH %x: zero filesize w/ non-zero offset unsupported\n", i +
-//                 1
-//             );
-//         }
+    size_t j = 0;
+    size_t regions_info_start = 0;
+    size_t regions_info_end = 0;
+    for (size_t i = 0; i < program_headers_len; i++) {
+        const PROGRAM_HEADER *program_header = &program_headers[i];
+        if (program_header->p_type != PT_LOAD) {
+            continue;
+        }
+        if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
+            BAIL(
+                "PH %d: zero filesize w/ non-zero offset unsupported\n", i + 1
+            );
+        }
 
-//         size_t file_offset = program_header->p_offset /
-//             program_header->p_align * program_header->p_align;
-//         size_t start = program_header->p_vaddr / program_header->p_align *
-//             program_header->p_align;
-//         size_t end = start +
-//             program_header->p_memsz / program_header->p_align *
-//                 program_header->p_align +
-//             program_header->p_align;
+        size_t file_offset = program_header->p_offset /
+            program_header->p_align * program_header->p_align;
+        size_t start = program_header->p_vaddr / program_header->p_align *
+            program_header->p_align;
+        size_t end = start +
+            program_header->p_memsz / program_header->p_align *
+                program_header->p_align +
+            program_header->p_align;
 
-//         size_t max_region_address =
-//             start + program_header->p_offset + program_header->p_memsz;
-//         if (max_region_address > end) {
-//             LOADER_LOG(
-//                 "WARNING: memory region %x extended due to offset\n", start
-//             );
-//             end += 0x1000;
-//         }
+        size_t max_region_address =
+            start + program_header->p_offset + program_header->p_memsz;
+        if (max_region_address > end) {
+            LOADER_LOG(
+                "WARNING: memory region %x extended due to offset\n", start
+            );
+            end += 0x1000;
+        }
 
-//         start = start + address_offset;
-//         end = end + address_offset;
-//         regions_info_end = end;
-//         if (regions_info_start == 0) {
-//             regions_info_start = start;
-//         }
+        start = start + address_offset;
+        end = end + address_offset;
+        regions_info_end = end;
+        if (regions_info_start == 0) {
+            regions_info_start = start;
+        }
 
-//         memory_regions[j++] = (struct MemoryRegion){
-//             .start = start,
-//             .end = end,
-//             .is_file_map = program_header->p_filesz > 0,
-//             .file_offset = file_offset,
-//             .permissions = program_header->p_flags,
-//         };
-//     }
+        memory_regions[j++] = (struct MemoryRegion){
+            .start = start,
+            .end = end,
+            .is_file_map = program_header->p_filesz > 0,
+            .file_offset = file_offset,
+            .permissions = program_header->p_flags,
+        };
+    }
 
-//     *memory_regions_info = (struct MemoryRegionsInfo){
-//         .start = regions_info_start,
-//         .end = regions_info_end,
-//         .regions = memory_regions,
-//         .regions_len = j,
-//     };
-//     return true;
-// }
+    *memory_regions_info = (struct MemoryRegionsInfo){
+        .start = regions_info_start,
+        .end = regions_info_end,
+        .regions = memory_regions,
+        .regions_len = j,
+    };
+    return true;
+}
 
-bool get_memory_regions_info2(
+bool get_memory_regions_info_x86(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
     size_t address_offset,
@@ -106,7 +104,7 @@ bool get_memory_regions_info2(
         }
         if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
             BAIL(
-                "PH %x: zero filesize w/ non-zero offset unsupported\n", i + 1
+                "PH %d: zero filesize w/ non-zero offset unsupported\n", i + 1
             );
         }
 

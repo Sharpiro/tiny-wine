@@ -25,7 +25,7 @@
         },
         { "text": "set output-radix 16" }
       ],
-      "preLaunchTask": "build"
+      "preLaunchTask": "build_x86"
     },
     {
       "name": "Launch program",
@@ -77,7 +77,7 @@
         },
         { "text": "set output-radix 16" }
       ],
-      "preLaunchTask": "build_test"
+      "preLaunchTask": "build_unit_test"
     }
   ]
 }
