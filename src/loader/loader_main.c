@@ -24,7 +24,11 @@ size_t runtime_got_entries_len = 0;
 
 // @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
 //        does arm?
-static void run_asm(size_t _, size_t stack_start, size_t program_entry) {
+static void run_asm(
+    [[maybe_unused]] size_t frame_start,
+    size_t stack_start,
+    size_t program_entry
+) {
     __asm__("mov rbx, 0x00\n"
             "mov rsp, %[stack_start]\n"
 
@@ -130,7 +134,11 @@ bool compute_variable_relocations(void) {
 
 // @todo: $fp is now broken and pointing to $sp in arm32?
 void dynamic_linker_callback(void) {
-    int x = 2;
+    LOADER_LOG(
+        "dynamically linking %x:%x from %x\n", 0, 0, dynamic_linker_callback
+    );
+    tiny_c_exit(-1);
+
     // __asm__("mov r10, r0\n");
     // size_t r0 = GET_REGISTER("r10");
     // size_t r1 = GET_REGISTER("r1");
@@ -414,51 +422,48 @@ static bool initialize_dynamic_data(
         run_var_reloc->value = runtime_address;
     }
 
-    // /** Get runtime GOT */
-    // runtime_got_entries =
-    //     loader_malloc_arena(sizeof(struct GotEntry) *
-    //     runtime_got_entries_len);
-    // if (runtime_got_entries == NULL) {
-    //     BAIL("malloc failed\n");
-    // }
+    /** Get runtime GOT */
+    runtime_got_entries =
+        loader_malloc_arena(sizeof(struct GotEntry) * runtime_got_entries_len);
+    if (runtime_got_entries == NULL) {
+        BAIL("malloc failed\n");
+    }
 
-    // for (size_t i = 0; i < inferior_dyn_data->got_len; i++) {
-    //     struct GotEntry *elf_got_entry = &inferior_dyn_data->got_entries[i];
-    //     size_t runtime_value = elf_got_entry->is_loader_callback
-    //         ? (size_t)dynamic_linker_callback
-    //         : elf_got_entry->value == 0 ? 0
-    //                                     : elf_got_entry->value;
-    //     struct GotEntry runtime_got_entry = {
-    //         .index = elf_got_entry->index,
-    //         .value = runtime_value,
-    //         .is_loader_callback = elf_got_entry->is_loader_callback,
-    //     };
+    for (size_t i = 0; i < inferior_dyn_data->got_len; i++) {
+        struct GotEntry *elf_got_entry = &inferior_dyn_data->got_entries[i];
+        size_t runtime_value = elf_got_entry->is_loader_callback
+            ? (size_t)dynamic_linker_callback
+            : elf_got_entry->value == 0 ? 0
+                                        : elf_got_entry->value;
+        struct GotEntry runtime_got_entry = {
+            .index = elf_got_entry->index,
+            .value = runtime_value,
+            .is_loader_callback = elf_got_entry->is_loader_callback,
+        };
 
-    //     runtime_got_entries[i] = runtime_got_entry;
-    // }
+        runtime_got_entries[i] = runtime_got_entry;
+    }
 
-    // size_t got_index = inferior_dyn_data->got_len;
-    // for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
-    //     struct SharedLibrary *curr_lib = &(*shared_libraries)[i];
-    //     struct DynamicData *shared_dyn_data =
-    //     curr_lib->elf_data.dynamic_data; for (size_t i = 0; i <
-    //     shared_dyn_data->got_len; i++) {
-    //         struct GotEntry *elf_got_entry =
-    //         &shared_dyn_data->got_entries[i]; size_t runtime_value =
-    //         elf_got_entry->is_loader_callback
-    //             ? (size_t)dynamic_linker_callback
-    //             : elf_got_entry->value == 0
-    //             ? 0
-    //             : curr_lib->dynamic_offset + elf_got_entry->value;
-    //         struct GotEntry runtime_got_entry = {
-    //             .index = curr_lib->dynamic_offset + elf_got_entry->index,
-    //             .value = runtime_value,
-    //             .is_loader_callback = elf_got_entry->is_loader_callback,
-    //         };
+    size_t got_index = inferior_dyn_data->got_len;
+    for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
+        struct SharedLibrary *curr_lib = &(*shared_libraries)[i];
+        struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
+        for (size_t i = 0; i < shared_dyn_data->got_len; i++) {
+            struct GotEntry *elf_got_entry = &shared_dyn_data->got_entries[i];
+            size_t runtime_value = elf_got_entry->is_loader_callback
+                ? (size_t)dynamic_linker_callback
+                : elf_got_entry->value == 0
+                ? 0
+                : curr_lib->dynamic_offset + elf_got_entry->value;
+            struct GotEntry runtime_got_entry = {
+                .index = curr_lib->dynamic_offset + elf_got_entry->index,
+                .value = runtime_value,
+                .is_loader_callback = elf_got_entry->is_loader_callback,
+            };
 
-    //         runtime_got_entries[got_index++] = runtime_got_entry;
-    //     }
-    // }
+            runtime_got_entries[got_index++] = runtime_got_entry;
+        }
+    }
 
     if (!compute_variable_relocations()) {
         BAIL("compute_variable_relocations failed\n");
@@ -468,11 +473,11 @@ static bool initialize_dynamic_data(
     print_memory_regions();
 
     /** Initialize GOT */
-    LOADER_LOG("GOT entries: %x\n", runtime_got_entries_len);
+    LOADER_LOG("GOT entries: %d\n", runtime_got_entries_len);
     for (size_t i = 0; i < runtime_got_entries_len; i++) {
         struct GotEntry *runtime_got_entry = &runtime_got_entries[i];
         LOADER_LOG(
-            "GOT entry %x: %x == %x, variable: %s\n",
+            "GOT entry %d: %x == %x, variable: %s\n",
             i + 1,
             runtime_got_entry->index,
             runtime_got_entry->value,
@@ -492,10 +497,10 @@ static bool initialize_dynamic_data(
 }
 
 int main(int32_t argc, char **argv) {
-    int32_t null_file_handle = tiny_c_open("/dev/null", O_RDONLY);
-    if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
-        loader_log_handle = null_file_handle;
-    }
+    // int32_t null_file_handle = tiny_c_open("/dev/null", O_RDONLY);
+    // if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
+    //     loader_log_handle = null_file_handle;
+    // }
 
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -504,10 +509,10 @@ int main(int32_t argc, char **argv) {
 
     char *filename = argv[1];
 
-    LOADER_LOG("Starting loader, %s, %x\n", filename, argc);
+    LOADER_LOG("Starting loader, %s, %d\n", filename, argc);
 
     int32_t pid = tiny_c_get_pid();
-    LOADER_LOG("pid: %x\n", pid);
+    LOADER_LOG("pid: %d\n", pid);
 
     // @todo: old gcc maps this by default for some reason
     const size_t ADDRESS = 0x10000;
@@ -533,7 +538,12 @@ int main(int32_t argc, char **argv) {
     }
 
     if (inferior_elf.header.e_type != ET_EXEC) {
-        BAIL("Program type '%x' not supported\n", inferior_elf.header.e_type);
+        tiny_c_fprintf(
+            STDERR,
+            "Program type '%d' not supported\n",
+            inferior_elf.header.e_type
+        );
+        return -1;
     }
 
     LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);

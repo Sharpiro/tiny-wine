@@ -12,6 +12,7 @@
 #define SYMBOL Elf32_Sym
 #define RELOCATION Elf32_Rel
 #define DYNAMIC_ENTRY Elf32_Dyn
+#define RELOCATION_SYMBOL_SHIFT_LENGTH 8
 
 #endif
 
@@ -23,6 +24,7 @@
 #define SYMBOL Elf64_Sym
 #define RELOCATION Elf64_Rel
 #define DYNAMIC_ENTRY Elf64_Dyn
+#define RELOCATION_SYMBOL_SHIFT_LENGTH 32
 
 #endif
 

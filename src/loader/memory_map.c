@@ -31,8 +31,10 @@ bool get_memory_regions_info_arm(
             continue;
         }
         if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
-            BAIL(
-                "PH %d: zero filesize w/ non-zero offset unsupported\n", i + 1
+            LOADER_LOG(
+                "WARNING: PH %d: zero filesize w/ non-zero offset "
+                "unsupported\n",
+                i + 1
             );
         }
 
@@ -82,7 +84,7 @@ bool get_memory_regions_info_arm(
 bool get_memory_regions_info_x86(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
-    size_t _,
+    size_t address_offset,
     struct MemoryRegionsInfo *memory_regions_info
 ) {
     if (program_headers == NULL) {
@@ -119,17 +121,20 @@ bool get_memory_regions_info_x86(
             program_header->p_align;
 
         size_t max_region_address =
-            start + program_header->p_offset + program_header->p_memsz;
+            program_header->p_vaddr + program_header->p_filesz;
         if (max_region_address > end) {
             LOADER_LOG(
                 "WARNING: memory region %x extended due to offset\n", start
             );
+            end += 0x1000;
         }
 
+        start += address_offset;
+        end += address_offset;
+        regions_end = end;
         if (j == 0) {
             regions_start = start;
         }
-        regions_end = end;
 
         memory_regions[j++] = (struct MemoryRegion){
             .start = start,
@@ -161,9 +166,10 @@ bool map_memory_regions(
         size_t prot_execute = (memory_region->permissions & 1) << 2;
         size_t map_protection = prot_read | prot_write | prot_execute;
         LOADER_LOG(
-            "mapping address: %x:%x, permissions: %x\n",
+            "mapping address: %x:%x, offset: %x, permissions: %d\n",
             memory_region->start,
             memory_region->end,
+            memory_region->file_offset,
             memory_region->permissions
         );
         if (!memory_region->is_file_map) {

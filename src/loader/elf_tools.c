@@ -213,8 +213,9 @@ static bool get_dynamic_data(
     }
 
     /* Load function relocations */
+    // @todo: sections name differs per arch?
     const struct SectionHeader *func_reloc_header =
-        find_section_header(section_headers, section_headers_len, ".rel.plt");
+        find_section_header(section_headers, section_headers_len, ".rela.plt");
     struct Relocation *func_relocations = NULL;
     size_t func_relocations_len = 0;
     if (func_reloc_header) {
@@ -240,7 +241,8 @@ static bool get_dynamic_data(
         for (size_t i = 0; i < func_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_func_relocations[i];
             size_t type = elf_relocation->r_info & 0xff;
-            size_t symbol_index = elf_relocation->r_info >> 8;
+            size_t symbol_index =
+                elf_relocation->r_info >> RELOCATION_SYMBOL_SHIFT_LENGTH;
             struct Symbol symbol = dyn_symbols[symbol_index];
             struct Relocation relocation = {
                 .offset = elf_relocation->r_offset,

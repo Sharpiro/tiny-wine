@@ -86,12 +86,16 @@ static void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
 
     size_t current_base = tiny_c_pow(0x10, MAX_DIGITS - 1);
     size_t buffer_index = 2;
-    for (size_t i = 0; i < MAX_DIGITS; i++, buffer_index++) {
+    bool num_start = false;
+    for (size_t i = 0; i < MAX_DIGITS; i++) {
         size_t digit = num / current_base;
-        num_buffer[buffer_index] = NUMBER_CHARS[digit];
         size_t digit_value = digit * current_base;
         num -= digit_value;
         current_base >>= 4;
+        if (num_start || digit > 0 | i + 1 == MAX_DIGITS) {
+            num_start = true;
+            num_buffer[buffer_index++] = NUMBER_CHARS[digit];
+        }
     }
 
     struct SysArgs args = {

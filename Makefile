@@ -6,7 +6,7 @@ endif
 
 OBJDUMP ?= objdump
 WARNINGS = \
-	-std=gnu99 \
+	-std=gnu2x \
 	-Wall -Wextra -Wpedantic -Wno-varargs \
 	-Wno-gnu-zero-variadic-macro-arguments \
 	-Wno-gnu-statement-expression-from-macro-expansion \
@@ -196,6 +196,7 @@ programs/linux/dynamic: libtinyc.so libdynamic.so
 		src/programs/linux/dynamic/dynamic_main.c
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
+		-mno-sse \
 		-nostdlib \
 		-no-pie \
 		$(WARNINGS) \

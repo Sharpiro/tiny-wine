@@ -1,6 +1,6 @@
 CompileFlags:
   Add:
-    - -std=gnu99
+    - -std=gnu23
     - -xc
     - -Wall
     - -Wextra
