@@ -13,19 +13,19 @@ $PRELOADER ./unit_test
 assert [ $? == 0 ]
 
 # Env Test
-assert [ "`$PRELOADER ./loader ./env silent | wc -c`" == "24" ]
-assert [ "`$PRELOADER ./loader ./env silent`" == $'0x00000002\n./env\nsilent' ]
+assert [ "`$PRELOADER ./loader ./env silent | wc -c`" == "15" ]
+assert [ "`$PRELOADER ./loader ./env silent`" == $'2\n./env\nsilent' ]
 
 # String Test
 expected=`cat <<EOF
 inline string
 CONST_STRING const string
-CONST_ZERO 0x00000000
-CONST_ONE 0x00000001
-data_int 0x00000001
+CONST_ZERO 0
+CONST_ONE 1
+data_int 1
 data_string string
-bss_int 0x00000000
-bss_string 0x00000000
+bss_int 0
+bss_string (null)
 malloc_string abcd
 EOF
 `

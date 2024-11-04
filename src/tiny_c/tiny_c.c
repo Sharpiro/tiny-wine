@@ -38,7 +38,7 @@ void tiny_c_print_len(int32_t file_handle, const char *data, size_t size) {
 
 static void tiny_c_print(int32_t file_handle, const char *data) {
     if (data == NULL) {
-        tiny_c_print_len(file_handle, "<null>", 6);
+        tiny_c_print_len(file_handle, "(null)", 6);
         return;
     }
 
@@ -121,10 +121,12 @@ static void tiny_c_print_number_decimal(int32_t file_handle, size_t num) {
         current_base /= 10;
     }
 
+    size_t print_start = (size_t)num_buffer + num_start;
+    size_t print_len = num_start == 0 ? 1 : MAX_DIGITS - num_start;
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
-        .param_two = (size_t)num_buffer + num_start,
-        .param_three = i,
+        .param_two = print_start,
+        .param_three = print_len,
     };
     tiny_c_syscall(SYS_write, &args);
 }

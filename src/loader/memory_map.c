@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
+// @todo: do not want 2 of these
 bool get_memory_regions_info_arm(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
@@ -81,7 +82,7 @@ bool get_memory_regions_info_arm(
 bool get_memory_regions_info_x86(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
-    size_t address_offset,
+    size_t _,
     struct MemoryRegionsInfo *memory_regions_info
 ) {
     if (program_headers == NULL) {

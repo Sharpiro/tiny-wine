@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build_x86",
+      "label": "build_x64",
       "type": "shell",
-      "command": "make clean && CFLAGS='-DVERBOSE' make all_x86"
+      "command": "make clean && CFLAGS='-DVERBOSE' make all_x64"
     },
     {
       "label": "build_unit_test",

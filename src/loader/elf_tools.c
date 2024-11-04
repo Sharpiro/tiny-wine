@@ -105,27 +105,24 @@ static bool get_dynamic_data(
 
     const struct SectionHeader *dyn_sym_section_header =
         find_section_header(section_headers, section_headers_len, ".dynsym");
-    const struct SectionHeader *func_reloc_header =
-        find_section_header(section_headers, section_headers_len, ".rel.plt");
-    const struct SectionHeader *var_reloc_header =
-        find_section_header(section_headers, section_headers_len, ".rel.dyn");
     const struct SectionHeader *dyn_str_section_header =
         find_section_header(section_headers, section_headers_len, ".dynstr");
-    const struct SectionHeader *got_section_header =
-        find_section_header(section_headers, section_headers_len, ".got");
     const struct SectionHeader *dynamic_header =
         find_section_header(section_headers, section_headers_len, ".dynamic");
+    // @todo: section name: .got vs .got.plt?
+    const struct SectionHeader *got_section_header =
+        find_section_header(section_headers, section_headers_len, ".got.plt");
     if (dyn_sym_section_header == NULL) {
         return true;
     }
     if (dyn_str_section_header == NULL) {
         BAIL("Could not find .dynstr section header\n");
     }
-    if (got_section_header == NULL) {
-        BAIL("Could not find .got section header\n");
-    }
     if (dynamic_header == NULL) {
         BAIL("Could not find .dynamic section header\n");
+    }
+    if (got_section_header == NULL) {
+        BAIL("Could not find .got section header\n");
     }
 
     size_t dyn_sym_section_size = dyn_sym_section_header->size;
@@ -216,6 +213,8 @@ static bool get_dynamic_data(
     }
 
     /* Load function relocations */
+    const struct SectionHeader *func_reloc_header =
+        find_section_header(section_headers, section_headers_len, ".rel.plt");
     struct Relocation *func_relocations = NULL;
     size_t func_relocations_len = 0;
     if (func_reloc_header) {
@@ -252,6 +251,8 @@ static bool get_dynamic_data(
         }
     }
     /* Load variable relocations */
+    const struct SectionHeader *var_reloc_header =
+        find_section_header(section_headers, section_headers_len, ".rel.dyn");
     struct Relocation *var_relocations = NULL;
     size_t var_relocations_len = 0;
     if (var_reloc_header) {

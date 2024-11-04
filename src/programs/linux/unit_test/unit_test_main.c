@@ -75,7 +75,7 @@ static void get_memory_regions_offset_test(void) {
     };
 
     struct MemoryRegionsInfo memory_regions_info;
-    bool result = get_memory_regions_info_x86(
+    bool result = get_memory_regions_info_arm(
         program_headers,
         sizeof(program_headers) / sizeof(PROGRAM_HEADER),
         0,
@@ -94,45 +94,45 @@ static void get_memory_regions_offset_test(void) {
     assert(memory_regions_info.regions[1].file_offset == 0);
 }
 
-// static void get_memory_regions_big_align_test(void) {
-//     PROGRAM_HEADER program_headers[] = {
-//         (PROGRAM_HEADER){
-//             .p_type = PT_LOAD,
-//             .p_offset = 0,
-//             .p_vaddr = 0x10000,
-//             .p_memsz = 0x004e4,
-//             .p_flags = PF_R | PF_X,
-//             .p_align = 0x10000,
-//         },
-//         (PROGRAM_HEADER){
-//             .p_type = PT_LOAD,
-//             .p_offset = 0x000f58,
-//             .p_vaddr = 0x00020f58,
-//             .p_memsz = 0x000d0,
-//             .p_flags = PF_R | PF_W,
-//             .p_align = 0x10000,
-//         },
-//     };
+static void get_memory_regions_big_align_test(void) {
+    PROGRAM_HEADER program_headers[] = {
+        (PROGRAM_HEADER){
+            .p_type = PT_LOAD,
+            .p_offset = 0,
+            .p_vaddr = 0x10000,
+            .p_memsz = 0x004e4,
+            .p_flags = PF_R | PF_X,
+            .p_align = 0x10000,
+        },
+        (PROGRAM_HEADER){
+            .p_type = PT_LOAD,
+            .p_offset = 0x000f58,
+            .p_vaddr = 0x00020f58,
+            .p_memsz = 0x000d0,
+            .p_flags = PF_R | PF_W,
+            .p_align = 0x10000,
+        },
+    };
 
-//     struct MemoryRegionsInfo memory_regions_info;
-//     bool result = get_memory_regions_info(
-//         program_headers,
-//         sizeof(program_headers) / sizeof(PROGRAM_HEADER),
-//         0,
-//         &memory_regions_info
-//     );
+    struct MemoryRegionsInfo memory_regions_info;
+    bool result = get_memory_regions_info_arm(
+        program_headers,
+        sizeof(program_headers) / sizeof(PROGRAM_HEADER),
+        0,
+        &memory_regions_info
+    );
 
-//     assert(result);
-//     assert(memory_regions_info.start == 0x10000);
-//     assert(memory_regions_info.end == 0x30000);
-//     assert(memory_regions_info.memory_regions_len == 2);
-//     assert(memory_regions_info.memory_regions[0].start == 0x10000);
-//     assert(memory_regions_info.memory_regions[0].end == 0x20000);
-//     assert(memory_regions_info.memory_regions[0].file_offset == 0);
-//     assert(memory_regions_info.memory_regions[1].start == 0x20000);
-//     assert(memory_regions_info.memory_regions[1].end == 0x30000);
-//     assert(memory_regions_info.memory_regions[1].file_offset == 0);
-// }
+    assert(result);
+    assert(memory_regions_info.start == 0x10000);
+    assert(memory_regions_info.end == 0x30000);
+    assert(memory_regions_info.regions_len == 2);
+    assert(memory_regions_info.regions[0].start == 0x10000);
+    assert(memory_regions_info.regions[0].end == 0x20000);
+    assert(memory_regions_info.regions[0].file_offset == 0);
+    assert(memory_regions_info.regions[1].start == 0x20000);
+    assert(memory_regions_info.regions[1].end == 0x30000);
+    assert(memory_regions_info.regions[1].file_offset == 0);
+}
 
 static void get_memory_regions_x86_test(void) {
     PROGRAM_HEADER program_headers[] = {
@@ -280,7 +280,7 @@ static void aeabi_uidivmod_test(
 int main(void) {
     get_memory_regions_basic_test();
     get_memory_regions_offset_test();
-    // get_memory_regions_big_align_test();
+    get_memory_regions_big_align_test();
     get_memory_regions_x86_test();
     loader_malloc_arena_align_test();
     get_runtime_function_local_lib_test();

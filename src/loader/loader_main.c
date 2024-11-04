@@ -129,78 +129,79 @@ bool compute_variable_relocations(void) {
 #endif
 
 // @todo: $fp is now broken and pointing to $sp in arm32?
-// void dynamic_linker_callback(void) {
-//     __asm__("mov r10, r0\n");
-//     size_t r0 = GET_REGISTER("r10");
-//     size_t r1 = GET_REGISTER("r1");
-//     size_t r2 = GET_REGISTER("r2");
-//     size_t r3 = GET_REGISTER("r3");
-//     size_t r4 = GET_REGISTER("r4");
-//     size_t r5 = GET_REGISTER("r5");
-//     size_t *got_entry = (size_t *)GET_REGISTER("r12");
+void dynamic_linker_callback(void) {
+    int x = 2;
+    // __asm__("mov r10, r0\n");
+    // size_t r0 = GET_REGISTER("r10");
+    // size_t r1 = GET_REGISTER("r1");
+    // size_t r2 = GET_REGISTER("r2");
+    // size_t r3 = GET_REGISTER("r3");
+    // size_t r4 = GET_REGISTER("r4");
+    // size_t r5 = GET_REGISTER("r5");
+    // size_t *got_entry = (size_t *)GET_REGISTER("r12");
 
-//     LOADER_LOG(
-//         "dynamically linking %x:%x from %x\n",
-//         got_entry,
-//         *got_entry,
-//         dynamic_linker_callback
-//     );
+    // LOADER_LOG(
+    //     "dynamically linking %x:%x from %x\n",
+    //     got_entry,
+    //     *got_entry,
+    //     dynamic_linker_callback
+    // );
 
-//     const struct RuntimeRelocation *runtime_relocation;
-//     if (!find_runtime_relocation(
-//             runtime_func_relocations,
-//             runtime_func_relocations_len,
-//             (size_t)got_entry,
-//             &runtime_relocation
-//         )) {
-//         tiny_c_fprintf(STDERR, "relocation %x not found\n", got_entry);
-//         tiny_c_exit(-1);
-//     }
-//     if (!get_runtime_address(
-//             runtime_relocation->name,
-//             runtime_dyn_symbols,
-//             runtime_dyn_symbols_len,
-//             got_entry
-//         )) {
-//         tiny_c_fprintf(
-//             STDERR,
-//             "couldn't find runtime symbol '%s'\n",
-//             runtime_relocation->name
-//         );
-//         tiny_c_exit(-1);
-//     }
+    // const struct RuntimeRelocation *runtime_relocation;
+    // if (!find_runtime_relocation(
+    //         runtime_func_relocations,
+    //         runtime_func_relocations_len,
+    //         (size_t)got_entry,
+    //         &runtime_relocation
+    //     )) {
+    //     tiny_c_fprintf(STDERR, "relocation %x not found\n", got_entry);
+    //     tiny_c_exit(-1);
+    // }
+    // if (!get_runtime_address(
+    //         runtime_relocation->name,
+    //         runtime_dyn_symbols,
+    //         runtime_dyn_symbols_len,
+    //         got_entry
+    //     )) {
+    //     tiny_c_fprintf(
+    //         STDERR,
+    //         "couldn't find runtime symbol '%s'\n",
+    //         runtime_relocation->name
+    //     );
+    //     tiny_c_exit(-1);
+    // }
 
-//     LOADER_LOG(
-//         "%x: %s(%x, %x, %x, %x, %x, %x)\n",
-//         *got_entry,
-//         runtime_relocation->name,
-//         r0,
-//         r1,
-//         r2,
-//         r3,
-//         r4,
-//         r5
-//     );
+    // LOADER_LOG(
+    //     "%x: %s(%x, %x, %x, %x, %x, %x)\n",
+    //     *got_entry,
+    //     runtime_relocation->name,
+    //     r0,
+    //     r1,
+    //     r2,
+    //     r3,
+    //     r4,
+    //     r5
+    // );
 
-//     __asm__(
-//         "mov r10, %0\n"
-//         "mov r0, %1\n"
-//         "mov r1, %2\n"
-//         "mov r2, %3\n"
-//         "mov r3, %4\n"
-//         "mov r4, %5\n"
-//         "mov r5, %6\n"
-//         "mov sp, fp\n"
-//         "pop {fp, r12, lr}\n"
-//         "bx r10\n" ::"r"(*got_entry),
-//         "r"(r0),
-//         "r"(r1),
-//         "r"(r2),
-//         "r"(r3),
-//         "r"(r4),
-//         "r"(r5)
-//     );
-// }
+    // __asm__(
+    //     "mov r10, %0\n"
+    //     "mov r0, %1\n"
+    //     "mov r1, %2\n"
+    //     "mov r2, %3\n"
+    //     "mov r3, %4\n"
+    //     "mov r4, %5\n"
+    //     "mov r5, %6\n"
+    //     "mov sp, fp\n"
+    //     "pop {fp, r12, lr}\n"
+    //     "bx r10\n" ::"r"(*got_entry),
+    //     "r"(r0),
+    //     "r"(r1),
+    //     "r"(r2),
+    //     "r"(r3),
+    //     "r"(r4),
+    //     "r"(r5)
+    // );
+}
 
 static bool initialize_dynamic_data(
     struct SharedLibrary **shared_libraries, size_t *shared_libraries_len
@@ -519,7 +520,7 @@ int main(int32_t argc, char **argv) {
     if (fd < 0) {
         tiny_c_fprintf(
             STDERR,
-            "file error, %x, %s\n",
+            "file error, %d, %s\n",
             tinyc_errno,
             tinyc_strerror(tinyc_errno)
         );
@@ -565,14 +566,14 @@ int main(int32_t argc, char **argv) {
         memset(bss, 0, bss_section_header->size);
     }
 
-    // if (inferior_elf.dynamic_data != NULL) {
-    //     if (!initialize_dynamic_data(
-    //             &shared_libraries, &shared_libraries_len
-    //         )) {
-    //         tiny_c_fprintf(STDERR, "failed initializing dynamic data\n");
-    //         return -1;
-    //     }
-    // }
+    if (inferior_elf.dynamic_data != NULL) {
+        if (!initialize_dynamic_data(
+                &shared_libraries, &shared_libraries_len
+            )) {
+            tiny_c_fprintf(STDERR, "failed initializing dynamic data\n");
+            return -1;
+        }
+    }
 
     /* Jump to program */
     size_t *frame_pointer = (size_t *)argv - 1;

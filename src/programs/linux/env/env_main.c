@@ -6,7 +6,7 @@
 extern char **environ;
 
 int main(int argc, char *argv[]) {
-    tiny_c_printf("%x\n", argc);
+    tiny_c_printf("%d\n", argc);
 
     // Print args
     for (int i = 0; i < argc; i++) {

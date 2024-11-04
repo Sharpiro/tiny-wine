@@ -25,7 +25,7 @@ all: \
 	programs/linux/static_pie \
 	programs/linux/dynamic
 
-all_x86: \
+all_x64: \
 	libtinyc.a \
 	libtinyc.so \
 	loader \
@@ -33,6 +33,7 @@ all_x86: \
 	programs/linux/env \
 	programs/linux/string \
 	programs/linux/static_pie \
+	programs/linux/dynamic
 
 tinyc_start.o: src/tiny_c/tinyc_start.c
 	@$(CC) $(CFLAGS) \
@@ -100,7 +101,7 @@ libdynamic.so:
 		$(WARNINGS) \
 		-fno-stack-protector \
 		-g \
-		-DARM32 \
+		-DAMD64 \
 		-nostdlib -static \
 		-shared \
 		-fPIC \
@@ -186,7 +187,7 @@ programs/linux/static_pie: tinyc_start.o libtinyc.a
 		libtinyc.a
 	@$(OBJDUMP) -D static_pie > static_pie.dump
 
-programs/linux/dynamic: libdynamic.so
+programs/linux/dynamic: libtinyc.so libdynamic.so
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		$(WARNINGS) \
@@ -203,7 +204,7 @@ programs/linux/dynamic: libdynamic.so
 		./libtinyc.so \
 		src/programs/linux/dynamic/dynamic_main.c \
 		tinyc_start.o
-	@$(OBJDUMP) -Dynamic > dynamic.dump
+	@$(OBJDUMP) -M intel -D dynamic > dynamic.dump
 
 baby64: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) \
