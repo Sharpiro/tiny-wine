@@ -13,6 +13,8 @@
 #define RELOCATION Elf32_Rel
 #define DYNAMIC_ENTRY Elf32_Dyn
 #define RELOCATION_SYMBOL_SHIFT_LENGTH 8
+#define GOT_RELOCATION_HEADER ".got"
+#define FUNCTION_RELOCATION_HEADER ".rel.plt"
 
 #endif
 
@@ -22,9 +24,11 @@
 #define PROGRAM_HEADER Elf64_Phdr
 #define SECTION_HEADER Elf64_Shdr
 #define SYMBOL Elf64_Sym
-#define RELOCATION Elf64_Rel
+#define RELOCATION Elf64_Rela
 #define DYNAMIC_ENTRY Elf64_Dyn
 #define RELOCATION_SYMBOL_SHIFT_LENGTH 32
+#define GOT_RELOCATION_HEADER ".got.plt"
+#define FUNCTION_RELOCATION_HEADER ".rela.plt"
 
 #endif
 

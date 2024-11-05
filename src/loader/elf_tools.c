@@ -109,9 +109,9 @@ static bool get_dynamic_data(
         find_section_header(section_headers, section_headers_len, ".dynstr");
     const struct SectionHeader *dynamic_header =
         find_section_header(section_headers, section_headers_len, ".dynamic");
-    // @todo: section name: .got vs .got.plt?
-    const struct SectionHeader *got_section_header =
-        find_section_header(section_headers, section_headers_len, ".got.plt");
+    const struct SectionHeader *got_section_header = find_section_header(
+        section_headers, section_headers_len, GOT_RELOCATION_HEADER
+    );
     if (dyn_sym_section_header == NULL) {
         return true;
     }
@@ -213,9 +213,9 @@ static bool get_dynamic_data(
     }
 
     /* Load function relocations */
-    // @todo: sections name differs per arch?
-    const struct SectionHeader *func_reloc_header =
-        find_section_header(section_headers, section_headers_len, ".rela.plt");
+    const struct SectionHeader *func_reloc_header = find_section_header(
+        section_headers, section_headers_len, FUNCTION_RELOCATION_HEADER
+    );
     struct Relocation *func_relocations = NULL;
     size_t func_relocations_len = 0;
     if (func_reloc_header) {
@@ -240,6 +240,10 @@ static bool get_dynamic_data(
         );
         for (size_t i = 0; i < func_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_func_relocations[i];
+            // @todo: check?
+            // if (elf_relocation->r_addend != 0) {
+            //     BAIL("Unsupported: relocation addend");
+            // }
             size_t type = elf_relocation->r_info & 0xff;
             size_t symbol_index =
                 elf_relocation->r_info >> RELOCATION_SYMBOL_SHIFT_LENGTH;
