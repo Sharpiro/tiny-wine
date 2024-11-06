@@ -82,9 +82,8 @@ void dynamic_linker_callback(void) {
     size_t *p6;
     __asm__("mov %0, r9" : "=r"(p6));
 
-    [[maybe_unused]] size_t _unknown = *(rbp + 1);
+    [[maybe_unused]] size_t _unknown_loader_param = *(rbp + 1);
     size_t relocation_index = *(rbp + 2);
-    size_t return_address = *(rbp + 3);
 
     struct RuntimeRelocation *runtime_relocation =
         &runtime_func_relocations[relocation_index];
@@ -123,12 +122,25 @@ void dynamic_linker_callback(void) {
         p6
     );
 
-    tiny_c_fprintf(STDERR, "unimplemented\n");
-
-    // __asm__("jmp %0" ::"r"(return_address));
-
-    tiny_c_fprintf(STDERR, "exiting\n");
-    tiny_c_exit(-1);
+    __asm__(
+        "mov r15, %0\n"
+        "mov rdi, %1\n"
+        "mov rsi, %2\n"
+        "mov rdx, %3\n"
+        "mov r10, %4\n"
+        "mov r8, %5\n"
+        "mov r9, %6\n"
+        "mov rsp, rbp\n"
+        "pop rbp\n"
+        "add rsp, 16\n"
+        "jmp r15\n" ::"r"(*got_entry),
+        "r"(p1),
+        "r"(p2),
+        "r"(p3),
+        "r"(p4),
+        "r"(p5),
+        "r"(p6)
+    );
 }
 
 #endif

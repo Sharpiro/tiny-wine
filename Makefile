@@ -93,7 +93,7 @@ libtinyc.so: tinyc_sys.o tiny_c.o
 		-o libtinyc.so \
 		tinyc_sys.o \
 		tiny_c.o
-	@$(OBJDUMP) -D libtinyc.so > libtinyc.so.dump
+	@$(OBJDUMP) -M intel -D libtinyc.so > libtinyc.so.dump
 
 libdynamic.so:
 	@$(CC) $(CFLAGS) \
