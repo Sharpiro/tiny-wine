@@ -84,6 +84,15 @@ void dynamic_linker_callback(void) {
 
     [[maybe_unused]] size_t _unknown_loader_param = *(rbp + 1);
     size_t relocation_index = *(rbp + 2);
+    if (relocation_index >= runtime_func_relocations_len) {
+        tiny_c_fprintf(
+            STDERR,
+            "relocation index %d is not less than %d\n",
+            relocation_index,
+            runtime_func_relocations_len
+        );
+        tiny_c_exit(-1);
+    }
 
     struct RuntimeRelocation *runtime_relocation =
         &runtime_func_relocations[relocation_index];

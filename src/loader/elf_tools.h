@@ -35,6 +35,7 @@
 struct GotEntry {
     size_t index;
     size_t value;
+    bool is_library_base_address;
     bool is_loader_callback;
     bool is_variable;
 };
