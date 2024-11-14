@@ -225,3 +225,12 @@ struct passwd *getpwuid(uid_t uid) {
 
     return NULL;
 }
+
+int test_inner_func() {
+    return 42;
+}
+
+int test_outer_func() {
+    int result = test_inner_func();
+    return result;
+}

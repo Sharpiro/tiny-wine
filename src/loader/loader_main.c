@@ -19,6 +19,7 @@ struct RuntimeRelocation *runtime_var_relocations;
 size_t runtime_var_relocations_len = 0;
 struct GotEntry *runtime_got_entries;
 size_t runtime_got_entries_len = 0;
+size_t GOT_LIB_DYN_OFFSET_TABLE[100] = {};
 
 #ifdef AMD64
 
@@ -82,8 +83,17 @@ void dynamic_linker_callback(void) {
     size_t *p6;
     __asm__("mov %0, r9" : "=r"(p6));
 
-    [[maybe_unused]] size_t _unknown_loader_param = *(rbp + 1);
+    size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
     size_t relocation_index = *(rbp + 2);
+    if (lib_dyn_offset == nullptr) {
+        tiny_c_fprintf(STDERR, "*lib_dyn_offset was null\n");
+        tiny_c_exit(-1);
+    }
+    if (*lib_dyn_offset > 0) {
+        tiny_c_fprintf(STDERR, "nonzero lib_dyn_offset not supported\n");
+        tiny_c_exit(-1);
+    }
+
     if (relocation_index >= runtime_func_relocations_len) {
         tiny_c_fprintf(
             STDERR,
@@ -99,7 +109,7 @@ void dynamic_linker_callback(void) {
     size_t *got_entry = (size_t *)runtime_relocation->offset;
 
     LOADER_LOG(
-        "dynamically linking %x:%x from %x\n",
+        "dynamically linking %x:%x from %x... ",
         got_entry,
         *got_entry,
         dynamic_linker_callback
@@ -352,7 +362,9 @@ static bool initialize_dynamic_data(
         }
 
         tiny_c_close(shared_lib_file);
-        print_memory_regions();
+        if (!print_memory_regions()) {
+            BAIL("print_memory_regions failed\n");
+        }
 
         runtime_dyn_symbols_len += shared_lib_elf.dynamic_data->symbols_len;
         runtime_func_relocations_len +=
@@ -422,6 +434,7 @@ static bool initialize_dynamic_data(
             .value = curr_relocation->symbol.value,
             .name = curr_relocation->symbol.name,
             .type = curr_relocation->type,
+            .lib_dyn_offset = 0,
         };
         runtime_func_relocations[i] = runtime_relocation;
     }
@@ -441,6 +454,7 @@ static bool initialize_dynamic_data(
                 .value = value,
                 .name = curr_relocation->symbol.name,
                 .type = curr_relocation->type,
+                .lib_dyn_offset = curr_lib->dynamic_offset,
             };
             runtime_func_relocations[func_reloc_index++] = runtime_relocation;
         }
@@ -512,10 +526,16 @@ static bool initialize_dynamic_data(
 
     for (size_t i = 0; i < inferior_dyn_data->got_len; i++) {
         struct GotEntry *elf_got_entry = &inferior_dyn_data->got_entries[i];
-        size_t runtime_value = elf_got_entry->is_loader_callback
-            ? (size_t)dynamic_linker_callback
-            : elf_got_entry->value == 0 ? 0
-                                        : elf_got_entry->value;
+        size_t runtime_value;
+        if (elf_got_entry->is_loader_callback) {
+            runtime_value = (size_t)dynamic_linker_callback;
+        } else if (elf_got_entry->is_library_base_address) {
+            runtime_value = (size_t)GOT_LIB_DYN_OFFSET_TABLE;
+        } else if (elf_got_entry->value == 0) {
+            runtime_value = 0;
+        } else {
+            runtime_value = elf_got_entry->value;
+        }
         struct GotEntry runtime_got_entry = {
             .index = elf_got_entry->index,
             .value = runtime_value,
@@ -529,13 +549,20 @@ static bool initialize_dynamic_data(
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
         struct SharedLibrary *curr_lib = &(*shared_libraries)[i];
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
-        for (size_t i = 0; i < shared_dyn_data->got_len; i++) {
-            struct GotEntry *elf_got_entry = &shared_dyn_data->got_entries[i];
-            size_t runtime_value = elf_got_entry->is_loader_callback
-                ? (size_t)dynamic_linker_callback
-                : elf_got_entry->value == 0
-                ? 0
-                : curr_lib->dynamic_offset + elf_got_entry->value;
+        for (size_t j = 0; j < shared_dyn_data->got_len; j++) {
+            struct GotEntry *elf_got_entry = &shared_dyn_data->got_entries[j];
+            size_t runtime_value;
+            if (elf_got_entry->is_loader_callback) {
+                runtime_value = (size_t)dynamic_linker_callback;
+            } else if (elf_got_entry->is_library_base_address) {
+                size_t *lib_dyn_offset = GOT_LIB_DYN_OFFSET_TABLE + i + 1;
+                *lib_dyn_offset = curr_lib->dynamic_offset;
+                runtime_value = (size_t)lib_dyn_offset;
+            } else if (elf_got_entry->value == 0) {
+                runtime_value = 0;
+            } else {
+                runtime_value = curr_lib->dynamic_offset + elf_got_entry->value;
+            }
             struct GotEntry runtime_got_entry = {
                 .index = curr_lib->dynamic_offset + elf_got_entry->index,
                 .value = runtime_value,
@@ -569,8 +596,8 @@ static bool initialize_dynamic_data(
 
         // @tood: seems like bss only
         if (runtime_got_entry->is_variable) {
-            size_t *var_pointer = (size_t *)runtime_got_entry->value;
-            *var_pointer = 0;
+            size_t *value = (size_t *)runtime_got_entry->value;
+            *value = 0;
         }
     }
 

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #define LOADER_BUFFER_ADDRESS 0x7d8d0000
-#define LOADER_BUFFER_LEN 0x8000
+#define LOADER_BUFFER_LEN 0x9000
 #define LOADER_SHARED_LIB_START 0x500000
 
 extern int32_t loader_log_handle;
@@ -44,6 +44,7 @@ struct RuntimeRelocation {
     size_t value;
     const char *name;
     size_t type;
+    size_t lib_dyn_offset;
 };
 
 struct RuntimeSymbol {

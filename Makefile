@@ -203,6 +203,7 @@ programs/linux/dynamic: libtinyc.so libdynamic.so
 		-o dynamic \
 		./libdynamic.so \
 		./libtinyc.so \
+		./libdynamic.so \
 		src/programs/linux/dynamic/dynamic_main.c \
 		tinyc_start.o
 	@$(OBJDUMP) -M intel -D dynamic > dynamic.dump

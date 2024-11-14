@@ -241,10 +241,11 @@ static bool get_dynamic_data(
         );
         for (size_t i = 0; i < func_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_func_relocations[i];
-            // @todo: check?
-            // if (elf_relocation->r_addend != 0) {
-            //     BAIL("Unsupported: relocation addend");
-            // }
+#ifdef AMD64
+            if (elf_relocation->r_addend > 0) {
+                BAIL("Unsupported: 64 bit relocation addend");
+            }
+#endif
             size_t type = elf_relocation->r_info & 0xff;
             size_t symbol_index =
                 elf_relocation->r_info >> RELOCATION_SYMBOL_SHIFT_LENGTH;
