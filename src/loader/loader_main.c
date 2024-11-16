@@ -67,6 +67,7 @@ bool compute_variable_relocations(void) {
     BAIL("unimplemented on x64\n");
 }
 
+// @note: unclear why some docs consider r10 to be 4th param instead of rcx
 void dynamic_linker_callback(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
@@ -77,43 +78,51 @@ void dynamic_linker_callback(void) {
     size_t *p3;
     __asm__("mov %0, rdx" : "=r"(p3));
     size_t *p4;
-    __asm__("mov %0, r10" : "=r"(p4));
+    __asm__("mov %0, rcx" : "=r"(p4));
     size_t *p5;
     __asm__("mov %0, r8" : "=r"(p5));
     size_t *p6;
     __asm__("mov %0, r9" : "=r"(p6));
 
+    LOADER_LOG("starting dynamic linking at %x\n", dynamic_linker_callback);
+
     size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
     size_t relocation_index = *(rbp + 2);
     if (lib_dyn_offset == nullptr) {
-        tiny_c_fprintf(STDERR, "*lib_dyn_offset was null\n");
+        tiny_c_fprintf(STDERR, "lib_dyn_offset was null\n");
         tiny_c_exit(-1);
     }
-    if (*lib_dyn_offset > 0) {
-        tiny_c_fprintf(STDERR, "nonzero lib_dyn_offset not supported\n");
-        tiny_c_exit(-1);
-    }
-
-    if (relocation_index >= runtime_func_relocations_len) {
-        tiny_c_fprintf(
-            STDERR,
-            "relocation index %d is not less than %d\n",
-            relocation_index,
-            runtime_func_relocations_len
-        );
-        tiny_c_exit(-1);
-    }
-
-    struct RuntimeRelocation *runtime_relocation =
-        &runtime_func_relocations[relocation_index];
-    size_t *got_entry = (size_t *)runtime_relocation->offset;
 
     LOADER_LOG(
-        "dynamically linking %x:%x from %x... ",
-        got_entry,
-        *got_entry,
-        dynamic_linker_callback
+        "relocation params: %x, %x\n", *lib_dyn_offset, relocation_index
     );
+    struct RuntimeRelocation *runtime_relocation;
+    if (*lib_dyn_offset == 0) {
+        // @todo: better handling of base binary relocations
+        runtime_relocation = &runtime_func_relocations[relocation_index];
+    } else {
+        for (size_t i = 0; i < shared_libraries_len; i++) {
+            struct SharedLibrary *current_lib = &shared_libraries[i];
+            if (current_lib->dynamic_offset != *lib_dyn_offset) {
+                continue;
+            }
+            if (relocation_index >= current_lib->runtime_func_relocations_len) {
+                tiny_c_fprintf(
+                    STDERR,
+                    "relocation index %d is not less than %d\n",
+                    relocation_index,
+                    current_lib->runtime_func_relocations_len
+                );
+                tiny_c_exit(-1);
+            }
+
+            runtime_relocation =
+                &current_lib->runtime_func_relocations[relocation_index];
+        }
+    }
+
+    size_t *got_entry = (size_t *)runtime_relocation->offset;
+    LOADER_LOG("got_entry: %x: %x\n", got_entry, *got_entry);
 
     if (!get_runtime_address(
             runtime_relocation->name,
@@ -140,26 +149,26 @@ void dynamic_linker_callback(void) {
         p5,
         p6
     );
+    LOADER_LOG("completed dynamic linking\n");
 
-    __asm__(
-        "mov r15, %0\n"
-        "mov rdi, %1\n"
-        "mov rsi, %2\n"
-        "mov rdx, %3\n"
-        "mov r10, %4\n"
-        "mov r8, %5\n"
-        "mov r9, %6\n"
-        "mov rsp, rbp\n"
-        "pop rbp\n"
-        "add rsp, 16\n"
-        "jmp r15\n" ::"r"(*got_entry),
-        "r"(p1),
-        "r"(p2),
-        "r"(p3),
-        "r"(p4),
-        "r"(p5),
-        "r"(p6)
-    );
+    __asm__("mov r15, %0\n"
+            "mov rdi, %1\n"
+            "mov rsi, %2\n"
+            "mov rdx, %3\n"
+            "mov rcx, %4\n"
+            "mov r8, %5\n"
+            "mov r9, %6\n"
+            "mov rsp, rbp\n"
+            "pop rbp\n"
+            "add rsp, 16\n"
+            "jmp r15\n" ::"r"(*got_entry),
+            "r"(p1),
+            "r"(p2),
+            "r"(p3),
+            "r"(p4),
+            "r"(p5),
+            "r"(p6)
+            : "rdi", "rsi", "rdx", "rcx", "r8", "r9");
 }
 
 #endif
@@ -377,6 +386,14 @@ static bool initialize_dynamic_data(
             .dynamic_offset = dynamic_lib_offset,
             .elf_data = shared_lib_elf,
             .memory_regions_info = memory_regions_info,
+            // @todo: should probably refactor to compute this here since x64
+            //        does relocations this way
+            .runtime_func_relocations = loader_malloc_arena(
+                sizeof(struct RuntimeRelocation) *
+                shared_lib_elf.dynamic_data->func_relocations_len
+            ),
+            .runtime_func_relocations_len =
+                shared_lib_elf.dynamic_data->func_relocations_len,
         };
         (*shared_libraries)[i] = shared_library;
         dynamic_lib_offset = memory_regions_info.end;
@@ -457,6 +474,7 @@ static bool initialize_dynamic_data(
                 .lib_dyn_offset = curr_lib->dynamic_offset,
             };
             runtime_func_relocations[func_reloc_index++] = runtime_relocation;
+            curr_lib->runtime_func_relocations[i] = runtime_relocation;
         }
     }
 

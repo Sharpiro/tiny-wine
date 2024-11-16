@@ -32,6 +32,7 @@ all_x64: \
 	programs/linux/unit_test \
 	programs/linux/env \
 	programs/linux/string \
+	programs/linux/tinyfetch \
 	programs/linux/static_pie \
 	programs/linux/dynamic
 

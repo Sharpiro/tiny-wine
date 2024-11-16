@@ -13,8 +13,8 @@ $PRELOADER ./unit_test
 assert [ $? == 0 ]
 
 # Env Test
-assert [ "`$PRELOADER ./loader ./env silent | wc -c`" == "15" ]
-assert [ "`$PRELOADER ./loader ./env silent`" == $'2\n./env\nsilent' ]
+assert [ "`$PRELOADER ./loader ./env | wc -c`" == "8" ]
+assert [ "`$PRELOADER ./loader ./env x`" == $'2\n./env\nx' ]
 
 # String Test
 expected=`cat <<EOF
@@ -35,10 +35,10 @@ assert [ "`$PRELOADER ./loader string silent`" == "$expected" ]
 expected=`cat <<EOF
 1st call
 2nd call
-0x00000010 + 0x00000010 = 0x00000020
-dynamic_var: 0x00000000
-dynamic_var: 0x0000002a
-2nd shared lib length of 'how now brown cow': 0x00000011
+16 + 16 = 32
+dynamic_var: 0
+dynamic_var: 42
+2nd shared lib length of 'how now brown cow': 17
 lib test_number_data: 0x00012345
 lib test_number_data: 0x00054321
 lib test_number_bss: 0x00000000
@@ -46,6 +46,6 @@ lib test_number_bss: 0x00054321
 lib get_test_number_data_internal_ref: 0x00012345
 EOF
 `
-assert [ "`$PRELOADER ./loader ./dynamic silent`" == "$expected" ]
+assert [ "`$PRELOADER ./loader ./dynamic`" == "$expected" ]
 
 echo All tests passed

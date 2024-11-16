@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #define LOADER_BUFFER_ADDRESS 0x7d8d0000
-#define LOADER_BUFFER_LEN 0x9000
+#define LOADER_BUFFER_LEN 0x10'000
 #define LOADER_SHARED_LIB_START 0x500000
 
 extern int32_t loader_log_handle;
@@ -32,19 +32,21 @@ bool print_memory_regions(void);
 
 #endif
 
-struct SharedLibrary {
-    const char *name;
-    size_t dynamic_offset;
-    struct ElfData elf_data;
-    struct MemoryRegionsInfo memory_regions_info;
-};
-
 struct RuntimeRelocation {
     size_t offset;
     size_t value;
     const char *name;
     size_t type;
     size_t lib_dyn_offset;
+};
+
+struct SharedLibrary {
+    const char *name;
+    size_t dynamic_offset;
+    struct ElfData elf_data;
+    struct MemoryRegionsInfo memory_regions_info;
+    struct RuntimeRelocation *runtime_func_relocations;
+    size_t runtime_func_relocations_len;
 };
 
 struct RuntimeSymbol {
