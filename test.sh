@@ -27,6 +27,8 @@ data_string string
 bss_int 0
 bss_string (null)
 malloc_string abcd
+test_number: 42
+test_number: 13
 EOF
 `
 assert [ "`$PRELOADER ./loader string silent`" == "$expected" ]

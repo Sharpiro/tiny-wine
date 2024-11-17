@@ -13,6 +13,7 @@
 #define TINYC_ENOENT -ENOENT;
 #define TINYC_EACCES -EACCES
 
+extern int32_t test_number;
 extern int32_t tinyc_errno;
 
 size_t tiny_c_pow(size_t x, size_t y);

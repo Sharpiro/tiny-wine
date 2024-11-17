@@ -23,7 +23,7 @@ int main(void) {
     *dynamic_var = 42;
     tiny_c_printf("dynamic_var: %d\n", *dynamic_var);
 
-    /* 2nd shared lib */
+    /* 2nd shared lib dynamic leaf */
     const char *str = "how now brown cow";
     tiny_c_printf("2nd shared lib length of '%s': %x\n", str, strlen(str));
 

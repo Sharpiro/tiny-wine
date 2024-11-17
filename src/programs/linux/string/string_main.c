@@ -35,5 +35,9 @@ int main(void) {
     memcpy(malloc_string, "abcd", 5);
     tiny_c_printf("malloc_string %s\n", malloc_string);
 
+    tiny_c_printf("test_number: %d\n", test_number);
+    test_number = 13;
+    tiny_c_printf("test_number: %d\n", test_number);
+
     tiny_c_exit(0);
 }
