@@ -243,7 +243,7 @@ static bool get_dynamic_data(
             RELOCATION *elf_relocation = &elf_func_relocations[i];
 #ifdef AMD64
             if (elf_relocation->r_addend > 0) {
-                BAIL("Unsupported: 64 bit relocation addend");
+                BAIL("Unsupported 64 bit function relocation addend");
             }
 #endif
             size_t type = elf_relocation->r_info & 0xff;
@@ -258,9 +258,11 @@ static bool get_dynamic_data(
             func_relocations[i] = relocation;
         }
     }
+
     /* Load variable relocations */
-    const struct SectionHeader *var_reloc_header =
-        find_section_header(section_headers, section_headers_len, ".rel.dyn");
+    const struct SectionHeader *var_reloc_header = find_section_header(
+        section_headers, section_headers_len, VARIABLE_RELOCATION_HEADER
+    );
     struct Relocation *var_relocations = NULL;
     size_t var_relocations_len = 0;
     if (var_reloc_header) {
@@ -285,8 +287,14 @@ static bool get_dynamic_data(
         );
         for (size_t i = 0; i < var_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_var_relocations[i];
+#ifdef AMD64
+            if (elf_relocation->r_addend > 0) {
+                BAIL("Unsupported 64 bit variable relocation addend");
+            }
+#endif
             size_t type = elf_relocation->r_info & 0xff;
-            size_t symbol_index = elf_relocation->r_info >> 8;
+            size_t symbol_index =
+                elf_relocation->r_info >> RELOCATION_SYMBOL_SHIFT_LENGTH;
             struct Symbol symbol = dyn_symbols[symbol_index];
             struct Relocation relocation = {
                 .offset = elf_relocation->r_offset,

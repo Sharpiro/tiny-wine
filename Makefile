@@ -28,6 +28,7 @@ all: \
 all_x64: \
 	libtinyc.a \
 	libtinyc.so \
+	libstatic.a \
 	loader \
 	programs/linux/unit_test \
 	programs/linux/env \
@@ -81,6 +82,23 @@ tiny_c.o: src/tiny_c/tiny_c.c
 
 libtinyc.a: tinyc_sys.o tiny_c.o
 	@ar rcs libtinyc.a tinyc_sys.o tiny_c.o
+	@$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
+
+libstatic.a: src/programs/linux/string/static_lib.c
+	@$(CC) $(CFLAGS) \
+		-g \
+		-c \
+		-O0 \
+		-nostdlib -static \
+		$(WARNINGS) \
+		-fPIC \
+		-fno-stack-protector \
+		-DAMD64 \
+		-masm=intel \
+		-mno-sse \
+		-o static_lib.o src/programs/linux/string/static_lib.c
+	@ar rcs libstatic.a static_lib.o
+	@$(OBJDUMP) -M intel -D libstatic.a > libstatic.a.dump
 
 libtinyc.so: tinyc_sys.o tiny_c.o
 	@$(CC) $(CFLAGS) \
@@ -128,6 +146,7 @@ loader: tinyc_start.o libtinyc.a src/loader/loader_main.c src/tiny_c/tiny_c.c
 		src/loader/elf_tools.c \
 		tinyc_start.o \
 		libtinyc.a
+	@$(OBJDUMP) -D loader > loader.dump
 
 programs/linux/unit_test: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
@@ -152,7 +171,7 @@ programs/linux/env: tinyc_start.o libtinyc.a
 		libtinyc.a
 	@$(OBJDUMP) -D env > env.dump
 
-programs/linux/string:
+programs/linux/string: libtinyc.a libstatic.a
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
@@ -160,7 +179,8 @@ programs/linux/string:
 		-o string \
 		src/programs/linux/string/string_main.c \
 		tinyc_start.o \
-		libtinyc.a
+		libtinyc.a \
+		libstatic.a
 	@$(OBJDUMP) -D string > string.dump
 
 programs/linux/tinyfetch: tinyc_start.o libtinyc.so libdynamic.so

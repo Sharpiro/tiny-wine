@@ -692,7 +692,6 @@ int main(int32_t argc, char **argv) {
 
     print_memory_regions();
 
-    /* Initialize .bss */
     const struct SectionHeader *bss_section_header = find_section_header(
         inferior_elf.section_headers, inferior_elf.section_headers_len, ".bss"
     );

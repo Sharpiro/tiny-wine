@@ -10,7 +10,6 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
-int32_t test_number = 42;
 int32_t tinyc_errno = 0;
 size_t tinyc_heap_start = 0;
 size_t tinyc_heap_end = 0;

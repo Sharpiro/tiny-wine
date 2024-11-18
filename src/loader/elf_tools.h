@@ -15,6 +15,7 @@
 #define RELOCATION_SYMBOL_SHIFT_LENGTH 8
 #define GOT_RELOCATION_HEADER ".got"
 #define FUNCTION_RELOCATION_HEADER ".rel.plt"
+#define VARIABLE_RELOCATION_HEADER ".rel.dyn"
 
 #endif
 
@@ -29,6 +30,7 @@
 #define RELOCATION_SYMBOL_SHIFT_LENGTH 32
 #define GOT_RELOCATION_HEADER ".got.plt"
 #define FUNCTION_RELOCATION_HEADER ".rela.plt"
+#define VARIABLE_RELOCATION_HEADER ".rela.dyn"
 
 #endif
 

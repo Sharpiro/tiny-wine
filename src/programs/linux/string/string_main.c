@@ -14,6 +14,11 @@ char *data_string = "string";
 int bss_int = 0;
 char *bss_string = NULL;
 
+extern int test_number_bss;
+extern int test_number_data;
+
+int get_test_number_data();
+
 int main(void) {
     tiny_c_printf("inline string\n");
 
@@ -35,9 +40,13 @@ int main(void) {
     memcpy(malloc_string, "abcd", 5);
     tiny_c_printf("malloc_string %s\n", malloc_string);
 
-    tiny_c_printf("test_number: %d\n", test_number);
-    test_number = 13;
-    tiny_c_printf("test_number: %d\n", test_number);
+    tiny_c_printf("lib test_number_data: %d\n", test_number_data);
+    test_number_data = 54321;
+    tiny_c_printf("lib test_number_data: %d\n", test_number_data);
+    tiny_c_printf("lib test_number_bss: %d\n", test_number_bss);
+    test_number_bss = 1;
+    tiny_c_printf("lib test_number_bss: %d\n", test_number_bss);
+    tiny_c_printf("lib get_test_number_data: %d\n", get_test_number_data());
 
     tiny_c_exit(0);
 }
