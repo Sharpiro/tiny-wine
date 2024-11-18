@@ -185,8 +185,8 @@ programs/linux/dynamic: libdynamic.so
 		-no-pie \
 		$(WARNINGS) \
 		-o dynamic \
-		./libtinyc.so \
 		./libdynamic.so \
+		./libtinyc.so \
 		src/programs/linux/dynamic/dynamic_main.c \
 		tinyc_start.o
 	@$(OBJDUMP) -D dynamic > dynamic.dump

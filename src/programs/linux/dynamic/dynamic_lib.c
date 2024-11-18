@@ -72,7 +72,8 @@ char *strstr(const char *haystack, const char *needle) {
             return (char *)haystack + i - needle_index;
         }
         if (haystack_char != needle_char) {
-            break;
+            needle_index = 0;
+            continue;
         }
 
         needle_index++;

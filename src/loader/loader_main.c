@@ -199,11 +199,13 @@ static bool initialize_dynamic_data(
         LOADER_LOG("mapping shared library '%s'\n", shared_lib_name);
         int32_t shared_lib_file = tiny_c_open(shared_lib_name, O_RDONLY);
         if (shared_lib_file == -1) {
-            BAIL("failed opening shared lib '%s'", shared_lib_name);
+            BAIL("failed opening shared lib '%s'\n", shared_lib_name);
         }
         struct ElfData shared_lib_elf;
         if (!get_elf_data(shared_lib_file, &shared_lib_elf)) {
-            BAIL("failed getting elf data for shared lib '%s'");
+            BAIL(
+                "failed getting elf data for shared lib '%s'\n", shared_lib_name
+            );
         }
         if (shared_lib_elf.dynamic_data == NULL) {
             BAIL("Expected shared library to have dynamic data\n");
