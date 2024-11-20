@@ -109,9 +109,6 @@ static bool get_dynamic_data(
         find_section_header(section_headers, section_headers_len, ".dynstr");
     const struct SectionHeader *dynamic_header =
         find_section_header(section_headers, section_headers_len, ".dynamic");
-    const struct SectionHeader *got_section_header = find_section_header(
-        section_headers, section_headers_len, GOT_RELOCATION_HEADER
-    );
     if (dyn_sym_section_header == NULL) {
         return true;
     }
@@ -121,9 +118,9 @@ static bool get_dynamic_data(
     if (dynamic_header == NULL) {
         BAIL("Could not find .dynamic section header\n");
     }
-    if (got_section_header == NULL) {
-        BAIL("Could not find .got section header\n");
-    }
+    // if (got_section_header == NULL) {
+    //     BAIL("Could not find .got section header\n");
+    // }
 
     size_t dyn_sym_section_size = dyn_sym_section_header->size;
     SYMBOL *dyn_elf_symbols = loader_malloc_arena(dyn_sym_section_size);
@@ -177,40 +174,47 @@ static bool get_dynamic_data(
         dyn_symbols[dyn_symbols_len++] = symbol;
     }
 
-    size_t *global_offset_table = loader_malloc_arena(got_section_header->size);
-    if (global_offset_table == NULL) {
-        BAIL("malloc failed\n");
-    }
-    seeked = tinyc_lseek(fd, (off_t)got_section_header->offset, SEEK_SET);
-    if (seeked != (off_t)got_section_header->offset) {
-        BAIL("seek failed\n");
-    }
-    read = tiny_c_read(fd, global_offset_table, got_section_header->size);
-    if ((size_t)read != got_section_header->size) {
-        BAIL("read failed\n");
-    }
+    const struct SectionHeader *got_section_header = find_section_header(
+        section_headers, section_headers_len, GOT_RELOCATION_HEADER
+    );
+    struct GotEntry *got_entries = NULL;
+    size_t got_len = 0;
+    if (got_section_header != NULL) {
+        size_t *global_offset_table =
+            loader_malloc_arena(got_section_header->size);
+        if (global_offset_table == NULL) {
+            BAIL("malloc failed\n");
+        }
+        seeked = tinyc_lseek(fd, (off_t)got_section_header->offset, SEEK_SET);
+        if (seeked != (off_t)got_section_header->offset) {
+            BAIL("seek failed\n");
+        }
+        read = tiny_c_read(fd, global_offset_table, got_section_header->size);
+        if ((size_t)read != got_section_header->size) {
+            BAIL("read failed\n");
+        }
 
-    size_t got_len = got_section_header->size / got_section_header->entry_size;
-    if (got_len < 3) {
-        BAIL(
-            "unsupported GOT length %x, unknown loader callback location\n",
-            got_len
-        );
-    }
+        got_len = got_section_header->size / got_section_header->entry_size;
+        if (got_len < 3) {
+            BAIL(
+                "unsupported GOT length %x, unknown loader callback location\n",
+                got_len
+            );
+        }
 
-    struct GotEntry *got_entries =
-        loader_malloc_arena(sizeof(struct GotEntry) * got_len);
-    size_t got_base_addr = got_section_header->addr;
-    for (size_t i = 0; i < got_len; i++) {
-        size_t index = got_base_addr + i * got_section_header->entry_size;
-        size_t value = global_offset_table[i];
-        struct GotEntry got_entry = {
-            .index = index,
-            .value = value,
-            .is_library_base_address = i == 1,
-            .is_loader_callback = i == 2,
-        };
-        got_entries[i] = got_entry;
+        got_entries = loader_malloc_arena(sizeof(struct GotEntry) * got_len);
+        size_t got_base_addr = got_section_header->addr;
+        for (size_t i = 0; i < got_len; i++) {
+            size_t index = got_base_addr + i * got_section_header->entry_size;
+            size_t value = global_offset_table[i];
+            struct GotEntry got_entry = {
+                .index = index,
+                .value = value,
+                .is_library_base_address = i == 1,
+                .is_loader_callback = i == 2,
+            };
+            got_entries[i] = got_entry;
+        }
     }
 
     /* Load function relocations */

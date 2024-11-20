@@ -61,10 +61,39 @@ static void run_asm(
 }
 
 bool compute_variable_relocations(void) {
-    // if (type != R_X86_64_COPY && type != R_X86_64_GLOB_DAT) {
-    //     BAIL("unsupported relocation type\n");
-    // }
-    BAIL("unimplemented on x64\n");
+    LOADER_LOG("Variable relocations: %d\n", runtime_var_relocations_len);
+    for (size_t i = 0; i < runtime_var_relocations_len; i++) {
+        struct RuntimeRelocation *var_relocation = &runtime_var_relocations[i];
+        LOADER_LOG(
+            "Varaible relocation: %d: %s %x:%x\n",
+            i + 1,
+            var_relocation->name,
+            var_relocation->offset,
+            var_relocation->value
+        );
+        if (var_relocation->type != R_X86_64_COPY &&
+            var_relocation->type != R_X86_64_GLOB_DAT) {
+            BAIL("unsupported relocation type %d\n", var_relocation->type);
+        }
+        if (var_relocation->type == R_X86_64_COPY) {
+            BAIL("@todo: relocation type R_X86_64_COPY\n");
+        }
+
+        struct GotEntry *runtime_got_entry;
+        if (!find_got_entry(
+                runtime_got_entries,
+                runtime_got_entries_len,
+                var_relocation->offset,
+                &runtime_got_entry
+            )) {
+            BAIL("Variable got entry %x not found\n", var_relocation->offset);
+        }
+
+        runtime_got_entry->value = var_relocation->value;
+        runtime_got_entry->is_variable = true;
+    }
+
+    return true;
 }
 
 // @note: unclear why some docs consider r10 to be 4th param instead of rcx
