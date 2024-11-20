@@ -10,6 +10,14 @@
 
 extern char **environ;
 
+int32_t test_number_bss = 0;
+int32_t test_number_data = 0x12345;
+int32_t test_number_data_internal_ref = 0x12345;
+
+int get_test_number_data_internal_ref(void) {
+    return test_number_data_internal_ref;
+}
+
 size_t strlen(const char *s) {
     size_t len = 0;
     for (ssize_t i = 0; true; i++) {

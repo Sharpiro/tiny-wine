@@ -277,13 +277,6 @@ static bool get_dynamic_data(
         for (size_t i = 0; i < var_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_var_relocations[i];
             size_t type = elf_relocation->r_info & 0xff;
-#ifdef ARM32
-            if (type != R_ARM_GLOB_DAT) {
-#elif AMD64
-            if (type != R_X86_64_COPY && type != R_X86_64_GLOB_DAT) {
-#endif
-                BAIL("unsupported relocation type\n");
-            }
             size_t symbol_index = elf_relocation->r_info >> 8;
             struct Symbol symbol = dyn_symbols[symbol_index];
             struct Relocation relocation = {

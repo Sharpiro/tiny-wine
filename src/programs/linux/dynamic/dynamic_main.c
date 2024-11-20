@@ -1,5 +1,10 @@
 #include "../../../tiny_c/tiny_c.h"
-#include <string.h>
+#include "string.h"
+
+extern int test_number_bss;
+extern int test_number_data;
+
+int get_test_number_data_internal_ref(void);
 
 int main(void) {
     /* Call dynamic function leaf */
@@ -21,4 +26,16 @@ int main(void) {
     /* 2nd shared lib */
     const char *str = "how now brown cow";
     tiny_c_printf("2nd shared lib length of '%s': %x\n", str, strlen(str));
+
+    /* Dynamic variable relocation */
+    tiny_c_printf("lib test_number_data: %x\n", test_number_data);
+    test_number_data = 0x54321;
+    tiny_c_printf("lib test_number_data: %x\n", test_number_data);
+    tiny_c_printf("lib test_number_bss: %x\n", test_number_bss);
+    test_number_bss = 0x54321;
+    tiny_c_printf("lib test_number_bss: %x\n", test_number_bss);
+    tiny_c_printf(
+        "lib get_test_number_data_internal_ref: %x\n",
+        get_test_number_data_internal_ref()
+    );
 }

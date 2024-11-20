@@ -58,6 +58,13 @@ static void run_asm(size_t stack_start, size_t program_entry) {
             : "rax");
 }
 
+bool compute_variable_relocations(void) {
+    // if (type != R_X86_64_COPY && type != R_X86_64_GLOB_DAT) {
+    //     BAIL("unsupported relocation type\n");
+    // }
+    BAIL("unimplemented on x64\n");
+}
+
 #endif
 
 #ifdef ARM32
@@ -89,6 +96,37 @@ static void run_asm(
               [stack_start] "r"(stack_start),
               [program_entry] "r"(program_entry)
             :);
+}
+
+bool compute_variable_relocations(void) {
+    LOADER_LOG("Variable relocations: %x\n", runtime_var_relocations_len);
+    for (size_t i = 0; i < runtime_var_relocations_len; i++) {
+        struct RuntimeRelocation *var_relocation = &runtime_var_relocations[i];
+        LOADER_LOG(
+            "Varaible relocation: %x: %x:%x\n",
+            i + 1,
+            var_relocation->offset,
+            var_relocation->value
+        );
+        if (var_relocation->type != R_ARM_GLOB_DAT) {
+            BAIL("unsupported relocation type\n");
+        }
+
+        struct GotEntry *runtime_got_entry;
+        if (!find_got_entry(
+                runtime_got_entries,
+                runtime_got_entries_len,
+                var_relocation->offset,
+                &runtime_got_entry
+            )) {
+            BAIL("Variable got entry %x not found\n", var_relocation->offset);
+        }
+
+        runtime_got_entry->value = var_relocation->value;
+        runtime_got_entry->is_variable = true;
+    }
+
+    return true;
 }
 
 #endif
@@ -294,12 +332,13 @@ static bool initialize_dynamic_data(
     }
 
     for (size_t i = 0; i < inferior_dyn_data->func_relocations_len; i++) {
-        struct Relocation curr_relocation =
-            inferior_dyn_data->func_relocations[i];
+        struct Relocation *curr_relocation =
+            &inferior_dyn_data->func_relocations[i];
         struct RuntimeRelocation runtime_relocation = {
-            .offset = curr_relocation.offset,
-            .value = curr_relocation.symbol.value,
-            .name = curr_relocation.symbol.name,
+            .offset = curr_relocation->offset,
+            .value = curr_relocation->symbol.value,
+            .name = curr_relocation->symbol.name,
+            .type = curr_relocation->type,
         };
         runtime_func_relocations[i] = runtime_relocation;
     }
@@ -318,6 +357,7 @@ static bool initialize_dynamic_data(
                 .offset = curr_lib->dynamic_offset + curr_relocation->offset,
                 .value = value,
                 .name = curr_relocation->symbol.name,
+                .type = curr_relocation->type,
             };
             runtime_func_relocations[func_reloc_index++] = runtime_relocation;
         }
@@ -332,12 +372,13 @@ static bool initialize_dynamic_data(
     }
 
     for (size_t i = 0; i < inferior_dyn_data->var_relocations_len; i++) {
-        struct Relocation curr_relocation =
-            inferior_dyn_data->var_relocations[i];
+        struct Relocation *curr_relocation =
+            &inferior_dyn_data->var_relocations[i];
         struct RuntimeRelocation runtime_relocation = {
-            .offset = curr_relocation.offset,
-            .value = curr_relocation.symbol.value,
-            .name = curr_relocation.symbol.name,
+            .offset = curr_relocation->offset,
+            .value = curr_relocation->symbol.value,
+            .name = curr_relocation->symbol.name,
+            .type = curr_relocation->type,
         };
         runtime_var_relocations[i] = runtime_relocation;
     }
@@ -356,27 +397,27 @@ static bool initialize_dynamic_data(
                 .offset = curr_lib->dynamic_offset + curr_relocation->offset,
                 .value = value,
                 .name = curr_relocation->symbol.name,
+                .type = curr_relocation->type,
             };
             runtime_var_relocations[var_reloc_index++] = runtime_relocation;
         }
     }
     for (size_t i = 0; i < runtime_var_relocations_len; i++) {
-        struct RuntimeRelocation *runtime_relocation =
-            &runtime_var_relocations[i];
+        struct RuntimeRelocation *run_var_reloc = &runtime_var_relocations[i];
         size_t runtime_address;
         if (!get_runtime_address(
-                runtime_relocation->name,
+                run_var_reloc->name,
                 runtime_dyn_symbols,
                 runtime_dyn_symbols_len,
                 &runtime_address
             )) {
             BAIL(
                 "runtime variable relocation '%s' not found\n",
-                runtime_relocation->name
+                run_var_reloc->name
             );
         }
 
-        runtime_relocation->value = runtime_address;
+        run_var_reloc->value = runtime_address;
     }
 
     /** Get runtime GOT */
@@ -422,34 +463,12 @@ static bool initialize_dynamic_data(
         }
     }
 
-    LOADER_LOG("Variable relocations: %x\n", runtime_var_relocations_len);
-    for (size_t i = 0; i < runtime_var_relocations_len; i++) {
-        struct RuntimeRelocation *runtime_var_relocation =
-            &runtime_var_relocations[i];
-        LOADER_LOG(
-            "Varaible relocation: %x: %x:%x\n",
-            i + 1,
-            runtime_var_relocation->offset,
-            runtime_var_relocation->value
-        );
-        struct GotEntry *runtime_got_entry;
-        if (!find_got_entry(
-                runtime_got_entries,
-                runtime_got_entries_len,
-                runtime_var_relocation->offset,
-                &runtime_got_entry
-            )) {
-            BAIL(
-                "Variable got entry %x not found\n",
-                runtime_var_relocation->offset
-            );
-        }
-
-        runtime_got_entry->value = runtime_var_relocation->value;
-        runtime_got_entry->is_variable = true;
+    if (!compute_variable_relocations()) {
+        BAIL("compute_variable_relocations failed\n");
     }
 
     /* Print memory regions */
+    print_memory_regions();
 
     /** Initialize GOT */
     LOADER_LOG("GOT entries: %x\n", runtime_got_entries_len);
@@ -465,6 +484,7 @@ static bool initialize_dynamic_data(
         size_t *got_pointer = (size_t *)runtime_got_entry->index;
         *got_pointer = runtime_got_entry->value;
 
+        // @tood: seems like bss only
         if (runtime_got_entry->is_variable) {
             size_t *var_pointer = (size_t *)runtime_got_entry->value;
             *var_pointer = 0;

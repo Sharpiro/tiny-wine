@@ -92,6 +92,7 @@ libdynamic.so:
 		-DARM32 \
 		-nostdlib -static \
 		-shared \
+		-fPIC \
 		-o libdynamic.so \
 		src/programs/linux/dynamic/dynamic_lib.c
 	@$(OBJDUMP) -D libdynamic.so > libdynamic.so.dump

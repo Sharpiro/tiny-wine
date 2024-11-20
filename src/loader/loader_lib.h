@@ -43,6 +43,7 @@ struct RuntimeRelocation {
     size_t offset;
     size_t value;
     const char *name;
+    size_t type;
 };
 
 struct RuntimeSymbol {
