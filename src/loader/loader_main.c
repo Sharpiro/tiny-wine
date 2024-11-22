@@ -60,42 +60,6 @@ static void run_asm(
             : "rax");
 }
 
-bool compute_variable_relocations(void) {
-    LOADER_LOG("Variable relocations: %d\n", runtime_var_relocations_len);
-    for (size_t i = 0; i < runtime_var_relocations_len; i++) {
-        struct RuntimeRelocation *var_relocation = &runtime_var_relocations[i];
-        LOADER_LOG(
-            "Varaible relocation: %d: %s %x:%x\n",
-            i + 1,
-            var_relocation->name,
-            var_relocation->offset,
-            var_relocation->value
-        );
-        if (var_relocation->type != R_X86_64_COPY &&
-            var_relocation->type != R_X86_64_GLOB_DAT) {
-            BAIL("unsupported relocation type %d\n", var_relocation->type);
-        }
-        if (var_relocation->type == R_X86_64_COPY) {
-            BAIL("@todo: relocation type R_X86_64_COPY\n");
-        }
-
-        struct GotEntry *runtime_got_entry;
-        if (!find_got_entry(
-                runtime_got_entries,
-                runtime_got_entries_len,
-                var_relocation->offset,
-                &runtime_got_entry
-            )) {
-            BAIL("Variable got entry %x not found\n", var_relocation->offset);
-        }
-
-        runtime_got_entry->value = var_relocation->value;
-        runtime_got_entry->is_variable = true;
-    }
-
-    return true;
-}
-
 // @note: unclear why some docs consider r10 to be 4th param instead of rcx
 void dynamic_linker_callback(void) {
     size_t *rbp;
@@ -153,11 +117,13 @@ void dynamic_linker_callback(void) {
     size_t *got_entry = (size_t *)runtime_relocation->offset;
     LOADER_LOG("got_entry: %x: %x\n", got_entry, *got_entry);
 
-    if (!get_runtime_address(
+    const struct RuntimeSymbol *runtime_symbol;
+    if (!get_runtime_symbol(
             runtime_relocation->name,
             runtime_dyn_symbols,
             runtime_dyn_symbols_len,
-            got_entry
+            0,
+            &runtime_symbol
         )) {
         tiny_c_fprintf(
             STDERR,
@@ -167,9 +133,10 @@ void dynamic_linker_callback(void) {
         tiny_c_exit(-1);
     }
 
+    *got_entry = runtime_symbol->value;
     LOADER_LOG(
         "%x: %s(%x, %x, %x, %x, %x, %x)\n",
-        *got_entry,
+        runtime_symbol->value,
         runtime_relocation->name,
         p1,
         p2,
@@ -190,7 +157,7 @@ void dynamic_linker_callback(void) {
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 16\n"
-            "jmp r15\n" ::"r"(*got_entry),
+            "jmp r15\n" ::"r"(runtime_symbol->value),
             "r"(p1),
             "r"(p2),
             "r"(p3),
@@ -437,11 +404,11 @@ static bool initialize_dynamic_data(
     }
 
     for (size_t i = 0; i < inferior_dyn_data->symbols_len; i++) {
-        struct Symbol curr_symbol = inferior_dyn_data->symbols[i];
+        struct Symbol *curr_symbol = &inferior_dyn_data->symbols[i];
         struct RuntimeSymbol runtime_symbol = {
-            .value = curr_symbol.value,
-            .name = curr_symbol.name,
-
+            .value = curr_symbol->value,
+            .name = curr_symbol->name,
+            .size = curr_symbol->size,
         };
         runtime_dyn_symbols[i] = runtime_symbol;
     }
@@ -458,7 +425,7 @@ static bool initialize_dynamic_data(
             struct RuntimeSymbol runtime_symbol = {
                 .value = value,
                 .name = curr_symbol->name,
-
+                .size = curr_symbol->size,
             };
             runtime_dyn_symbols[symbol_index++] = runtime_symbol;
         }
@@ -524,6 +491,14 @@ static bool initialize_dynamic_data(
             .name = curr_relocation->symbol.name,
             .type = curr_relocation->type,
         };
+        LOADER_LOG(
+            "variable relocation %d: %s %x:%x, type %d\n",
+            i + 1,
+            runtime_relocation.name,
+            runtime_relocation.offset,
+            runtime_relocation.value,
+            runtime_relocation.type
+        );
         runtime_var_relocations[i] = runtime_relocation;
     }
 
@@ -543,17 +518,25 @@ static bool initialize_dynamic_data(
                 .name = curr_relocation->symbol.name,
                 .type = curr_relocation->type,
             };
+            LOADER_LOG(
+                "Varaible relocation: %d: %s %x:%x\n",
+                i + 1,
+                runtime_relocation.name,
+                runtime_relocation.offset,
+                runtime_relocation.value
+            );
             runtime_var_relocations[var_reloc_index++] = runtime_relocation;
         }
     }
     for (size_t i = 0; i < runtime_var_relocations_len; i++) {
         struct RuntimeRelocation *run_var_reloc = &runtime_var_relocations[i];
-        size_t runtime_address;
-        if (!get_runtime_address(
+        const struct RuntimeSymbol *runtime_symbol;
+        if (!get_runtime_symbol(
                 run_var_reloc->name,
                 runtime_dyn_symbols,
                 runtime_dyn_symbols_len,
-                &runtime_address
+                0,
+                &runtime_symbol
             )) {
             BAIL(
                 "runtime variable relocation '%s' not found\n",
@@ -561,7 +544,7 @@ static bool initialize_dynamic_data(
             );
         }
 
-        run_var_reloc->value = runtime_address;
+        run_var_reloc->value = runtime_symbol->value;
     }
 
     /** Get runtime GOT */
@@ -620,12 +603,25 @@ static bool initialize_dynamic_data(
         }
     }
 
-    if (!compute_variable_relocations()) {
-        BAIL("compute_variable_relocations failed\n");
-    }
+    for (size_t i = 0; i < runtime_var_relocations_len; i++) {
+        struct RuntimeRelocation *var_relocation = &runtime_var_relocations[i];
+        if (var_relocation->type != R_X86_64_GLOB_DAT) {
+            continue;
+        }
 
-    /* Print memory regions */
-    print_memory_regions();
+        struct GotEntry *runtime_got_entry;
+        if (!find_got_entry(
+                runtime_got_entries,
+                runtime_got_entries_len,
+                var_relocation->offset,
+                &runtime_got_entry
+            )) {
+            BAIL("Variable got entry %x not found\n", var_relocation->offset);
+        }
+
+        runtime_got_entry->value = var_relocation->value;
+        runtime_got_entry->is_variable = true;
+    }
 
     /** Initialize GOT */
     LOADER_LOG("GOT entries: %d\n", runtime_got_entries_len);
@@ -641,11 +637,35 @@ static bool initialize_dynamic_data(
         size_t *got_pointer = (size_t *)runtime_got_entry->index;
         *got_pointer = runtime_got_entry->value;
 
-        // @tood: seems like bss only
         if (runtime_got_entry->is_variable) {
             size_t *value = (size_t *)runtime_got_entry->value;
             *value = 0;
         }
+    }
+
+    /** Initialize variable relocation 'copy' types */
+    for (size_t i = 0; i < runtime_var_relocations_len; i++) {
+        struct RuntimeRelocation *var_relocation = &runtime_var_relocations[i];
+        if (var_relocation->type != R_X86_64_COPY) {
+            continue;
+        }
+
+        const struct RuntimeSymbol *runtime_symbol;
+        if (!get_runtime_symbol(
+                var_relocation->name,
+                runtime_dyn_symbols,
+                runtime_dyn_symbols_len,
+                var_relocation->offset,
+                &runtime_symbol
+            )) {
+            BAIL("runtime symbol '%s' not found\n", var_relocation->name);
+        }
+        size_t *init_value = (size_t *)runtime_symbol->value;
+        size_t init_value_sized;
+        memcpy(&init_value_sized, init_value, runtime_symbol->size);
+
+        size_t *variable = (size_t *)var_relocation->offset;
+        *variable = init_value_sized;
     }
 
     return true;

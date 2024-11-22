@@ -70,19 +70,20 @@ bool find_runtime_relocation(
     return false;
 }
 
-bool get_runtime_address(
-    const char *relocation_name,
+bool get_runtime_symbol(
+    const char *name,
     const struct RuntimeSymbol *runtime_symbols,
     size_t runtime_symbols_len,
-    size_t *relocation_address
+    size_t ignore_val,
+    const struct RuntimeSymbol **symbol
 ) {
-    if (relocation_name == NULL) {
+    if (name == NULL) {
         BAIL("relocation_name was null\n");
     }
     if (runtime_symbols == NULL) {
         BAIL("runtime_symbols was null\n");
     }
-    if (relocation_address == NULL) {
+    if (symbol == NULL) {
         BAIL("relocation_address was null\n");
     }
 
@@ -91,8 +92,11 @@ bool get_runtime_address(
         if (curr_runtime_symbol->value == 0) {
             continue;
         }
-        if (tiny_c_strcmp(curr_runtime_symbol->name, relocation_name) == 0) {
-            *relocation_address = curr_runtime_symbol->value;
+        if (curr_runtime_symbol->value == ignore_val) {
+            continue;
+        }
+        if (tiny_c_strcmp(curr_runtime_symbol->name, name) == 0) {
+            *symbol = curr_runtime_symbol;
             return true;
         }
     }

@@ -52,6 +52,7 @@ struct SharedLibrary {
 struct RuntimeSymbol {
     size_t value;
     const char *name;
+    size_t size;
 };
 
 bool find_runtime_relocation(
@@ -61,11 +62,12 @@ bool find_runtime_relocation(
     const struct RuntimeRelocation **runtime_relocation
 );
 
-bool get_runtime_address(
-    const char *relocation_name,
+bool get_runtime_symbol(
+    const char *name,
     const struct RuntimeSymbol *runtime_symbols,
     size_t runtime_symbols_len,
-    size_t *relocation_address
+    size_t ignore_val,
+    const struct RuntimeSymbol **symbol
 );
 
 bool find_got_entry(

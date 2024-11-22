@@ -223,16 +223,17 @@ static void get_runtime_function_local_lib_test(void) {
         {.value = 0x9d8, .name = "tiny_c_pow"},
     };
 
-    size_t runtime_address;
-    bool result = get_runtime_address(
+    const struct RuntimeSymbol *runtime_symbol;
+    bool result = get_runtime_symbol(
         "tiny_c_pow",
         runtime_symbols,
         sizeof(runtime_symbols) / sizeof(struct RuntimeSymbol),
-        &runtime_address
+        0,
+        &runtime_symbol
     );
 
     assert(result);
-    assert(runtime_address == 0x9d8);
+    assert(runtime_symbol->value == 0x9d8);
 }
 
 static void get_runtime_function_shared_lib_test(void) {
@@ -247,16 +248,17 @@ static void get_runtime_function_shared_lib_test(void) {
         },
     };
 
-    size_t runtime_address;
-    bool result = get_runtime_address(
+    const struct RuntimeSymbol *runtime_symbol;
+    bool result = get_runtime_symbol(
         "tiny_c_pow",
         runtime_symbols,
         sizeof(runtime_symbols) / sizeof(struct RuntimeSymbol),
-        &runtime_address
+        0,
+        &runtime_symbol
     );
 
     assert(result);
-    assert(runtime_address == 0x209d8);
+    assert(runtime_symbol->value == 0x209d8);
 }
 
 #ifdef ARM32
