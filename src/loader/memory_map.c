@@ -110,6 +110,9 @@ bool get_memory_regions_info_x86(
                 "PH %d: zero filesize w/ non-zero offset unsupported\n", i + 1
             );
         }
+        if (program_header->p_memsz != program_header->p_filesz) {
+            LOADER_LOG("WARNING: PH filesize != memsize\n", i + 1);
+        }
 
         size_t file_offset = program_header->p_offset /
             program_header->p_align * program_header->p_align;
@@ -119,9 +122,8 @@ bool get_memory_regions_info_x86(
             program_header->p_memsz / program_header->p_align *
                 program_header->p_align +
             program_header->p_align;
-
         size_t max_region_address =
-            program_header->p_vaddr + program_header->p_filesz;
+            program_header->p_vaddr + program_header->p_memsz;
         if (max_region_address > end) {
             LOADER_LOG(
                 "WARNING: memory region %x extended due to offset\n", start

@@ -3,6 +3,7 @@
 #include <pwd.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -11,11 +12,15 @@
 extern char **environ;
 
 int32_t test_number_bss = 0;
-int32_t test_number_data = 0x12345;
-int32_t test_number_data_internal_ref = 0x12345;
+int32_t test_number_data = 12345;
+static int32_t test_number_data_internal_ref = 12345;
 
-int get_test_number_data_internal_ref(void) {
+int32_t get_test_number_data_internal_ref(void) {
     return test_number_data_internal_ref;
+}
+
+void set_test_number_data_internal_ref(int32_t val) {
+    test_number_data_internal_ref = val;
 }
 
 size_t strlen(const char *s) {
@@ -224,13 +229,4 @@ struct passwd *getpwuid(uid_t uid) {
     }
 
     return NULL;
-}
-
-int test_inner_func() {
-    return 42;
-}
-
-int test_outer_func() {
-    int result = test_inner_func();
-    return result;
 }

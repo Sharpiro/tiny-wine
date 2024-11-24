@@ -1,6 +1,7 @@
 #pragma once
 
 #include "elf_tools.h"
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -47,6 +48,8 @@ struct SharedLibrary {
     struct MemoryRegionsInfo memory_regions_info;
     struct RuntimeRelocation *runtime_func_relocations;
     size_t runtime_func_relocations_len;
+    uint8_t *bss;
+    size_t bss_len;
 };
 
 struct RuntimeSymbol {

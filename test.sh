@@ -44,11 +44,12 @@ expected=`cat <<EOF
 dynamic_var: 0
 dynamic_var: 42
 2nd shared lib length of 'how now brown cow': 17
-lib test_number_data: 0x00012345
-lib test_number_data: 0x00054321
-lib test_number_bss: 0x00000000
-lib test_number_bss: 0x00054321
-lib get_test_number_data_internal_ref: 0x00012345
+lib test_number_data: 12345
+lib test_number_data: 54321
+lib test_number_bss: 0
+lib test_number_bss: 54321
+lib get_test_number_data_internal_ref: 12345
+lib get_test_number_data_internal_ref: 54321
 EOF
 `
 assert [ "`$PRELOADER ./loader ./dynamic`" == "$expected" ]

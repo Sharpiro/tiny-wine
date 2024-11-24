@@ -1,10 +1,12 @@
 #include "../../../tiny_c/tiny_c.h"
-#include "string.h"
+#include "stddef.h"
+#include <string.h>
 
 extern int test_number_bss;
 extern int test_number_data;
 
 int get_test_number_data_internal_ref(void);
+void set_test_number_data_internal_ref(int32_t val);
 
 int main(void) {
     /* Call dynamic function leaf */
@@ -25,17 +27,22 @@ int main(void) {
 
     /* 2nd shared lib dynamic leaf */
     const char *str = "how now brown cow";
-    tiny_c_printf("2nd shared lib length of '%s': %x\n", str, strlen(str));
+    tiny_c_printf("2nd shared lib length of '%s': %d\n", str, strlen(str));
 
     /* Dynamic variable relocation */
-    tiny_c_printf("lib test_number_data: %x\n", test_number_data);
-    test_number_data = 0x54321;
-    tiny_c_printf("lib test_number_data: %x\n", test_number_data);
-    tiny_c_printf("lib test_number_bss: %x\n", test_number_bss);
-    test_number_bss = 0x54321;
-    tiny_c_printf("lib test_number_bss: %x\n", test_number_bss);
+    tiny_c_printf("lib test_number_data: %d\n", test_number_data);
+    test_number_data = 54321;
+    tiny_c_printf("lib test_number_data: %d\n", test_number_data);
+    tiny_c_printf("lib test_number_bss: %d\n", test_number_bss);
+    test_number_bss = 54321;
+    tiny_c_printf("lib test_number_bss: %d\n", test_number_bss);
     tiny_c_printf(
-        "lib get_test_number_data_internal_ref: %x\n",
+        "lib get_test_number_data_internal_ref: %d\n",
+        get_test_number_data_internal_ref()
+    );
+    set_test_number_data_internal_ref(54321);
+    tiny_c_printf(
+        "lib get_test_number_data_internal_ref: %d\n",
         get_test_number_data_internal_ref()
     );
 }

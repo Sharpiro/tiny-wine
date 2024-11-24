@@ -56,6 +56,10 @@ uid_t tinyc_getuid(void);
     tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
     return false
 
+#define EXIT(fmt, ...)                                                         \
+    tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
+    tiny_c_exit(1);
+
 #ifdef ARM32
 
 // @todo: doesn't work with r0

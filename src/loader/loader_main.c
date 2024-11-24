@@ -164,7 +164,7 @@ void dynamic_linker_callback(void) {
             "r"(p4),
             "r"(p5),
             "r"(p6)
-            : "rdi", "rsi", "rdx", "rcx", "r8", "r9");
+            : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
 }
 
 #endif
@@ -377,6 +377,19 @@ static bool initialize_dynamic_data(
         runtime_var_relocations_len +=
             shared_lib_elf.dynamic_data->var_relocations_len;
         runtime_got_entries_len += shared_lib_elf.dynamic_data->got_len;
+
+        uint8_t *bss = 0;
+        size_t bss_len = 0;
+        const struct SectionHeader *bss_section_header = find_section_header(
+            shared_lib_elf.section_headers,
+            shared_lib_elf.section_headers_len,
+            ".bss"
+        );
+        if (bss_section_header != NULL) {
+            bss = (uint8_t *)(dynamic_lib_offset + bss_section_header->addr);
+            bss_len = bss_section_header->size;
+        }
+
         struct SharedLibrary shared_library = {
             .name = shared_lib_name,
             .dynamic_offset = dynamic_lib_offset,
@@ -390,6 +403,8 @@ static bool initialize_dynamic_data(
             ),
             .runtime_func_relocations_len =
                 shared_lib_elf.dynamic_data->func_relocations_len,
+            .bss = bss,
+            .bss_len = bss_len
         };
         (*shared_libraries)[i] = shared_library;
         dynamic_lib_offset = memory_regions_info.end;
@@ -623,7 +638,16 @@ static bool initialize_dynamic_data(
         runtime_got_entry->is_variable = true;
     }
 
-    /** Initialize GOT */
+    /** Init shared lib .bss */
+    for (size_t i = 0; i < *shared_libraries_len; i++) {
+        struct SharedLibrary *shared_lib = &(*shared_libraries)[i];
+        if (shared_lib->bss != NULL) {
+            LOADER_LOG("initializing shared lib .bss\n");
+            memset(shared_lib->bss, 0, shared_lib->bss_len);
+        }
+    }
+
+    /** Init GOT */
     LOADER_LOG("GOT entries: %d\n", runtime_got_entries_len);
     for (size_t i = 0; i < runtime_got_entries_len; i++) {
         struct GotEntry *runtime_got_entry = &runtime_got_entries[i];
@@ -636,14 +660,9 @@ static bool initialize_dynamic_data(
         );
         size_t *got_pointer = (size_t *)runtime_got_entry->index;
         *got_pointer = runtime_got_entry->value;
-
-        if (runtime_got_entry->is_variable) {
-            size_t *value = (size_t *)runtime_got_entry->value;
-            *value = 0;
-        }
     }
 
-    /** Initialize variable relocation 'copy' types */
+    /** Init variable relocation 'copy' types */
     for (size_t i = 0; i < runtime_var_relocations_len; i++) {
         struct RuntimeRelocation *var_relocation = &runtime_var_relocations[i];
         if (var_relocation->type != R_X86_64_COPY) {
@@ -672,11 +691,6 @@ static bool initialize_dynamic_data(
 }
 
 int main(int32_t argc, char **argv) {
-    // int32_t null_file_handle = tiny_c_open("/dev/null", O_RDONLY);
-    // if (argc > 2 && tiny_c_strcmp(argv[2], "silent") == 0) {
-    //     loader_log_handle = null_file_handle;
-    // }
-
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
         return -1;
@@ -746,7 +760,7 @@ int main(int32_t argc, char **argv) {
     );
     if (bss_section_header != NULL) {
         LOADER_LOG("initializing .bss\n");
-        void *bss = (void *)bss_section_header->addr;
+        uint8_t *bss = (uint8_t *)bss_section_header->addr;
         memset(bss, 0, bss_section_header->size);
     }
 
