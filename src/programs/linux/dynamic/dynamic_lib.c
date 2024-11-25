@@ -141,8 +141,8 @@ bool read_to_string(const char *path, char **content) {
 }
 
 struct Split {
-    size_t start;
-    size_t end;
+    const char *split;
+    size_t split_len;
 };
 
 bool string_split(
@@ -160,10 +160,14 @@ bool string_split(
     size_t split_start = 0;
     for (size_t i = 0; i < str_len; i++) {
         const char curr_char = str[i];
-        if (curr_char == split_char || i + 1 == str_len) {
+        bool is_last_char = i + 1 == str_len;
+        if (curr_char == split_char || is_last_char) {
+            const char *split = str + split_start;
+            size_t split_len =
+                is_last_char ? i - split_start + 1 : i - split_start;
             (*split_entries)[split_index++] = (struct Split){
-                .start = split_start,
-                .end = i,
+                .split = split,
+                .split_len = split_len,
             };
             if (split_index == MAX_SPLIT_ENTRIES) {
                 BAIL("max split entries exceeded\n");
@@ -184,47 +188,54 @@ struct passwd *getpwuid(uid_t uid) {
     }
 
     size_t passwd_file_len = strlen(passwd_file);
-    struct Split *lines;
-    size_t lines_len;
-    if (!string_split(passwd_file, passwd_file_len, '\n', &lines, &lines_len)) {
+    struct Split *user_lines;
+    size_t user_lines_len;
+    if (!string_split(
+            passwd_file, passwd_file_len, '\n', &user_lines, &user_lines_len
+        )) {
         tinyc_errno = ENOENT;
         return NULL;
     }
 
-    for (size_t i = 0; i < lines_len; i++) {
-        struct Split *curr_line = &lines[i];
-        char *line_ptr = passwd_file + curr_line->start;
-        size_t line_len = curr_line->end - curr_line->start;
-        struct Split *split_entries;
-        size_t split_entries_len;
+    for (size_t i = 0; i < user_lines_len; i++) {
+        struct Split *user_line = &user_lines[i];
+        struct Split *user_details_split;
+        size_t user_details_split_len;
         if (!string_split(
-                line_ptr, line_len, ':', &split_entries, &split_entries_len
+                user_line->split,
+                user_line->split_len,
+                ':',
+                &user_details_split,
+                &user_details_split_len
             )) {
             tinyc_errno = ENOENT;
             return NULL;
         }
-        if (split_entries_len < 7) {
+        if (user_details_split_len < 7) {
             tinyc_errno = ENOENT;
             return NULL;
         }
 
-        struct Split *uid_split = &split_entries[2];
-        size_t uid_str_len = uid_split->end - uid_split->start;
-        char *uid_str = passwd_file + curr_line->start + uid_split->start;
-        size_t parsed_uid = (size_t)atol_len(uid_str, uid_str_len);
+        struct Split *uid_split = &user_details_split[2];
+        size_t parsed_uid =
+            (size_t)atol_len(uid_split->split, uid_split->split_len);
         if (parsed_uid == uid) {
-            struct Split *username_split = &split_entries[0];
-            size_t username_len = username_split->end - username_split->start;
-            char *username_file_ptr = passwd_file + curr_line->start;
-            char *username = tinyc_malloc_arena(username_len + 1);
-            // @todo: could create 'alloc' func to avoid this line
-            username[username_len] = 0;
-            memcpy(username, username_file_ptr, username_len);
-            struct passwd *passwdx = tinyc_malloc_arena(READ_SIZE);
-            *passwdx = (struct passwd){
+            struct Split *username_split = &user_details_split[0];
+            char *username = tinyc_malloc_arena(username_split->split_len + 1);
+            memcpy(username, username_split->split, username_split->split_len);
+            memset(username + user_line->split_len, 0, 1);
+
+            struct Split *shell_split = &user_details_split[6];
+            char *shell = tinyc_malloc_arena(shell_split->split_len + 1);
+            memcpy(shell, shell_split->split, shell_split->split_len);
+            memset(shell + shell_split->split_len, 0, 1);
+
+            struct passwd *passwd = tinyc_malloc_arena(sizeof(struct passwd));
+            *passwd = (struct passwd){
                 .pw_name = username,
+                .pw_shell = shell,
             };
-            return passwdx;
+            return passwd;
         }
     }
 

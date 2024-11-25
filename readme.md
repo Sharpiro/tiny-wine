@@ -6,13 +6,13 @@ Very basic support for jumping to other static Linux ELF programs.
 
 ## Limitations
 
-- Arm32
 - Linux
-- No standard libary
+- No standard library
+- More...
 
 ## Prerequisites
 
-- docker (or an arm32 machine)
+- docker
 
 ```sh
 git clone https://github.com/Sharpiro/tiny-wine.git
@@ -29,7 +29,7 @@ docker run --rm -v $PWD:/root/tiny_wine tinywine make
 ## Running
 
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine qemu-arm ./loader ./tinyfetch
+docker run --rm -v $PWD:/root/tiny_wine tinywine ./loader ./tinyfetch
 ```
 
 ### Example Output
@@ -39,8 +39,8 @@ root@3db29f0a588e
 --------------
 OS: Ubuntu 22.04.4 LTS armv7l
 Kernel: 6.10.5-100.fc39.x86_64
-Uptime: 0x00000024 days, 0x00000016 hours, 0x00000033 minutes
-Shell: (null)
+Uptime: Uptime: 32 days, 21 hours, 29 minutes
+Shell: /bin/bash
 ```
 
 ## Tests

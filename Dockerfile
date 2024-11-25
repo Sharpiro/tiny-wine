@@ -1,15 +1,15 @@
-FROM ubuntu:jammy
+FROM ubuntu:24.04
 
-ENV QEMU_LD_PREFIX="/usr/arm-linux-gnueabihf"
 ENV CC="clang"
-ENV CFLAGS="--target=arm-linux-gnueabihf"
-ENV OBJDUMP="/usr/arm-linux-gnueabihf/bin/objdump"
-ENV PRELOADER="qemu-arm"
+ENV OBJDUMP="objdump"
 
 RUN apt-get update && apt-get -y install \
     build-essential \
     clang \
-    gcc-arm-linux-gnueabihf \
-    qemu-user
+    binutils \
+    less \
+    bat \
+    vim \
+    neofetch
 
 WORKDIR /root/tiny_wine

@@ -1,5 +1,3 @@
-# @todo: add fsanitize
-
 ifeq ($(CC),cc)
   CC := clang
 endif
@@ -17,18 +15,6 @@ WARNINGS = \
 all: \
 	libtinyc.a \
 	libtinyc.so \
-	loader \
-	programs/linux/unit_test \
-	programs/linux/env \
-	programs/linux/string \
-	programs/linux/tinyfetch \
-	programs/linux/static_pie \
-	programs/linux/dynamic
-
-all_x64: \
-	libtinyc.a \
-	libtinyc.so \
-	libstatic.a \
 	loader \
 	programs/linux/unit_test \
 	programs/linux/env \

@@ -81,7 +81,7 @@ void dynamic_linker_callback(void) {
 
     size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
     size_t relocation_index = *(rbp + 2);
-    if (lib_dyn_offset == nullptr) {
+    if (lib_dyn_offset == NULL) {
         tiny_c_fprintf(STDERR, "lib_dyn_offset was null\n");
         tiny_c_exit(-1);
     }

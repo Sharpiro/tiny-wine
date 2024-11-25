@@ -93,8 +93,7 @@ int main(int argc, char **argv) {
     );
 
     /* Shell */
-    const char *shell = getenv("SHELL");
-    tiny_c_printf("Shell: %s\n", shell);
+    tiny_c_printf("Shell: %s\n", user_info->pw_shell);
 
     tinyc_free_arena();
 }
