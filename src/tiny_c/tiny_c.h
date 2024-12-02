@@ -52,6 +52,8 @@ uint32_t divmod(uint32_t numerator, uint32_t denominator);
 int32_t tinyc_uname(struct utsname *uname);
 uid_t tinyc_getuid(void);
 
+off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence);
+
 #define BAIL(fmt, ...)                                                         \
     tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
     return false
