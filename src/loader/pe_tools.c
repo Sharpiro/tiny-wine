@@ -8,7 +8,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     }
 
     *pe_data = (struct PeData){
-        .entry_point = 0x188,
+        .entry_point = 0x140001020,
     };
 
     return true;

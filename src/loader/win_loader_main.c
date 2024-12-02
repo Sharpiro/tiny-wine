@@ -7,6 +7,49 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
+//        does arm?
+static void run_asm(
+    [[maybe_unused]] size_t frame_start,
+    size_t stack_start,
+    size_t program_entry
+) {
+    __asm__("mov rbx, 0x00\n"
+            "mov rsp, %[stack_start]\n"
+
+            /* clear 'PF' flag */
+            "mov r15, 0xff\n"
+            "xor r15, 1\n"
+
+            "mov rax, 0x00\n"
+            "mov rcx, 0x00\n"
+            "mov rdx, 0x00\n"
+            "mov rsi, 0x00\n"
+            "mov rdi, 0x00\n"
+            "mov r8, 0x00\n"
+            "mov r9, 0x00\n"
+            "mov r10, 0x00\n"
+            "mov r11, 0x00\n"
+            "mov r12, 0x00\n"
+            "mov r13, 0x00\n"
+            "mov r14, 0x00\n"
+            "mov r15, 0x00\n"
+            :
+            : [stack_start] "r"(stack_start));
+
+    __asm__("mov rbp, 0\n"
+            "jmp %[program_entry]\n"
+            :
+            : [program_entry] "r"(program_entry)
+            : "rax");
+}
+
+__attribute__((naked)) void _end(void) {
+    __asm__("mov rdi, rax\n"
+            "mov rax, 0x3c\n"
+            "syscall\n");
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -62,7 +105,23 @@ int main(int argc, char **argv) {
 
     uint8_t *temp_region_start = (uint8_t *)0x140001000;
     tinyc_lseek(fd, 0x400, SEEK_SET);
-    tiny_c_read(fd, temp_region_start, 72);
+    tiny_c_read(fd, temp_region_start, 250);
 
     print_memory_regions();
+
+    /* Jump to program */
+    size_t *frame_pointer = (size_t *)argv - 1;
+    size_t *inferior_frame_pointer = frame_pointer + 1;
+    *inferior_frame_pointer = (size_t)(argc - 1);
+    size_t *stack_start = inferior_frame_pointer;
+    size_t *end_func = stack_start - 1;
+    *end_func = (size_t)_end;
+    LOADER_LOG("frame_pointer: %x\n", frame_pointer);
+    LOADER_LOG("stack_start: %x\n", stack_start);
+    LOADER_LOG("end func: %x\n", end_func);
+    LOADER_LOG("------------running program------------\n");
+
+    run_asm(
+        (size_t)inferior_frame_pointer, (size_t)stack_start, pe_data.entry_point
+    );
 }
