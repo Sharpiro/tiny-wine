@@ -16,6 +16,7 @@ all: \
 	libtinyc.a \
 	libtinyc.so \
 	loader \
+	winloader \
 	programs/linux/unit_test \
 	programs/linux/env \
 	programs/linux/string \
@@ -114,7 +115,7 @@ libdynamic.so:
 		src/programs/linux/dynamic/dynamic_lib.c
 	@$(OBJDUMP) -D libdynamic.so > libdynamic.so.dump
 
-loader: tinyc_start.o libtinyc.a src/loader/loader_main.c src/tiny_c/tiny_c.c
+loader: tinyc_start.o libtinyc.a src/loader/loader_main.c
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
@@ -130,6 +131,25 @@ loader: tinyc_start.o libtinyc.a src/loader/loader_main.c src/tiny_c/tiny_c.c
 		src/loader/loader_lib.c \
 		src/loader/memory_map.c \
 		src/loader/elf_tools.c \
+		tinyc_start.o \
+		libtinyc.a
+	@$(OBJDUMP) -D loader > loader.dump
+
+winloader: tinyc_start.o libtinyc.a src/loader/win_loader_main.c
+	@$(CC) $(CFLAGS) \
+		-O0 \
+		-nostdlib -static \
+		$(WARNINGS) \
+		-Wl,--section-start=.text=7d7d0000 \
+		-fno-stack-protector \
+		-g \
+		-DAMD64 \
+		-masm=intel \
+		-mno-sse \
+		-o winloader \
+		src/loader/win_loader_main.c \
+		src/loader/loader_lib.c \
+		src/loader/pe_tools.c \
 		tinyc_start.o \
 		libtinyc.a
 	@$(OBJDUMP) -D loader > loader.dump

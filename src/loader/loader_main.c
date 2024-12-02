@@ -697,7 +697,6 @@ int main(int32_t argc, char **argv) {
     }
 
     char *filename = argv[1];
-
     LOADER_LOG("Starting loader, %s, %d\n", filename, argc);
 
     int32_t pid = tiny_c_get_pid();
