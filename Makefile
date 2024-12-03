@@ -153,7 +153,7 @@ winloader: tinyc_start.o libtinyc.a src/loader/win_loader_main.c
 		src/loader/pe_tools.c \
 		tinyc_start.o \
 		libtinyc.a
-	@$(OBJDUMP) -D loader > loader.dump
+	@$(OBJDUMP) -D winloader > winloader.dump
 
 programs/linux/unit_test: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \

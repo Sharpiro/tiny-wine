@@ -44,7 +44,7 @@ static void run_asm(
             : "rax");
 }
 
-__attribute__((naked)) void _end(void) {
+__attribute__((naked)) void win_loader_end(void) {
     __asm__("mov rdi, rax\n"
             "mov rax, 0x3c\n"
             "syscall\n");
@@ -114,11 +114,10 @@ int main(int argc, char **argv) {
     size_t *inferior_frame_pointer = frame_pointer + 1;
     *inferior_frame_pointer = (size_t)(argc - 1);
     size_t *stack_start = inferior_frame_pointer;
-    size_t *end_func = stack_start - 1;
-    *end_func = (size_t)_end;
+    *stack_start = (size_t)win_loader_end;
     LOADER_LOG("frame_pointer: %x\n", frame_pointer);
     LOADER_LOG("stack_start: %x\n", stack_start);
-    LOADER_LOG("end func: %x\n", end_func);
+    LOADER_LOG("end func: %x\n", *stack_start);
     LOADER_LOG("------------running program------------\n");
 
     run_asm(
