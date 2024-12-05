@@ -62,7 +62,6 @@ int main(int argc, char **argv) {
     int32_t pid = tiny_c_get_pid();
     LOADER_LOG("pid: %d\n", pid);
 
-    // @todo: unmaps readonly section of loader elf
     if (tiny_c_munmap(0x400000, 0x1000)) {
         tiny_c_fprintf(STDERR, "munmap of self failed\n");
         return -1;
@@ -85,27 +84,73 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    struct MemoryRegion memory_regions[] = {{
-        .start = 0x140001000,
-        .end = 0x140002000,
-        .is_file_map = false,
-        .file_offset = 0,
-        .permissions = 4 | 2 | 1,
-    }};
+    const size_t TEXT_START = 0x140001000;
+    const size_t RDATA_START = 0x140002000;
+
+    struct MemoryRegion memory_regions[] = {
+        {
+            .start = TEXT_START,
+            .end = 0x140002000,
+            .is_file_map = false,
+            .file_offset = 0,
+            .permissions = 4 | 2,
+        },
+        {
+            .start = RDATA_START,
+            .end = 0x140003000,
+            .is_file_map = false,
+            .file_offset = 0,
+            .permissions = 4 | 2,
+        }
+    };
     struct MemoryRegionsInfo memory_regions_info = {
         .start = 0,
         .end = 0,
         .regions = memory_regions,
-        .regions_len = 1,
+        .regions_len = sizeof(memory_regions) / sizeof(struct MemoryRegion),
     };
     if (!map_memory_regions(fd, &memory_regions_info)) {
         tiny_c_fprintf(STDERR, "loader map memory regions failed\n");
         return -1;
     }
 
-    uint8_t *temp_region_start = (uint8_t *)0x140001000;
+    uint8_t *text_region_start = (uint8_t *)TEXT_START;
     tinyc_lseek(fd, 0x400, SEEK_SET);
-    tiny_c_read(fd, temp_region_start, 250);
+    tiny_c_read(fd, text_region_start, 250);
+
+    uint8_t *rdata_region_start = (uint8_t *)RDATA_START;
+    tinyc_lseek(fd, 0x600, SEEK_SET);
+    tiny_c_read(fd, rdata_region_start, 8);
+
+    int32_t map_permission = 4 | 1;
+    int32_t prot_read = (map_permission & 4) >> 2;
+    int32_t prot_write = map_permission & 2;
+    int32_t prot_execute = (map_permission & 1) << 2;
+    int32_t map_protection = prot_read | prot_write | prot_execute;
+    if (tiny_c_mprotect(text_region_start, 0x1'000, map_protection) < 0) {
+        tiny_c_fprintf(
+            STDERR,
+            "tiny_c_mprotect failed, %d, %s\n",
+            tinyc_errno,
+            tinyc_strerror(tinyc_errno)
+        );
+        return -1;
+    }
+
+    map_permission = 4;
+    prot_read = (map_permission & 4) >> 2;
+    prot_write = map_permission & 2;
+    prot_execute = (map_permission & 1) << 2;
+    map_protection = prot_read | prot_write | prot_execute;
+    if (tiny_c_mprotect(rdata_region_start, 0x1'000, map_protection) < 0) {
+        tiny_c_fprintf(
+            STDERR,
+            "tiny_c_mprotect failed, %d, %s\n",
+            tinyc_errno,
+            tinyc_strerror(tinyc_errno)
+        );
+        return -1;
+    }
 
     print_memory_regions();
 

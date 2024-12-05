@@ -321,6 +321,21 @@ size_t tiny_c_munmap(size_t address, size_t length) {
     return result;
 }
 
+int32_t tiny_c_mprotect(void *address, size_t length, int32_t protection) {
+    struct SysArgs args = {
+        .param_one = (size_t)address,
+        .param_two = length,
+        .param_three = (size_t)protection,
+    };
+    size_t result = tiny_c_syscall(SYS_mprotect, &args);
+    int32_t err = (int32_t)result;
+    if (err < 1) {
+        tinyc_errno = -err;
+    }
+
+    return err;
+}
+
 int tiny_c_memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
     for (size_t i = 0; i < n; i++) {
         u_int8_t a = ((u_int8_t *)buffer_a)[i];

@@ -36,7 +36,11 @@ void *tiny_c_mmapx86(
     int32_t fd,
     size_t offset
 );
+
 size_t tiny_c_munmap(size_t address, size_t length);
+
+int32_t tiny_c_mprotect(void *address, size_t length, int32_t protection);
+
 int32_t tiny_c_open(const char *path, int flags);
 void tiny_c_close(int32_t fd);
 ssize_t tiny_c_read(int32_t fd, void *buf, size_t count);
