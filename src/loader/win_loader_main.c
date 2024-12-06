@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 // @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
 //        does arm?
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
     }
 
     char *filename = argv[1];
-    LOADER_LOG("Starting loader, %s, %d\n", filename, argc);
+    LOADER_LOG("Starting winloader, %s, %d\n", filename, argc);
 
     int32_t pid = tiny_c_get_pid();
     LOADER_LOG("pid: %d\n", pid);
@@ -84,75 +85,57 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    const size_t TEXT_START = 0x140001000;
-    const size_t RDATA_START = 0x140002000;
+    struct MemoryRegionsInfo memory_regions_info;
+    if (!get_memory_regions_info_win(
+            pe_data.section_headers,
+            pe_data.section_headers_len,
+            pe_data.winpe_header->image_optional_header.image_base,
+            &memory_regions_info
+        )) {
+        EXIT("failed getting memory regions\n");
+    }
 
-    struct MemoryRegion memory_regions[] = {
-        {
-            .start = TEXT_START,
-            .end = 0x140002000,
-            .is_file_map = false,
-            .file_offset = 0,
-            .permissions = 4 | 2,
-        },
-        {
-            .start = RDATA_START,
-            .end = 0x140003000,
-            .is_file_map = false,
-            .file_offset = 0,
-            .permissions = 4 | 2,
-        }
-    };
-    struct MemoryRegionsInfo memory_regions_info = {
-        .start = 0,
-        .end = 0,
-        .regions = memory_regions,
-        .regions_len = sizeof(memory_regions) / sizeof(struct MemoryRegion),
-    };
+    for (size_t i = 0; i < memory_regions_info.regions_len; i++) {
+        struct MemoryRegion *memory_region = &memory_regions_info.regions[i];
+        memory_region->permissions = 4 | 2 | 0;
+    }
+
     if (!map_memory_regions(fd, &memory_regions_info)) {
-        tiny_c_fprintf(STDERR, "loader map memory regions failed\n");
-        return -1;
+        EXIT("loader map memory regions failed\n");
     }
 
-    uint8_t *text_region_start = (uint8_t *)TEXT_START;
-    tinyc_lseek(fd, 0x400, SEEK_SET);
-    tiny_c_read(fd, text_region_start, 250);
-
-    uint8_t *rdata_region_start = (uint8_t *)RDATA_START;
-    tinyc_lseek(fd, 0x600, SEEK_SET);
-    tiny_c_read(fd, rdata_region_start, 8);
-
-    int32_t map_permission = 4 | 1;
-    int32_t prot_read = (map_permission & 4) >> 2;
-    int32_t prot_write = map_permission & 2;
-    int32_t prot_execute = (map_permission & 1) << 2;
-    int32_t map_protection = prot_read | prot_write | prot_execute;
-    if (tiny_c_mprotect(text_region_start, 0x1'000, map_protection) < 0) {
-        tiny_c_fprintf(
-            STDERR,
-            "tiny_c_mprotect failed, %d, %s\n",
-            tinyc_errno,
-            tinyc_strerror(tinyc_errno)
-        );
-        return -1;
-    }
-
-    map_permission = 4;
-    prot_read = (map_permission & 4) >> 2;
-    prot_write = map_permission & 2;
-    prot_execute = (map_permission & 1) << 2;
-    map_protection = prot_read | prot_write | prot_execute;
-    if (tiny_c_mprotect(rdata_region_start, 0x1'000, map_protection) < 0) {
-        tiny_c_fprintf(
-            STDERR,
-            "tiny_c_mprotect failed, %d, %s\n",
-            tinyc_errno,
-            tinyc_strerror(tinyc_errno)
-        );
-        return -1;
-    }
+    get_memory_regions_info_win(
+        pe_data.section_headers,
+        pe_data.section_headers_len,
+        pe_data.winpe_header->image_optional_header.image_base,
+        &memory_regions_info
+    );
 
     print_memory_regions();
+
+    for (size_t i = 0; i < memory_regions_info.regions_len; i++) {
+        struct MemoryRegion *memory_region = &memory_regions_info.regions[i];
+        uint8_t *region_start = (uint8_t *)memory_region->start;
+        tinyc_lseek(fd, (off_t)memory_region->temp_win_offset, SEEK_SET);
+        if ((int32_t
+            )tiny_c_read(fd, region_start, memory_region->temp_win_size) < 0) {
+            EXIT("read failed\n");
+        }
+
+        int32_t prot_read = (memory_region->permissions & 4) >> 2;
+        int32_t prot_write = memory_region->permissions & 2;
+        int32_t prot_execute = ((int32_t)memory_region->permissions & 1) << 2;
+        int32_t map_protection = prot_read | prot_write | prot_execute;
+        size_t memory_region_len = memory_region->end - memory_region->start;
+        if (tiny_c_mprotect(region_start, memory_region_len, map_protection) <
+            0) {
+            EXIT(
+                "tiny_c_mprotect failed, %d, %s\n",
+                tinyc_errno,
+                tinyc_strerror(tinyc_errno)
+            );
+        }
+    }
 
     /* Jump to program */
     size_t *frame_pointer = (size_t *)argv - 1;
@@ -160,12 +143,13 @@ int main(int argc, char **argv) {
     *inferior_frame_pointer = (size_t)(argc - 1);
     size_t *stack_start = inferior_frame_pointer;
     *stack_start = (size_t)win_loader_end;
+    LOADER_LOG("entrypoint: %x\n", pe_data.entrypoint);
     LOADER_LOG("frame_pointer: %x\n", frame_pointer);
     LOADER_LOG("stack_start: %x\n", stack_start);
     LOADER_LOG("end func: %x\n", *stack_start);
     LOADER_LOG("------------running program------------\n");
 
     run_asm(
-        (size_t)inferior_frame_pointer, (size_t)stack_start, pe_data.entry_point
+        (size_t)inferior_frame_pointer, (size_t)stack_start, pe_data.entrypoint
     );
 }

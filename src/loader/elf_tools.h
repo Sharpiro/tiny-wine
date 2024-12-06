@@ -69,6 +69,8 @@ struct MemoryRegion {
     bool is_file_map;
     size_t file_offset;
     size_t permissions;
+    size_t temp_win_offset;
+    size_t temp_win_size;
 };
 
 struct MemoryRegionsInfo {

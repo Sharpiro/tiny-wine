@@ -22,7 +22,8 @@ all: \
 	programs/linux/string \
 	programs/linux/tinyfetch \
 	programs/linux/static_pie \
-	programs/linux/dynamic
+	programs/linux/dynamic \
+	tools/readwin
 
 tinyc_start.o: src/tiny_c/tinyc_start.c
 	@$(CC) $(CFLAGS) \
@@ -235,26 +236,23 @@ programs/linux/dynamic: libtinyc.so libdynamic.so
 		tinyc_start.o
 	@$(OBJDUMP) -M intel -D dynamic > dynamic.dump
 
-baby64: tinyc_start.o libtinyc.a
-	@$(CC) $(CFLAGS) \
-		-g \
-		-O0 \
+tools/readwin: tools/readwin/readwin_main.c tinyc_start.o libtinyc.a
+	@$(CC) $(CFLAGS) -g \
+		-DAMD64 \
 		-nostdlib -static \
 		$(WARNINGS) \
-		-fPIC \
-		-fno-stack-protector \
-		-DAMD64 \
-		-mno-sse \
-		-o baby64 \
+		-o readwin \
+		tools/readwin/readwin_main.c \
+		src/loader/loader_lib.c \
+		src/loader/pe_tools.c \
 		tinyc_start.o \
-		src/programs/linux/baby64/baby64_main.c \
 		libtinyc.a
-	@$(OBJDUMP) -D baby64 > baby64.dump
 
 clean:
 	@rm -f \
 	*.dump *.o *.s *.a *.so \
-	loader env string tinyfetch dynamic unit_test static_pie baby64
+	loader env string tinyfetch dynamic unit_test static_pie winloader readwin \
+	readwin
 
 install: libtinyc.a libtinyc.so
 	cp src/tiny_c/tiny_c.h /usr/local/include
