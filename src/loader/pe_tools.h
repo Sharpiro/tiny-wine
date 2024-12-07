@@ -96,6 +96,7 @@ struct WinSectionHeader {
 };
 
 struct PeData {
+    struct ImageDosHeader *dos_header;
     struct WinPEHeader *winpe_header;
     size_t entrypoint;
     struct WinSectionHeader *section_headers;

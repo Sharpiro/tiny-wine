@@ -27,6 +27,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         winpe_header->image_optional_header.address_of_entry_point;
 
     *pe_data = (struct PeData){
+        .dos_header = dos_header,
         .winpe_header = winpe_header,
         .entrypoint = entrypoint,
         .section_headers = section_headers,
@@ -43,6 +44,7 @@ bool get_memory_regions_info_win(
     struct MemoryRegionsInfo *memory_regions_info
 ) {
     const int MAX_REGION_SIZE = 0x1000;
+
     struct MemoryRegion *memory_regions =
         loader_malloc_arena(sizeof(struct MemoryRegion) * program_headers_len);
     for (size_t i = 0; i < program_headers_len; i++) {
@@ -65,12 +67,10 @@ bool get_memory_regions_info_win(
             .start = address_offset + program_header->virtual_address,
             .end = address_offset + program_header->virtual_address +
                 MAX_REGION_SIZE,
-            // @todo: confusing win/linux relationship
-            .is_file_map = false,
-            .file_offset = 0,
+            .is_direct_file_map = false,
+            .file_offset = program_header->pointer_to_raw_data,
+            .file_size = program_header->virtual_size,
             .permissions = permissions,
-            .temp_win_offset = program_header->pointer_to_raw_data,
-            .temp_win_size = program_header->virtual_size,
         };
     }
 

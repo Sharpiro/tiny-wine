@@ -1,5 +1,6 @@
 #include "../../../loader/loader_lib.h"
 #include "../../../loader/memory_map.h"
+#include "../../../loader/pe_tools.h"
 #include "../../../tiny_c/tiny_c.h"
 
 #define assert(expr)                                                           \
@@ -188,24 +189,68 @@ static void get_memory_regions_x86_test(void) {
     assert(memory_regions_info.regions_len == 4);
     assert(memory_regions_info.regions[0].start == 0x400000);
     assert(memory_regions_info.regions[0].end == 0x401000);
-    assert(memory_regions_info.regions[0].is_file_map == true);
+    assert(memory_regions_info.regions[0].is_direct_file_map == true);
     assert(memory_regions_info.regions[0].file_offset == 0);
     assert(memory_regions_info.regions[0].permissions == 4);
     assert(memory_regions_info.regions[1].start == 0x401000);
     assert(memory_regions_info.regions[1].end == 0x403000);
-    assert(memory_regions_info.regions[1].is_file_map == true);
+    assert(memory_regions_info.regions[1].is_direct_file_map == true);
     assert(memory_regions_info.regions[1].file_offset == 0x1000);
     assert(memory_regions_info.regions[1].permissions == 5);
     assert(memory_regions_info.regions[2].start == 0x403000);
     assert(memory_regions_info.regions[2].end == 0x404000);
-    assert(memory_regions_info.regions[2].is_file_map == true);
+    assert(memory_regions_info.regions[2].is_direct_file_map == true);
     assert(memory_regions_info.regions[2].file_offset == 0x3000);
     assert(memory_regions_info.regions[2].permissions == 4);
     assert(memory_regions_info.regions[3].start == 0x404000);
     assert(memory_regions_info.regions[3].end == 0x405000);
-    assert(memory_regions_info.regions[3].is_file_map == false);
+    assert(memory_regions_info.regions[3].is_direct_file_map == false);
     assert(memory_regions_info.regions[3].file_offset == 0);
     assert(memory_regions_info.regions[3].permissions == 6);
+}
+
+static void get_memory_regions_win_test(void) {
+    struct WinSectionHeader program_headers[] = {
+        (struct WinSectionHeader){
+            .name = ".text",
+            .virtual_size = 0x48,
+            .virtual_address = 0x1000,
+            .pointer_to_raw_data = 0x400,
+            .characteristics = 0x60000020,
+        },
+        (struct WinSectionHeader){
+            .name = ".pdata",
+            .virtual_size = 0x0c,
+            .virtual_address = 0x2000,
+            .pointer_to_raw_data = 0x600,
+            .characteristics = 0x40000040,
+        }
+    };
+
+    struct MemoryRegionsInfo memory_regions_info;
+    bool result = get_memory_regions_info_win(
+        program_headers,
+        sizeof(program_headers) / sizeof(struct WinSectionHeader),
+        0x140000000,
+        &memory_regions_info
+    );
+
+    assert(result);
+    assert(memory_regions_info.start == 0);
+    assert(memory_regions_info.end == 0);
+    assert(memory_regions_info.regions_len == 2);
+    assert(memory_regions_info.regions[0].start == 0x140001000);
+    assert(memory_regions_info.regions[0].end == 0x140002000);
+    assert(memory_regions_info.regions[0].is_direct_file_map == false);
+    assert(memory_regions_info.regions[0].file_offset == 0x400);
+    assert(memory_regions_info.regions[0].file_size == 0x48);
+    assert(memory_regions_info.regions[0].permissions == 5);
+    assert(memory_regions_info.regions[1].start == 0x140002000);
+    assert(memory_regions_info.regions[1].end == 0x140003000);
+    assert(memory_regions_info.regions[1].is_direct_file_map == false);
+    assert(memory_regions_info.regions[1].file_offset == 0x600);
+    assert(memory_regions_info.regions[1].file_size == 0x0c);
+    assert(memory_regions_info.regions[1].permissions == 4);
 }
 
 static void loader_malloc_arena_align_test(void) {
@@ -284,6 +329,7 @@ int main(void) {
     get_memory_regions_offset_test();
     get_memory_regions_big_align_test();
     get_memory_regions_x86_test();
+    get_memory_regions_win_test();
     loader_malloc_arena_align_test();
     get_runtime_function_local_lib_test();
     get_runtime_function_shared_lib_test();

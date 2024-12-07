@@ -66,11 +66,10 @@ struct Relocation {
 struct MemoryRegion {
     size_t start;
     size_t end;
-    bool is_file_map;
+    bool is_direct_file_map;
     size_t file_offset;
+    size_t file_size;
     size_t permissions;
-    size_t temp_win_offset;
-    size_t temp_win_size;
 };
 
 struct MemoryRegionsInfo {

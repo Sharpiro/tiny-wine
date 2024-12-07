@@ -165,6 +165,7 @@ programs/linux/unit_test: tinyc_start.o libtinyc.a
 		src/programs/linux/unit_test/unit_test_main.c \
 		src/loader/memory_map.c \
 		src/loader/loader_lib.c \
+		src/loader/pe_tools.c \
 		tinyc_start.o \
 		libtinyc.a
 

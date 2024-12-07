@@ -111,14 +111,12 @@ int main(int argc, char **argv) {
         &memory_regions_info
     );
 
-    print_memory_regions();
-
     for (size_t i = 0; i < memory_regions_info.regions_len; i++) {
         struct MemoryRegion *memory_region = &memory_regions_info.regions[i];
         uint8_t *region_start = (uint8_t *)memory_region->start;
-        tinyc_lseek(fd, (off_t)memory_region->temp_win_offset, SEEK_SET);
-        if ((int32_t
-            )tiny_c_read(fd, region_start, memory_region->temp_win_size) < 0) {
+        tinyc_lseek(fd, (off_t)memory_region->file_offset, SEEK_SET);
+        if ((int32_t)tiny_c_read(fd, region_start, memory_region->file_size) <
+            0) {
             EXIT("read failed\n");
         }
 
@@ -136,6 +134,8 @@ int main(int argc, char **argv) {
             );
         }
     }
+
+    print_memory_regions();
 
     /* Jump to program */
     size_t *frame_pointer = (size_t *)argv - 1;

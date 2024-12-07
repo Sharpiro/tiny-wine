@@ -66,7 +66,7 @@ bool get_memory_regions_info_arm(
         memory_regions[j++] = (struct MemoryRegion){
             .start = start,
             .end = end,
-            .is_file_map = program_header->p_filesz > 0,
+            .is_direct_file_map = program_header->p_filesz > 0,
             .file_offset = file_offset,
             .permissions = program_header->p_flags,
         };
@@ -141,7 +141,7 @@ bool get_memory_regions_info_x86(
         memory_regions[j++] = (struct MemoryRegion){
             .start = start,
             .end = end,
-            .is_file_map = program_header->p_filesz > 0,
+            .is_direct_file_map = program_header->p_filesz > 0,
             .file_offset = file_offset,
             .permissions = program_header->p_flags,
         };
@@ -174,18 +174,18 @@ bool map_memory_regions(
             memory_region->file_offset,
             memory_region->permissions
         );
-        if (!memory_region->is_file_map) {
-            LOADER_LOG("WARNING: non-file map unsupported\n");
-        }
 
-        size_t map_anonymous = memory_region->is_file_map ? 0 : MAP_ANONYMOUS;
+        size_t map_anonymous =
+            memory_region->is_direct_file_map ? 0 : MAP_ANONYMOUS;
+        size_t file_offset =
+            memory_region->is_direct_file_map ? memory_region->file_offset : 0;
         uint8_t *addr = tiny_c_mmapx86(
             memory_region->start,
             memory_region_len,
             map_protection,
             MAP_PRIVATE | MAP_FIXED | map_anonymous,
             fd,
-            memory_region->file_offset
+            file_offset
         );
         if ((size_t)addr != memory_region->start) {
             BAIL(
