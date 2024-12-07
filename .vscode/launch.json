@@ -25,7 +25,7 @@
         },
         { "text": "set output-radix 16" }
       ],
-      "preLaunchTask": "build_x64"
+      "preLaunchTask": "build"
     },
     {
       "name": "Launch program",
@@ -51,7 +51,7 @@
         },
         { "text": "set output-radix 16" }
       ],
-      "preLaunchTask": "build_x64"
+      "preLaunchTask": "build"
     },
     {
       "name": "Launch Unit Tests",
@@ -78,6 +78,32 @@
         { "text": "set output-radix 16" }
       ],
       "preLaunchTask": "build_unit_test"
+    },
+    {
+      "name": "Launch readwin",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/readwin",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        },
+        { "text": "set output-radix 16" }
+      ],
+      "preLaunchTask": "build"
     }
   ]
 }

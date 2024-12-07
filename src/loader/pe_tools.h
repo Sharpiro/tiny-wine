@@ -86,7 +86,7 @@ struct WinSectionHeader {
     uint32_t
         virtual_address; // Address of the section relative to the image base
     uint32_t size_of_raw_data;       // Size of the section in the file
-    uint32_t pointer_to_raw_data;    // File pointer to the section's data
+    uint32_t pointer_to_raw_data;    // File offset
     uint32_t pointer_to_relocations; // File pointer to relocations (deprecated)
     uint32_t
         pointer_to_linenumbers;     // File pointer to line numbers (deprecated)
@@ -95,12 +95,24 @@ struct WinSectionHeader {
     uint32_t characteristics;       // Flags describing section attributes
 };
 
+struct ImportDirectoryEntry {
+    uint32_t characteristics;
+    uint32_t timestamp;
+    uint32_t forwarder_chain;
+    uint32_t name_offset;
+    uint32_t import_address_table_offset;
+};
+
+#define IMPORT_DIRECTORY_ENTRY_SIZE sizeof(struct ImportDirectoryEntry)
+
 struct PeData {
     struct ImageDosHeader *dos_header;
     struct WinPEHeader *winpe_header;
     size_t entrypoint;
     struct WinSectionHeader *section_headers;
     size_t section_headers_len;
+    struct ImportDirectoryEntry *import_dir_entries;
+    size_t import_dir_entries_len;
 };
 
 bool get_pe_data(int32_t fd, struct PeData *elf_data);

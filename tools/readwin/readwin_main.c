@@ -44,14 +44,22 @@ int main(int argc, char **argv) {
     tiny_c_printf("\nSection Headers:\n", filename);
     for (size_t i = 0; i < pe_data.section_headers_len; i++) {
         struct WinSectionHeader *section_header = &pe_data.section_headers[i];
+        size_t address = image_base + section_header->virtual_address;
+        size_t file_offset = section_header->pointer_to_raw_data;
         tiny_c_printf(
             "%d, %s, %x, %x, %x, %x\n",
             i,
             section_header->name,
             section_header->virtual_size,
-            image_base + section_header->virtual_address,
-            section_header->pointer_to_raw_data,
+            address,
+            file_offset,
             section_header->characteristics
         );
+    }
+
+    tiny_c_printf("\n.idata:\n", filename);
+    for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
+        struct ImportDirectoryEntry *entry = &pe_data.import_dir_entries[i];
+        tiny_c_printf("Name offset: %x", entry->name_offset);
     }
 }

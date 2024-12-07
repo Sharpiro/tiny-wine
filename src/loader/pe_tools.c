@@ -2,6 +2,7 @@
 #include "./pe_tools.h"
 #include "../tiny_c/tiny_c.h"
 #include "loader_lib.h"
+#include <stddef.h>
 
 bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (pe_data == NULL) {
@@ -15,6 +16,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t image_header_start = (size_t)dos_header->e_lfanew;
     struct WinPEHeader *winpe_header =
         (struct WinPEHeader *)(file_buffer + image_header_start);
+    size_t image_base = winpe_header->image_optional_header.image_base;
+    size_t entrypoint =
+        image_base + winpe_header->image_optional_header.address_of_entry_point;
 
     size_t section_headers_start =
         (size_t)dos_header->e_lfanew + sizeof(struct WinPEHeader);
@@ -23,8 +27,33 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     struct WinSectionHeader *section_headers =
         (struct WinSectionHeader *)(file_buffer + section_headers_start);
 
-    size_t entrypoint = winpe_header->image_optional_header.image_base +
-        winpe_header->image_optional_header.address_of_entry_point;
+    struct WinSectionHeader *import_data_header = NULL;
+    for (size_t i = 0; i < section_headers_len; i++) {
+        if (tiny_c_strcmp((const char *)section_headers[i].name, ".idata") ==
+            0) {
+            import_data_header = &section_headers[i];
+        }
+    }
+    if (import_data_header == NULL) {
+        BAIL(".idata section not found");
+    }
+
+    // @todo: invalid address, need to load from file
+    struct ImportDirectoryEntry *import_dir_entries =
+        (struct ImportDirectoryEntry *)(image_base +
+                                        import_data_header->pointer_to_raw_data
+        );
+    size_t import_dir_entries_len = 0;
+    for (size_t i = 0; true; i++) {
+        struct ImportDirectoryEntry *import_dir_entry = &import_dir_entries[i];
+        const uint8_t ENTRY_COMPARE[IMPORT_DIRECTORY_ENTRY_SIZE] = {0};
+        if (tiny_c_memcmp(
+                import_dir_entry, ENTRY_COMPARE, IMPORT_DIRECTORY_ENTRY_SIZE
+            ) == 0) {
+            break;
+        }
+        import_dir_entries_len++;
+    }
 
     *pe_data = (struct PeData){
         .dos_header = dos_header,
@@ -32,6 +61,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .entrypoint = entrypoint,
         .section_headers = section_headers,
         .section_headers_len = section_headers_len,
+        .import_dir_entries = import_dir_entries,
+        .import_dir_entries_len = import_dir_entries_len,
     };
 
     return true;
