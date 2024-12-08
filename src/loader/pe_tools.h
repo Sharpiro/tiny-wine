@@ -95,7 +95,12 @@ struct WinSectionHeader {
     uint32_t characteristics;       // Flags describing section attributes
 };
 
-struct ImportDirectoryEntry {
+struct ImportEntry {
+    const char *name;
+    size_t address;
+};
+
+struct ImportDirectoryRawEntry {
     uint32_t characteristics;
     uint32_t timestamp;
     uint32_t forwarder_chain;
@@ -103,7 +108,14 @@ struct ImportDirectoryEntry {
     uint32_t import_address_table_offset;
 };
 
-#define IMPORT_DIRECTORY_ENTRY_SIZE sizeof(struct ImportDirectoryEntry)
+struct ImportDirectoryEntry {
+    size_t import_lookup_table_offset;
+    const char *lib_name;
+    struct ImportEntry *import_entries;
+    size_t import_entries_len;
+};
+
+#define IMPORT_DIRECTORY_RAW_ENTRY_SIZE sizeof(struct ImportDirectoryRawEntry)
 
 struct PeData {
     struct ImageDosHeader *dos_header;

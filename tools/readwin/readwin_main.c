@@ -57,9 +57,15 @@ int main(int argc, char **argv) {
         );
     }
 
-    tiny_c_printf("\n.idata:\n", filename);
+    tiny_c_printf("\nSection .idata:\n", filename);
     for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
-        struct ImportDirectoryEntry *entry = &pe_data.import_dir_entries[i];
-        tiny_c_printf("Name offset: %x", entry->name_offset);
+        struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
+        tiny_c_printf("Lib: %s:\n", dir_entry->lib_name);
+        for (size_t i = 0; i < dir_entry->import_entries_len; i++) {
+            struct ImportEntry *import_entry = &dir_entry->import_entries[i];
+            tiny_c_printf(
+                "Import: %s, %x\n", import_entry->name, import_entry->address
+            );
+        }
     }
 }

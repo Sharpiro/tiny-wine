@@ -2,20 +2,24 @@
 #include "./pe_tools.h"
 #include "../tiny_c/tiny_c.h"
 #include "loader_lib.h"
+#include <stdatomic.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
 bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (pe_data == NULL) {
         BAIL("pe_data was null\n");
     }
 
-    int8_t *file_buffer = loader_malloc_arena(1000);
-    tiny_c_read(fd, file_buffer, 1000);
+    int8_t *pe_header_buffer = loader_malloc_arena(1000);
+    tiny_c_read(fd, pe_header_buffer, 1000);
 
-    struct ImageDosHeader *dos_header = (struct ImageDosHeader *)file_buffer;
+    struct ImageDosHeader *dos_header =
+        (struct ImageDosHeader *)pe_header_buffer;
     size_t image_header_start = (size_t)dos_header->e_lfanew;
     struct WinPEHeader *winpe_header =
-        (struct WinPEHeader *)(file_buffer + image_header_start);
+        (struct WinPEHeader *)(pe_header_buffer + image_header_start);
     size_t image_base = winpe_header->image_optional_header.image_base;
     size_t entrypoint =
         image_base + winpe_header->image_optional_header.address_of_entry_point;
@@ -25,34 +29,89 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t section_headers_len =
         winpe_header->image_file_header.number_of_sections;
     struct WinSectionHeader *section_headers =
-        (struct WinSectionHeader *)(file_buffer + section_headers_start);
+        (struct WinSectionHeader *)(pe_header_buffer + section_headers_start);
 
-    struct WinSectionHeader *import_data_header = NULL;
+    struct WinSectionHeader *idata_header = NULL;
     for (size_t i = 0; i < section_headers_len; i++) {
         if (tiny_c_strcmp((const char *)section_headers[i].name, ".idata") ==
             0) {
-            import_data_header = &section_headers[i];
+            idata_header = &section_headers[i];
         }
     }
-    if (import_data_header == NULL) {
+    if (idata_header == NULL) {
         BAIL(".idata section not found");
     }
 
-    // @todo: invalid address, need to load from file
-    struct ImportDirectoryEntry *import_dir_entries =
-        (struct ImportDirectoryEntry *)(image_base +
-                                        import_data_header->pointer_to_raw_data
+    const int MAX_ARRAY_LENGTH = 10;
+
+    uint8_t *idata_buffer = loader_malloc_arena(1000);
+    tinyc_lseek(fd, idata_header->pointer_to_raw_data, SEEK_SET);
+    tiny_c_read(fd, idata_buffer, 1000);
+    struct ImportDirectoryRawEntry *raw_entries =
+        (struct ImportDirectoryRawEntry *)idata_buffer;
+    struct ImportDirectoryEntry *entries =
+        (struct ImportDirectoryEntry *)loader_malloc_arena(
+            sizeof(struct ImportDirectoryEntry) * MAX_ARRAY_LENGTH
         );
+
+    size_t idata_base = idata_header->virtual_address;
     size_t import_dir_entries_len = 0;
     for (size_t i = 0; true; i++) {
-        struct ImportDirectoryEntry *import_dir_entry = &import_dir_entries[i];
-        const uint8_t ENTRY_COMPARE[IMPORT_DIRECTORY_ENTRY_SIZE] = {0};
-        if (tiny_c_memcmp(
-                import_dir_entry, ENTRY_COMPARE, IMPORT_DIRECTORY_ENTRY_SIZE
-            ) == 0) {
+        struct ImportDirectoryRawEntry *raw_entry = &raw_entries[i];
+        if (i == MAX_ARRAY_LENGTH) {
+            BAIL("unsupported .idata table size\n");
+        }
+        if (tiny_c_mem_empty(raw_entry, IMPORT_DIRECTORY_RAW_ENTRY_SIZE)) {
             break;
         }
+
         import_dir_entries_len++;
+
+        size_t name_idata_offset = raw_entry->name_offset - idata_base;
+        const char *lib_name = (char *)idata_buffer + name_idata_offset;
+
+        struct ImportEntry *import_entries =
+            loader_malloc_arena(sizeof(struct ImportEntry) * MAX_ARRAY_LENGTH);
+        size_t import_entries_len = 0;
+        uint64_t *import_lookup_entries =
+            (uint64_t *)(idata_buffer +
+                         (raw_entry->characteristics - idata_base));
+        uint64_t *import_address_entries =
+            (uint64_t *)(idata_buffer +
+                         (raw_entry->import_address_table_offset - idata_base));
+        for (size_t j = 0; true; j++) {
+            uint64_t import_lookup_entry = import_lookup_entries[j];
+            uint64_t import_address_entry = import_address_entries[j];
+            if (j == MAX_ARRAY_LENGTH) {
+                BAIL("unsupported array size\n");
+            }
+            if (tiny_c_mem_empty(&import_lookup_entry, sizeof(uint64_t))) {
+                break;
+            }
+            if (import_lookup_entry & 0x8000000000000000) {
+                BAIL("unsupported import table lookup by ordinal\n");
+            }
+
+            import_entries_len++;
+
+            const int NAME_ENTRY_OFFSET = 2;
+
+            size_t import_name_entry_offset =
+                (import_lookup_entry & 0x7fffffff) - idata_base;
+            const char *import_name = (char *)idata_buffer +
+                import_name_entry_offset + NAME_ENTRY_OFFSET;
+            import_entries[j] = (struct ImportEntry){
+                .name = import_name,
+                .address = import_address_entry,
+            };
+        }
+
+        entries[i] = (struct ImportDirectoryEntry){
+            .import_lookup_table_offset = raw_entry->characteristics,
+            .lib_name = lib_name,
+            .import_entries = import_entries,
+            .import_entries_len = import_entries_len,
+        };
     }
 
     *pe_data = (struct PeData){
@@ -61,7 +120,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .entrypoint = entrypoint,
         .section_headers = section_headers,
         .section_headers_len = section_headers_len,
-        .import_dir_entries = import_dir_entries,
+        .import_dir_entries = entries,
         .import_dir_entries_len = import_dir_entries_len,
     };
 
