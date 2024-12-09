@@ -51,6 +51,10 @@ __attribute__((naked)) void win_loader_end(void) {
             "syscall\n");
 }
 
+void dynamic_linker_callback(void) {
+    LOADER_LOG("DYNAMIC LINKER CALLBACK HIT\n");
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -85,11 +89,13 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    size_t image_base = pe_data.winpe_header->image_optional_header.image_base;
+
     struct MemoryRegionsInfo memory_regions_info;
     if (!get_memory_regions_info_win(
             pe_data.section_headers,
             pe_data.section_headers_len,
-            pe_data.winpe_header->image_optional_header.image_base,
+            image_base,
             &memory_regions_info
         )) {
         EXIT("failed getting memory regions\n");
@@ -97,7 +103,7 @@ int main(int argc, char **argv) {
 
     for (size_t i = 0; i < memory_regions_info.regions_len; i++) {
         struct MemoryRegion *memory_region = &memory_regions_info.regions[i];
-        memory_region->permissions = 4 | 2 | 0;
+        memory_region->permissions = 4 | 2 | 1;
     }
 
     if (!map_memory_regions(fd, &memory_regions_info)) {
@@ -107,7 +113,7 @@ int main(int argc, char **argv) {
     get_memory_regions_info_win(
         pe_data.section_headers,
         pe_data.section_headers_len,
-        pe_data.winpe_header->image_optional_header.image_base,
+        image_base,
         &memory_regions_info
     );
 
@@ -120,22 +126,33 @@ int main(int argc, char **argv) {
             EXIT("read failed\n");
         }
 
-        int32_t prot_read = (memory_region->permissions & 4) >> 2;
-        int32_t prot_write = memory_region->permissions & 2;
-        int32_t prot_execute = ((int32_t)memory_region->permissions & 1) << 2;
-        int32_t map_protection = prot_read | prot_write | prot_execute;
-        size_t memory_region_len = memory_region->end - memory_region->start;
-        if (tiny_c_mprotect(region_start, memory_region_len, map_protection) <
-            0) {
-            EXIT(
-                "tiny_c_mprotect failed, %d, %s\n",
-                tinyc_errno,
-                tinyc_strerror(tinyc_errno)
-            );
-        }
+        // @todo: needs to happen later
+        // int32_t prot_read = (memory_region->permissions & 4) >> 2;
+        // int32_t prot_write = memory_region->permissions & 2;
+        // int32_t prot_execute = ((int32_t)memory_region->permissions & 1) <<
+        // 2; int32_t map_protection = prot_read | prot_write | prot_execute;
+        // size_t memory_region_len = memory_region->end - memory_region->start;
+        // if (tiny_c_mprotect(region_start, memory_region_len, map_protection)
+        // <
+        //     0) {
+        //     EXIT(
+        //         "tiny_c_mprotect failed, %d, %s\n",
+        //         tinyc_errno,
+        //         tinyc_strerror(tinyc_errno)
+        //     );
+        // }
     }
 
     print_memory_regions();
+
+    size_t *iat_offset =
+        (size_t *)(image_base + pe_data.import_address_table_offset);
+    for (size_t i = 0; i < pe_data.import_address_table_length; i++) {
+        size_t *iat_entry = iat_offset + i;
+        size_t iat_entry_init = *iat_entry;
+        *iat_entry = (size_t)dynamic_linker_callback;
+        LOADER_LOG("IAT: %x, %x, %x\n", iat_entry, iat_entry_init, *iat_entry);
+    }
 
     /* Jump to program */
     size_t *frame_pointer = (size_t *)argv - 1;

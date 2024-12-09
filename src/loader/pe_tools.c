@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+static const int MAX_ARRAY_LENGTH = 10;
+
 bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (pe_data == NULL) {
         BAIL("pe_data was null\n");
@@ -14,15 +16,14 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
 
     int8_t *pe_header_buffer = loader_malloc_arena(1000);
     tiny_c_read(fd, pe_header_buffer, 1000);
-
     struct ImageDosHeader *dos_header =
         (struct ImageDosHeader *)pe_header_buffer;
     size_t image_header_start = (size_t)dos_header->e_lfanew;
     struct WinPEHeader *winpe_header =
         (struct WinPEHeader *)(pe_header_buffer + image_header_start);
-    size_t image_base = winpe_header->image_optional_header.image_base;
-    size_t entrypoint =
-        image_base + winpe_header->image_optional_header.address_of_entry_point;
+    if (winpe_header->image_optional_header.number_of_rva_and_sizes != 16) {
+        BAIL("unsupported data directory size");
+    }
 
     size_t section_headers_start =
         (size_t)dos_header->e_lfanew + sizeof(struct WinPEHeader);
@@ -41,8 +42,6 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (idata_header == NULL) {
         BAIL(".idata section not found");
     }
-
-    const int MAX_ARRAY_LENGTH = 10;
 
     uint8_t *idata_buffer = loader_malloc_arena(1000);
     tinyc_lseek(fd, idata_header->pointer_to_raw_data, SEEK_SET);
@@ -114,6 +113,13 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         };
     }
 
+    size_t entrypoint = winpe_header->image_optional_header.image_base +
+        winpe_header->image_optional_header.address_of_entry_point;
+
+    struct ImageDataDirectory *import_address_table_dir =
+        &winpe_header->image_optional_header.data_directory[DATA_DIR_IAT_INDEX];
+    size_t iat_length = import_address_table_dir->size / sizeof(size_t) - 1;
+
     *pe_data = (struct PeData){
         .dos_header = dos_header,
         .winpe_header = winpe_header,
@@ -122,6 +128,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .section_headers_len = section_headers_len,
         .import_dir_entries = entries,
         .import_dir_entries_len = import_dir_entries_len,
+        .import_address_table_offset =
+            import_address_table_dir->virtual_address,
+        .import_address_table_length = iat_length,
     };
 
     return true;

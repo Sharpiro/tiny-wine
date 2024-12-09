@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     size_t base_of_code =
         pe_data.winpe_header->image_optional_header.base_of_code;
 
-    tiny_c_printf("PE Header:\n", filename);
+    tiny_c_printf("PE Header:\n");
     tiny_c_printf("DOS magic: %s\n", (char *)&dos_magic);
     tiny_c_printf("PE magic: %x\n", pe_magic);
     tiny_c_printf("Class: %s\n", class);
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     tiny_c_printf("Section headers length: %d\n", pe_data.section_headers_len);
     tiny_c_printf("Section header size: %d\n", sizeof(struct WinSectionHeader));
 
-    tiny_c_printf("\nSection Headers:\n", filename);
+    tiny_c_printf("\nSection Headers:\n");
     for (size_t i = 0; i < pe_data.section_headers_len; i++) {
         struct WinSectionHeader *section_header = &pe_data.section_headers[i];
         size_t address = image_base + section_header->virtual_address;
@@ -57,7 +57,14 @@ int main(int argc, char **argv) {
         );
     }
 
-    tiny_c_printf("\nSection .idata:\n", filename);
+    tiny_c_printf("\nData Directory:\n");
+    tiny_c_printf(
+        "Import Address Table: %x, %d\n",
+        pe_data.import_address_table_offset,
+        pe_data.import_address_table_length
+    );
+
+    tiny_c_printf("\nSection .idata:\n");
     for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
         struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
         tiny_c_printf("Lib: %s:\n", dir_entry->lib_name);

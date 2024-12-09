@@ -74,6 +74,8 @@ struct ImageOptionalHeader {
     struct ImageDataDirectory data_directory[16]; // Array of data directories
 };
 
+#define DATA_DIR_IAT_INDEX 12
+
 struct WinPEHeader {
     uint32_t signature;
     struct ImageFileHeader image_file_header;
@@ -125,6 +127,8 @@ struct PeData {
     size_t section_headers_len;
     struct ImportDirectoryEntry *import_dir_entries;
     size_t import_dir_entries_len;
+    size_t import_address_table_offset;
+    size_t import_address_table_length;
 };
 
 bool get_pe_data(int32_t fd, struct PeData *elf_data);
