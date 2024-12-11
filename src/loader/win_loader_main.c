@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/types.h>
 
 // @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
@@ -52,7 +53,16 @@ __attribute__((naked)) void win_loader_end(void) {
 }
 
 void dynamic_linker_callback(void) {
-    LOADER_LOG("DYNAMIC LINKER CALLBACK HIT\n");
+    size_t source_address = 0;
+    __asm__("mov %0, r15\n" : "=r"(source_address)::"rax");
+    LOADER_LOG("DYNAMIC LINKER CALLBACK HIT, %x\n", source_address);
+
+    __asm__("mov rax, 0\n");
+}
+
+__attribute__((naked)) void dynamic_trampoline(void) {
+    __asm__("lea r15, [rip - 0x0c]\n"
+            "jmp %0\n" ::"r"(dynamic_linker_callback));
 }
 
 int main(int argc, char **argv) {
@@ -110,13 +120,14 @@ int main(int argc, char **argv) {
         EXIT("loader map memory regions failed\n");
     }
 
+    /* Protect memory regions */
+
     get_memory_regions_info_win(
         pe_data.section_headers,
         pe_data.section_headers_len,
         image_base,
         &memory_regions_info
     );
-
     for (size_t i = 0; i < memory_regions_info.regions_len; i++) {
         struct MemoryRegion *memory_region = &memory_regions_info.regions[i];
         uint8_t *region_start = (uint8_t *)memory_region->start;
@@ -143,6 +154,28 @@ int main(int argc, char **argv) {
         // }
     }
 
+    /* Map Import Address Table memory */
+
+    const size_t IAT_BASE_START = 0x7d7e0000;
+    const size_t IAT_MEM_START = 0x4000;
+    struct MemoryRegion iat_regions = {
+        .start = IAT_BASE_START + IAT_MEM_START,
+        .end = IAT_BASE_START + IAT_MEM_START + 0x1000,
+        .is_direct_file_map = false,
+        .file_offset = 0,
+        .file_size = 0,
+        .permissions = 4 | 2 | 1,
+    };
+    struct MemoryRegionsInfo iat_mem_info = {
+        .start = 0,
+        .end = 0,
+        .regions = &iat_regions,
+        .regions_len = 1,
+    };
+    if (!map_memory_regions(fd, &iat_mem_info)) {
+        EXIT("loader map memory regions failed\n");
+    }
+
     print_memory_regions();
 
     size_t *iat_offset =
@@ -150,8 +183,12 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < pe_data.import_address_table_length; i++) {
         size_t *iat_entry = iat_offset + i;
         size_t iat_entry_init = *iat_entry;
-        *iat_entry = (size_t)dynamic_linker_callback;
-        LOADER_LOG("IAT: %x, %x, %x\n", iat_entry, iat_entry_init, *iat_entry);
+        size_t *entry_trampoline = (size_t *)(IAT_BASE_START + *iat_entry);
+        *iat_entry = (size_t)entry_trampoline;
+        memcpy(entry_trampoline, (void *)dynamic_trampoline, 0x0e);
+        LOADER_LOG(
+            "IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_trampoline
+        );
     }
 
     /* Jump to program */
