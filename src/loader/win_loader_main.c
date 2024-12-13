@@ -53,9 +53,23 @@ __attribute__((naked)) void win_loader_end(void) {
 }
 
 void dynamic_linker_callback(void) {
+    size_t *rbp;
+    __asm__("mov %0, rbp" : "=r"(rbp));
     size_t source_address = 0;
-    __asm__("mov %0, r15\n" : "=r"(source_address)::"rax");
-    LOADER_LOG("DYNAMIC LINKER CALLBACK HIT, %x\n", source_address);
+    __asm__("mov %0, r15\n" : "=r"(source_address));
+    size_t p1;
+    __asm__("mov %0, rcx" : "=r"(p1));
+    size_t p2;
+    __asm__("mov %0, rdx" : "=r"(p2));
+    size_t p3;
+    __asm__("mov %0, r8" : "=r"(p3));
+    size_t p4;
+    __asm__("mov %0, r9" : "=r"(p4));
+    size_t p5 = rbp[6];
+    size_t p6 = rbp[7];
+
+    LOADER_LOG("Dynamic linker callback hit, %x\n", source_address);
+    LOADER_LOG("func(%x, %x, %x, %x, %x, %x)\n", p1, p2, p3, p4, p5, p6);
 
     __asm__("mov rax, 0\n");
 }
