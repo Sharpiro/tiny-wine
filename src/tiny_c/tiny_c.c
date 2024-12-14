@@ -348,7 +348,7 @@ int tiny_c_memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
     return 0;
 }
 
-bool tiny_c_mem_empty(const void *buffer, size_t n) {
+bool tiny_c_mem_is_empty(const void *buffer, size_t n) {
     for (size_t i = 0; i < n; i++) {
         u_int8_t byte = ((u_int8_t *)buffer)[i];
         if (byte != 0) {

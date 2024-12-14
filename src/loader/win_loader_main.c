@@ -9,6 +9,10 @@
 #include <string.h>
 #include <sys/types.h>
 
+const size_t IAT_BASE_START = 0x7d7e0000;
+
+struct PeData pe_data;
+
 // @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
 //        does arm?
 static void run_asm(
@@ -52,6 +56,12 @@ __attribute__((naked)) void win_loader_end(void) {
             "syscall\n");
 }
 
+void dynamic_builtin(const char *data) {
+    // @todo: first func param gets hosed here
+    LOADER_LOG("dynamic_builtin\n");
+    tiny_c_printf("x: %x\n", data);
+}
+
 void dynamic_linker_callback(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
@@ -68,10 +78,73 @@ void dynamic_linker_callback(void) {
     size_t p5 = rbp[6];
     size_t p6 = rbp[7];
 
-    LOADER_LOG("Dynamic linker callback hit, %x\n", source_address);
-    LOADER_LOG("func(%x, %x, %x, %x, %x, %x)\n", p1, p2, p3, p4, p5, p6);
+    size_t func_iat_value = source_address - IAT_BASE_START;
+    size_t func_iat_key = 0;
 
-    __asm__("mov rax, 0\n");
+    for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
+        struct KeyValue *iat_entry = &pe_data.import_address_table[i];
+        if (iat_entry->value == func_iat_value) {
+            func_iat_key = iat_entry->key;
+        }
+    }
+    if (func_iat_key == 0) {
+        EXIT("dynamic entry offset '%x' not found\n", func_iat_value)
+    }
+
+    LOADER_LOG(
+        "Dynamic linker callback hit, %x:%x\n", func_iat_key, func_iat_value
+    );
+
+    struct ImportEntry *import_entry = NULL;
+    for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
+        struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
+        for (size_t i = 0; i < dir_entry->import_entries_len; i++) {
+            struct ImportEntry *current_entry = &dir_entry->import_entries[i];
+            if (current_entry->address == func_iat_value) {
+                import_entry = current_entry;
+            }
+        }
+    }
+    if (import_entry == NULL) {
+        EXIT("dynamic entry offset '%x' not found\n", func_iat_value)
+    };
+
+    size_t image_base = pe_data.winpe_header->image_optional_header.image_base;
+    size_t *temp_key = (size_t *)(image_base + func_iat_key);
+    *temp_key = (size_t)dynamic_builtin;
+
+    LOADER_LOG(
+        "%s(%x, %x, %x, %x, %x, %x)\n",
+        import_entry->name,
+        p1,
+        p2,
+        p3,
+        p4,
+        p5,
+        p6
+    );
+
+    // __asm__("mov rax, 0\n");
+
+    LOADER_LOG("completed dynamic linking\n");
+
+    // @todo: stack params
+    __asm__("mov r15, %0\n"
+            "mov rcx, %1\n"
+            "mov rdx, %2\n"
+            "mov r8, %3\n"
+            "mov r9, %4\n"
+            "mov rsp, rbp\n"
+            "pop rbp\n"
+            "add rsp, 16\n"
+            "jmp r15\n" ::"r"(*temp_key),
+            "r"(p1),
+            "r"(p2),
+            "r"(p3),
+            "r"(p4),
+            "r"(p5),
+            "r"(p6)
+            : "r15", "rcx", "rdx", "r8", "r9");
 }
 
 __attribute__((naked)) void dynamic_trampoline(void) {
@@ -107,7 +180,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    struct PeData pe_data;
+    // struct PeData pe_data;
     if (!get_pe_data(fd, &pe_data)) {
         tiny_c_fprintf(STDERR, "error parsing pe data\n");
         return -1;
@@ -170,11 +243,14 @@ int main(int argc, char **argv) {
 
     /* Map Import Address Table memory */
 
-    const size_t IAT_BASE_START = 0x7d7e0000;
-    const size_t IAT_MEM_START = 0x4000;
+    const struct WinSectionHeader *idata_header = find_win_section_header(
+        pe_data.section_headers, pe_data.section_headers_len, ".idata"
+    );
+    size_t iat_mem_start = idata_header->virtual_address;
+
     struct MemoryRegion iat_regions = {
-        .start = IAT_BASE_START + IAT_MEM_START,
-        .end = IAT_BASE_START + IAT_MEM_START + 0x1000,
+        .start = IAT_BASE_START + iat_mem_start,
+        .end = IAT_BASE_START + iat_mem_start + 0x1000,
         .is_direct_file_map = false,
         .file_offset = 0,
         .file_size = 0,
@@ -194,7 +270,7 @@ int main(int argc, char **argv) {
 
     size_t *iat_offset =
         (size_t *)(image_base + pe_data.import_address_table_offset);
-    for (size_t i = 0; i < pe_data.import_address_table_length; i++) {
+    for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
         size_t *iat_entry = iat_offset + i;
         size_t iat_entry_init = *iat_entry;
         size_t *entry_trampoline = (size_t *)(IAT_BASE_START + *iat_entry);

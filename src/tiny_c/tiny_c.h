@@ -46,7 +46,7 @@ void tiny_c_close(int32_t fd);
 ssize_t tiny_c_read(int32_t fd, void *buf, size_t count);
 int32_t tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
 
-bool tiny_c_mem_empty(const void *buffer, size_t n);
+bool tiny_c_mem_is_empty(const void *buffer, size_t n);
 
 int32_t tiny_c_strcmp(const char *__s1, const char *__s2);
 int32_t tiny_c_get_pid(void);

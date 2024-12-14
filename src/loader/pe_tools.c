@@ -46,7 +46,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     uint8_t *idata_buffer = loader_malloc_arena(1000);
     tinyc_lseek(fd, idata_header->pointer_to_raw_data, SEEK_SET);
     tiny_c_read(fd, idata_buffer, 1000);
-    struct ImportDirectoryRawEntry *raw_entries =
+    struct ImportDirectoryRawEntry *raw_dir_entries =
         (struct ImportDirectoryRawEntry *)idata_buffer;
     struct ImportDirectoryEntry *entries =
         (struct ImportDirectoryEntry *)loader_malloc_arena(
@@ -56,17 +56,19 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t idata_base = idata_header->virtual_address;
     size_t import_dir_entries_len = 0;
     for (size_t i = 0; true; i++) {
-        struct ImportDirectoryRawEntry *raw_entry = &raw_entries[i];
+        struct ImportDirectoryRawEntry *raw_dir_entry = &raw_dir_entries[i];
         if (i == MAX_ARRAY_LENGTH) {
             BAIL("unsupported .idata table size\n");
         }
-        if (tiny_c_mem_empty(raw_entry, IMPORT_DIRECTORY_RAW_ENTRY_SIZE)) {
+        if (tiny_c_mem_is_empty(
+                raw_dir_entry, IMPORT_DIRECTORY_RAW_ENTRY_SIZE
+            )) {
             break;
         }
 
         import_dir_entries_len++;
 
-        size_t name_idata_offset = raw_entry->name_offset - idata_base;
+        size_t name_idata_offset = raw_dir_entry->name_offset - idata_base;
         const char *lib_name = (char *)idata_buffer + name_idata_offset;
 
         struct ImportEntry *import_entries =
@@ -74,17 +76,18 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         size_t import_entries_len = 0;
         uint64_t *import_lookup_entries =
             (uint64_t *)(idata_buffer +
-                         (raw_entry->characteristics - idata_base));
+                         (raw_dir_entry->characteristics - idata_base));
         uint64_t *import_address_entries =
             (uint64_t *)(idata_buffer +
-                         (raw_entry->import_address_table_offset - idata_base));
+                         (raw_dir_entry->import_address_table_offset -
+                          idata_base));
         for (size_t j = 0; true; j++) {
             uint64_t import_lookup_entry = import_lookup_entries[j];
             uint64_t import_address_entry = import_address_entries[j];
             if (j == MAX_ARRAY_LENGTH) {
                 BAIL("unsupported array size\n");
             }
-            if (tiny_c_mem_empty(&import_lookup_entry, sizeof(uint64_t))) {
+            if (tiny_c_mem_is_empty(&import_lookup_entry, sizeof(uint64_t))) {
                 break;
             }
             if (import_lookup_entry & 0x8000000000000000) {
@@ -106,19 +109,34 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         }
 
         entries[i] = (struct ImportDirectoryEntry){
-            .import_lookup_table_offset = raw_entry->characteristics,
+            .import_lookup_table_offset = raw_dir_entry->characteristics,
             .lib_name = lib_name,
             .import_entries = import_entries,
             .import_entries_len = import_entries_len,
         };
     }
 
-    size_t entrypoint = winpe_header->image_optional_header.image_base +
-        winpe_header->image_optional_header.address_of_entry_point;
+    size_t image_base = winpe_header->image_optional_header.image_base;
+    size_t entrypoint =
+        image_base + winpe_header->image_optional_header.address_of_entry_point;
 
     struct ImageDataDirectory *import_address_table_dir =
         &winpe_header->image_optional_header.data_directory[DATA_DIR_IAT_INDEX];
-    size_t iat_length = import_address_table_dir->size / sizeof(size_t) - 1;
+    size_t iat_len = import_address_table_dir->size / sizeof(size_t) - 1;
+
+    size_t iat_file_offset =
+        import_address_table_dir->virtual_address - idata_base;
+    size_t import_address_table_offset =
+        import_address_table_dir->virtual_address;
+
+    struct KeyValue *import_address_table =
+        loader_malloc_arena(sizeof(struct KeyValue) * iat_len);
+    size_t *iat_base = (size_t *)(idata_buffer + iat_file_offset);
+    for (size_t i = 0; i < iat_len; i++) {
+        size_t key = import_address_table_offset + i * sizeof(size_t);
+        size_t value = *(iat_base + i);
+        import_address_table[i] = (struct KeyValue){.key = key, .value = value};
+    }
 
     *pe_data = (struct PeData){
         .dos_header = dos_header,
@@ -128,9 +146,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .section_headers_len = section_headers_len,
         .import_dir_entries = entries,
         .import_dir_entries_len = import_dir_entries_len,
-        .import_address_table_offset =
-            import_address_table_dir->virtual_address,
-        .import_address_table_length = iat_length,
+        .import_address_table_offset = import_address_table_offset,
+        .import_address_table = import_address_table,
+        .import_address_table_len = iat_len,
     };
 
     return true;
@@ -180,4 +198,19 @@ bool get_memory_regions_info_win(
         .regions_len = program_headers_len,
     };
     return true;
+}
+
+const struct WinSectionHeader *find_win_section_header(
+    const struct WinSectionHeader *section_headers,
+    size_t section_headers_len,
+    const char *name
+) {
+    for (size_t i = 0; i < section_headers_len; i++) {
+        const struct WinSectionHeader *section_header = &section_headers[i];
+        if (tiny_c_strcmp((char *)section_header->name, name) == 0) {
+            return section_header;
+        }
+    }
+
+    return NULL;
 }

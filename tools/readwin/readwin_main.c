@@ -46,23 +46,32 @@ int main(int argc, char **argv) {
         struct WinSectionHeader *section_header = &pe_data.section_headers[i];
         size_t address = image_base + section_header->virtual_address;
         size_t file_offset = section_header->pointer_to_raw_data;
+        size_t permissions = section_header->characteristics >> 28;
+        char *read = permissions & 4 ? "r" : "-";
+        char *write = permissions & 8 ? "w" : "-";
+        char *execute = permissions & 2 ? "e" : "-";
         tiny_c_printf(
-            "%d, %s, %x, %x, %x, %x\n",
+            "%d, %s, %x, %x, %x, %s%s%s\n",
             i,
             section_header->name,
             section_header->virtual_size,
             address,
             file_offset,
-            section_header->characteristics
+            read,
+            write,
+            execute
         );
     }
 
-    tiny_c_printf("\nData Directory:\n");
     tiny_c_printf(
-        "Import Address Table: %x, %d\n",
+        "\nImport Address Table: %x, %d\n",
         pe_data.import_address_table_offset,
-        pe_data.import_address_table_length
+        pe_data.import_address_table_len
     );
+    for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
+        struct KeyValue *iat_entry = &pe_data.import_address_table[i];
+        tiny_c_printf("%x:%x\n", iat_entry->key, iat_entry->value);
+    }
 
     tiny_c_printf("\nSection .idata:\n");
     for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {

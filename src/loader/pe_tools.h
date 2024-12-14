@@ -119,6 +119,11 @@ struct ImportDirectoryEntry {
 
 #define IMPORT_DIRECTORY_RAW_ENTRY_SIZE sizeof(struct ImportDirectoryRawEntry)
 
+struct KeyValue {
+    size_t key;
+    size_t value;
+};
+
 struct PeData {
     struct ImageDosHeader *dos_header;
     struct WinPEHeader *winpe_header;
@@ -128,7 +133,8 @@ struct PeData {
     struct ImportDirectoryEntry *import_dir_entries;
     size_t import_dir_entries_len;
     size_t import_address_table_offset;
-    size_t import_address_table_length;
+    struct KeyValue *import_address_table;
+    size_t import_address_table_len;
 };
 
 bool get_pe_data(int32_t fd, struct PeData *elf_data);
@@ -138,4 +144,10 @@ bool get_memory_regions_info_win(
     size_t program_headers_len,
     size_t address_offset,
     struct MemoryRegionsInfo *memory_regions_info
+);
+
+const struct WinSectionHeader *find_win_section_header(
+    const struct WinSectionHeader *section_headers,
+    size_t section_headers_len,
+    const char *name
 );
