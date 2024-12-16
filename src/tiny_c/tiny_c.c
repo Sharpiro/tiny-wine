@@ -62,7 +62,7 @@ static void tiny_c_newline(int32_t file_handle) {
     tiny_c_syscall(SYS_write, &args);
 }
 
-void tiny_c_puts(int32_t file_handle, const char *data) {
+void tiny_c_fputs(int32_t file_handle, const char *data) {
     tiny_c_print(file_handle, data);
     tiny_c_newline(file_handle);
 }

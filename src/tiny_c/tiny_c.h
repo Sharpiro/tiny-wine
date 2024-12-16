@@ -16,8 +16,13 @@
 extern int32_t tinyc_errno;
 
 size_t tiny_c_pow(size_t x, size_t y);
+
 void tiny_c_print_len(int32_t file_handle, const char *data, size_t size);
+
+void tiny_c_fputs(int32_t file_handle, const char *data);
+
 void tiny_c_fprintf(int32_t file_handle, const char *format, ...);
+
 void tiny_c_printf(const char *format, ...);
 void tiny_c_exit(int32_t code);
 void *tiny_c_mmap(

@@ -6,10 +6,12 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 
 const size_t IAT_BASE_START = 0x7d7e0000;
+const size_t DYNAMIC_CALLBACK_TRAMPOLINE_SIZE = 0x0e;
 
 struct PeData pe_data;
 
@@ -56,13 +58,21 @@ __attribute__((naked)) void win_loader_end(void) {
             "syscall\n");
 }
 
-void dynamic_builtin(const char *data) {
-    // @todo: first func param gets hosed here
-    LOADER_LOG("dynamic_builtin\n");
-    tiny_c_printf("x: %x\n", data);
+void puts_internal(const char *data) {
+    LOADER_LOG("puts internal\n");
+    tiny_c_fputs(STDOUT, data);
 }
 
-void dynamic_linker_callback(void) {
+// @todo: may need to inject this like with dynamic_callback_trampoline
+__attribute__((naked)) void swap_calling_convention(void) {
+    __asm__("lea r15, [rip - 0x0c]\n"
+            "jmp %0\n" ::"r"(win_loader_end));
+}
+// void swap_calling_convention(void) {
+//     LOADER_LOG("swap_calling_convention\n");
+// }
+
+void dynamic_callback(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
     size_t source_address = 0;
@@ -108,10 +118,9 @@ void dynamic_linker_callback(void) {
     if (import_entry == NULL) {
         EXIT("dynamic entry offset '%x' not found\n", func_iat_value)
     };
-
-    size_t image_base = pe_data.winpe_header->image_optional_header.image_base;
-    size_t *temp_key = (size_t *)(image_base + func_iat_key);
-    *temp_key = (size_t)dynamic_builtin;
+    if (tiny_c_strcmp(import_entry->name, "puts") != 0) {
+        EXIT("unsupported arbitrary function lookup\n", func_iat_value)
+    };
 
     LOADER_LOG(
         "%s(%x, %x, %x, %x, %x, %x)\n",
@@ -124,32 +133,42 @@ void dynamic_linker_callback(void) {
         p6
     );
 
-    // __asm__("mov rax, 0\n");
+    size_t dynamic_func_address = (size_t)puts_internal;
+    // size_t image_base =
+    // pe_data.winpe_header->image_optional_header.image_base; size_t *iat_entry
+    // = (size_t *)(image_base + func_iat_key);
+    // // @todo: requires CC swap
+    // size_t *temp_trampoline = (size_t *)*iat_entry;
+    // memcpy(
+    //     temp_trampoline,
+    //     (void *)swap_calling_convention,
+    //     DYNAMIC_CALLBACK_TRAMPOLINE_SIZE
+    // );
 
     LOADER_LOG("completed dynamic linking\n");
 
-    // @todo: stack params
     __asm__("mov r15, %0\n"
-            "mov rcx, %1\n"
-            "mov rdx, %2\n"
-            "mov r8, %3\n"
-            "mov r9, %4\n"
+            "mov rdi, %1\n"
+            "mov rsi, %2\n"
+            "mov rdx, %3\n"
+            "mov rcx, %4\n"
+            "mov r8, %5\n"
+            "mov r9, %6\n"
             "mov rsp, rbp\n"
             "pop rbp\n"
-            "add rsp, 16\n"
-            "jmp r15\n" ::"r"(*temp_key),
+            "jmp r15\n" ::"r"(dynamic_func_address),
             "r"(p1),
             "r"(p2),
             "r"(p3),
             "r"(p4),
             "r"(p5),
             "r"(p6)
-            : "r15", "rcx", "rdx", "r8", "r9");
+            : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
 }
 
-__attribute__((naked)) void dynamic_trampoline(void) {
+__attribute__((naked)) void dynamic_callback_trampoline(void) {
     __asm__("lea r15, [rip - 0x0c]\n"
-            "jmp %0\n" ::"r"(dynamic_linker_callback));
+            "jmp %0\n" ::"r"(dynamic_callback));
 }
 
 int main(int argc, char **argv) {
@@ -268,6 +287,10 @@ int main(int argc, char **argv) {
 
     print_memory_regions();
 
+    if (DYNAMIC_CALLBACK_TRAMPOLINE_SIZE > 0x10) {
+        EXIT("unsupported trampoline size, must be less than 16 bytes\n");
+    }
+
     size_t *iat_offset =
         (size_t *)(image_base + pe_data.import_address_table_offset);
     for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
@@ -275,7 +298,11 @@ int main(int argc, char **argv) {
         size_t iat_entry_init = *iat_entry;
         size_t *entry_trampoline = (size_t *)(IAT_BASE_START + *iat_entry);
         *iat_entry = (size_t)entry_trampoline;
-        memcpy(entry_trampoline, (void *)dynamic_trampoline, 0x0e);
+        memcpy(
+            entry_trampoline,
+            (void *)dynamic_callback_trampoline,
+            DYNAMIC_CALLBACK_TRAMPOLINE_SIZE
+        );
         LOADER_LOG(
             "IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_trampoline
         );
