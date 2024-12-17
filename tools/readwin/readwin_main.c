@@ -1,4 +1,4 @@
-#include "../../src/loader//pe_tools.h"
+#include "../../src/loader/pe_tools.h"
 #include "../../src/tiny_c/tiny_c.h"
 #include <fcntl.h>
 #include <stddef.h>
@@ -71,15 +71,43 @@ int main(int argc, char **argv) {
         );
     }
 
-    tiny_c_printf("\nSymbols:\n");
+    tiny_c_printf("\nExported Function Symbols:\n");
     for (size_t i = 0; i < pe_data.symbols_len; i++) {
         struct WinSymbol *symbol = &pe_data.symbols[i];
-        if (tiny_c_memcmp(symbol->name, ".", 1) == 0 ||
-            tiny_c_memcmp(symbol->name, "_", 1) == 0 ||
-            tiny_c_memcmp(symbol->name, "@", 1) == 0) {
+        if (symbol->type != 0x20) {
+            if (symbol->type != 0) {
+                tiny_c_printf(
+                    "WARNING: ignoring unknown symbol type '%s', %x\n",
+                    symbol->name,
+                    symbol->type
+                );
+            }
             continue;
         }
-        tiny_c_printf("%d: %s\n", i, symbol->name);
+        if (symbol->storage_class != 0x02) {
+            if (symbol->storage_class != 0x03) {
+                tiny_c_printf(
+                    "WARNING: ignoring unknown symbol class '%s', %x\n",
+                    symbol->name,
+                    symbol->type
+                );
+            }
+            continue;
+        }
+
+        char *symbol_type = symbol->type == 0x20 ? "FUNCTION" : NULL;
+        char *symbol_class = symbol->storage_class == 0x02 ? "EXTERNAL"
+            : symbol->storage_class == 0x03                ? "STATIC"
+                                                           : NULL;
+
+        tiny_c_printf(
+            "%d: %x: %s, %s, %s\n",
+            i,
+            symbol->value,
+            symbol->name,
+            symbol_type,
+            symbol_class
+        );
     }
 
     if (pe_data.import_address_table_len > 0) {
