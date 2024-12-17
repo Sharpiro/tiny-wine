@@ -124,6 +124,25 @@ struct KeyValue {
     size_t value;
 };
 
+// @todo: alignment problems on some platforms?
+struct RawWinSymbol {
+    char name[8];
+    int32_t value;
+    uint16_t section_number;
+    uint16_t type;
+    uint8_t storage_class;
+    uint8_t auxillary_symbols_len;
+} __attribute__((packed));
+
+struct WinSymbol {
+    char *name;
+    int32_t value;
+    uint16_t section_number;
+    uint16_t type;
+    uint8_t storage_class;
+    uint8_t auxillary_symbols_len;
+};
+
 struct PeData {
     struct ImageDosHeader *dos_header;
     struct WinPEHeader *winpe_header;
@@ -135,15 +154,8 @@ struct PeData {
     size_t import_address_table_offset;
     struct KeyValue *import_address_table;
     size_t import_address_table_len;
-};
-
-struct WinSymbol {
-    char name[8];
-    int32_t value;
-    uint16_t section_number;
-    uint16_t type;
-    uint8_t storage_class;
-    uint8_t auxillary_symbols_len;
+    struct WinSymbol *symbols;
+    size_t symbols_len;
 };
 
 bool get_pe_data(int32_t fd, struct PeData *elf_data);

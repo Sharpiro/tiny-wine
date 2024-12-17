@@ -11,6 +11,7 @@ WARNINGS = \
 	-Wconversion \
     -Werror=return-type \
     -Werror=incompatible-pointer-types \
+	-Wvla
 
 all: \
 	libtinyc.a \
