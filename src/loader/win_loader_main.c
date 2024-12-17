@@ -63,15 +63,6 @@ void puts_internal(const char *data) {
     tiny_c_fputs(STDOUT, data);
 }
 
-// @todo: may need to inject this like with dynamic_callback_trampoline
-__attribute__((naked)) void swap_calling_convention(void) {
-    __asm__("lea r15, [rip - 0x0c]\n"
-            "jmp %0\n" ::"r"(win_loader_end));
-}
-// void swap_calling_convention(void) {
-//     LOADER_LOG("swap_calling_convention\n");
-// }
-
 void dynamic_callback(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
@@ -134,17 +125,6 @@ void dynamic_callback(void) {
     );
 
     size_t dynamic_func_address = (size_t)puts_internal;
-    // size_t image_base =
-    // pe_data.winpe_header->image_optional_header.image_base; size_t *iat_entry
-    // = (size_t *)(image_base + func_iat_key);
-    // // @todo: requires CC swap
-    // size_t *temp_trampoline = (size_t *)*iat_entry;
-    // memcpy(
-    //     temp_trampoline,
-    //     (void *)swap_calling_convention,
-    //     DYNAMIC_CALLBACK_TRAMPOLINE_SIZE
-    // );
-
     LOADER_LOG("completed dynamic linking\n");
 
     __asm__("mov r15, %0\n"

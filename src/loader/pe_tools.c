@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-static const int MAX_ARRAY_LENGTH = 10;
+static const int MAX_ARRAY_LENGTH = 1000;
 
 bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (pe_data == NULL) {
@@ -25,12 +25,16 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         BAIL("unsupported data directory size");
     }
 
-    size_t section_headers_start =
-        (size_t)dos_header->e_lfanew + sizeof(struct WinPEHeader);
+    off_t section_headers_start =
+        (off_t)dos_header->e_lfanew + (off_t)sizeof(struct WinPEHeader);
     size_t section_headers_len =
         winpe_header->image_file_header.number_of_sections;
+    size_t section_headers_size =
+        sizeof(struct WinSectionHeader) * section_headers_len;
     struct WinSectionHeader *section_headers =
-        (struct WinSectionHeader *)(pe_header_buffer + section_headers_start);
+        loader_malloc_arena(section_headers_size);
+    tinyc_lseek(fd, section_headers_start, SEEK_SET);
+    tiny_c_read(fd, section_headers, section_headers_size);
 
     struct WinSectionHeader *idata_header = NULL;
     for (size_t i = 0; i < section_headers_len; i++) {
@@ -43,9 +47,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         BAIL(".idata section not found");
     }
 
-    uint8_t *idata_buffer = loader_malloc_arena(1000);
+    uint8_t *idata_buffer = loader_malloc_arena(idata_header->size_of_raw_data);
     tinyc_lseek(fd, idata_header->pointer_to_raw_data, SEEK_SET);
-    tiny_c_read(fd, idata_buffer, 1000);
+    tiny_c_read(fd, idata_buffer, idata_header->size_of_raw_data);
     struct ImportDirectoryRawEntry *raw_dir_entries =
         (struct ImportDirectoryRawEntry *)idata_buffer;
     struct ImportDirectoryEntry *entries =

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #define LOADER_BUFFER_ADDRESS 0x7d8d0000
-#define LOADER_BUFFER_LEN 0x10'000
+#define LOADER_BUFFER_LEN 0x20'000
 #define LOADER_SHARED_LIB_START 0x500000
 
 extern int32_t loader_log_handle;

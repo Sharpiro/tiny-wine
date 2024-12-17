@@ -40,6 +40,14 @@ int main(int argc, char **argv) {
     tiny_c_printf("Section headers start: %x\n", section_headers_start);
     tiny_c_printf("Section headers length: %d\n", pe_data.section_headers_len);
     tiny_c_printf("Section header size: %d\n", sizeof(struct WinSectionHeader));
+    tiny_c_printf(
+        "Symbol table offset: %x\n",
+        pe_data.winpe_header->image_file_header.pointer_to_symbol_table
+    );
+    tiny_c_printf(
+        "Symbol length: %x\n",
+        pe_data.winpe_header->image_file_header.number_of_symbols
+    );
 
     tiny_c_printf("\nSection Headers:\n");
     for (size_t i = 0; i < pe_data.section_headers_len; i++) {

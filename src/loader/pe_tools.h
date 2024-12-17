@@ -137,6 +137,15 @@ struct PeData {
     size_t import_address_table_len;
 };
 
+struct WinSymbol {
+    char name[8];
+    int32_t value;
+    uint16_t section_number;
+    uint16_t type;
+    uint8_t storage_class;
+    uint8_t auxillary_symbols_len;
+};
+
 bool get_pe_data(int32_t fd, struct PeData *elf_data);
 
 bool get_memory_regions_info_win(
