@@ -14,15 +14,17 @@ int main(int argc, char **argv) {
         EXIT("file not found\n");
     }
 
+    const bool verbose = argc >= 3 && tiny_c_strcmp(argv[2], "-v") == 0;
+
     struct PeData pe_data;
     if (!get_pe_data(fd, &pe_data)) {
         EXIT("failed getting PE data\n");
     }
     tiny_c_close(fd);
 
-    size_t dos_magic = pe_data.dos_header->e_magic;
+    size_t dos_magic = pe_data.dos_header->magic;
     size_t pe_magic = pe_data.winpe_header->image_optional_header.magic;
-    char *class = pe_magic == 0x10b ? "PE32" : "PE32+";
+    char *class = pe_magic == PE32_MAGIC ? "PE32" : "PE32+";
     size_t image_header_start = (size_t)pe_data.dos_header->e_lfanew;
     size_t section_headers_start =
         image_header_start + sizeof(struct WinPEHeader);
@@ -71,10 +73,25 @@ int main(int argc, char **argv) {
         );
     }
 
-    tiny_c_printf("\nExported Function Symbols:\n");
+    tiny_c_printf("\nSymbols:\n");
     for (size_t i = 0; i < pe_data.symbols_len; i++) {
         struct WinSymbol *symbol = &pe_data.symbols[i];
-        if (symbol->type != 0x20) {
+        if (verbose) {
+            char *symbol_type = symbol->type == 0x20 ? "FUNCTION" : "-";
+            char *symbol_class = symbol->storage_class == 0x02 ? "EXTERNAL"
+                : symbol->storage_class == 0x03                ? "STATIC"
+                                                               : "-";
+            tiny_c_printf(
+                "%d: %x: %s, %s %s\n",
+                symbol->raw_index,
+                symbol->value,
+                symbol->name,
+                symbol_type,
+                symbol_class
+            );
+            continue;
+        }
+        if (symbol->type != SYMBOL_TYPE_FUNCTION) {
             if (symbol->type != 0) {
                 tiny_c_printf(
                     "WARNING: ignoring unknown symbol type '%s', %x\n",
@@ -84,8 +101,8 @@ int main(int argc, char **argv) {
             }
             continue;
         }
-        if (symbol->storage_class != 0x02) {
-            if (symbol->storage_class != 0x03) {
+        if (symbol->storage_class != SYMBOL_CLASS_EXTERNAL) {
+            if (symbol->storage_class != SYMBOL_CLASS_STATIC) {
                 tiny_c_printf(
                     "WARNING: ignoring unknown symbol class '%s', %x\n",
                     symbol->name,
@@ -95,30 +112,16 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        char *symbol_type = symbol->type == 0x20 ? "FUNCTION" : NULL;
-        char *symbol_class = symbol->storage_class == 0x02 ? "EXTERNAL"
-            : symbol->storage_class == 0x03                ? "STATIC"
-                                                           : NULL;
-
         tiny_c_printf(
-            "%d: %x: %s, %s, %s\n",
-            i,
-            symbol->value,
-            symbol->name,
-            symbol_type,
-            symbol_class
+            "%d: %x: %s\n", symbol->raw_index, symbol->value, symbol->name
         );
     }
 
     if (pe_data.import_address_table_len > 0) {
-        tiny_c_printf(
-            "\nImport Address Table: %x, %d\n",
-            pe_data.import_address_table_offset,
-            pe_data.import_address_table_len
-        );
+        tiny_c_printf("\nImport Address Table:\n");
         for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
             struct KeyValue *iat_entry = &pe_data.import_address_table[i];
-            tiny_c_printf("%x:%x\n", iat_entry->key, iat_entry->value);
+            tiny_c_printf("%d: %x:%x\n", i, iat_entry->key, iat_entry->value);
         }
 
         tiny_c_printf("\nSection .idata:\n");
@@ -130,9 +133,7 @@ int main(int argc, char **argv) {
                 struct ImportEntry *import_entry =
                     &dir_entry->import_entries[i];
                 tiny_c_printf(
-                    "Import: %s, %x\n",
-                    import_entry->name,
-                    import_entry->address
+                    "%d: %x, %s\n", i, import_entry->address, import_entry->name
                 );
             }
         }

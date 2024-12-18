@@ -1,11 +1,12 @@
-
 #include "elf_tools.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
+#define DOS_MAGIC 0x5a4d
+
 struct ImageDosHeader {
-    uint16_t e_magic;    // Magic number ("MZ")
+    uint16_t magic;      // Magic number ("MZ")
     uint16_t e_cblp;     // Bytes on last page of file
     uint16_t e_cp;       // Pages in file
     uint16_t e_crlc;     // Relocations
@@ -40,6 +41,9 @@ struct ImageDataDirectory {
     uint32_t virtual_address; // Relative virtual address (RVA) of the directory
     uint32_t size;            // Size of the directory in bytes
 };
+
+#define PE32_MAGIC 0x010b
+#define PE32_PLUS_MAGIC 0x020b
 
 struct ImageOptionalHeader {
     uint16_t magic;                          // Identifies PE32 or PE32+
@@ -141,7 +145,12 @@ struct WinSymbol {
     uint16_t type;
     uint8_t storage_class;
     uint8_t auxillary_symbols_len;
+    size_t raw_index;
 };
+
+#define SYMBOL_TYPE_FUNCTION 0x20
+#define SYMBOL_CLASS_EXTERNAL 0x02
+#define SYMBOL_CLASS_STATIC 0x03
 
 struct PeData {
     struct ImageDosHeader *dos_header;

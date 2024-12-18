@@ -20,9 +20,15 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     tiny_c_read(fd, pe_header_buffer, 1000);
     struct ImageDosHeader *dos_header =
         (struct ImageDosHeader *)pe_header_buffer;
+    if (dos_header->magic != DOS_MAGIC) {
+        BAIL("Invalid DOS header\n");
+    }
     size_t image_header_start = (size_t)dos_header->e_lfanew;
     struct WinPEHeader *winpe_header =
         (struct WinPEHeader *)(pe_header_buffer + image_header_start);
+    if (winpe_header->image_optional_header.magic != PE32_PLUS_MAGIC) {
+        BAIL("Invalid PE header\n");
+    }
     if (winpe_header->image_optional_header.number_of_rva_and_sizes != 16) {
         BAIL("unsupported data directory size");
     }
@@ -174,7 +180,6 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t symbols_len = 0;
     for (size_t i = 0; i < raw_symbols_len; i++) {
         struct RawWinSymbol *raw_symbol = &raw_symbols[i];
-        i += raw_symbol->auxillary_symbols_len;
         char *name;
         if (tiny_c_mem_is_empty(raw_symbol->name, 4)) {
             uint32_t str_table_offset = *(uint32_t *)(raw_symbol->name + 4);
@@ -190,7 +195,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             .type = raw_symbol->type,
             .storage_class = raw_symbol->storage_class,
             .auxillary_symbols_len = raw_symbol->auxillary_symbols_len,
+            .raw_index = i,
         };
+        i += raw_symbol->auxillary_symbols_len;
     }
 
     *pe_data = (struct PeData){
