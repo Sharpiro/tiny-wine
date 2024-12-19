@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
     const struct WinSectionHeader *idata_header = find_win_section_header(
         pe_data.section_headers, pe_data.section_headers_len, ".idata"
     );
-    size_t iat_mem_start = idata_header->virtual_address;
+    size_t iat_mem_start = idata_header->base_address;
 
     struct MemoryRegion iat_regions = {
         .start = IAT_BASE_START + iat_mem_start,

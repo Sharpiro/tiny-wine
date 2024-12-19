@@ -32,6 +32,8 @@ int main(int argc, char **argv) {
     size_t base_of_code =
         pe_data.winpe_header->image_optional_header.base_of_code;
 
+    /* General information */
+
     tiny_c_printf("PE Header:\n");
     tiny_c_printf("DOS magic: %s\n", (char *)&dos_magic);
     tiny_c_printf("PE magic: %x\n", pe_magic);
@@ -51,10 +53,12 @@ int main(int argc, char **argv) {
         pe_data.winpe_header->image_file_header.number_of_symbols
     );
 
+    /* Section headers */
+
     tiny_c_printf("\nSection Headers:\n");
     for (size_t i = 0; i < pe_data.section_headers_len; i++) {
         struct WinSectionHeader *section_header = &pe_data.section_headers[i];
-        size_t address = image_base + section_header->virtual_address;
+        size_t address = image_base + section_header->base_address;
         size_t file_offset = section_header->pointer_to_raw_data;
         size_t permissions = section_header->characteristics >> 28;
         char *read = permissions & 4 ? "r" : "-";
@@ -72,6 +76,38 @@ int main(int argc, char **argv) {
             execute
         );
     }
+
+    /* Imports */
+
+    tiny_c_printf("\nImport Address Table:\n");
+    for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
+        struct KeyValue *iat_entry = &pe_data.import_address_table[i];
+        tiny_c_printf("%d: %x:%x\n", i, iat_entry->key, iat_entry->value);
+    }
+
+    tiny_c_printf("\nImports:\n");
+    for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
+        struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
+        tiny_c_printf("Lib: %s:\n", dir_entry->lib_name);
+        for (size_t i = 0; i < dir_entry->import_entries_len; i++) {
+            struct ImportEntry *import_entry = &dir_entry->import_entries[i];
+            tiny_c_printf(
+                "%d: %x, %s\n", i, import_entry->address, import_entry->name
+            );
+        }
+    }
+
+    /* Exports */
+
+    tiny_c_printf("\nExport Table:\n");
+    for (size_t i = 0; i < pe_data.export_entries_len; i++) {
+        struct ExportEntry *export_entry = &pe_data.export_entries[i];
+        tiny_c_printf(
+            "%d: %x: %s\n", i, export_entry->address, export_entry->name
+        );
+    }
+
+    /* Symbols */
 
     tiny_c_printf("\nSymbols:\n");
     for (size_t i = 0; i < pe_data.symbols_len; i++) {
@@ -115,27 +151,5 @@ int main(int argc, char **argv) {
         tiny_c_printf(
             "%d: %x: %s\n", symbol->raw_index, symbol->value, symbol->name
         );
-    }
-
-    if (pe_data.import_address_table_len > 0) {
-        tiny_c_printf("\nImport Address Table:\n");
-        for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
-            struct KeyValue *iat_entry = &pe_data.import_address_table[i];
-            tiny_c_printf("%d: %x:%x\n", i, iat_entry->key, iat_entry->value);
-        }
-
-        tiny_c_printf("\nSection .idata:\n");
-        for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
-            struct ImportDirectoryEntry *dir_entry =
-                &pe_data.import_dir_entries[i];
-            tiny_c_printf("Lib: %s:\n", dir_entry->lib_name);
-            for (size_t i = 0; i < dir_entry->import_entries_len; i++) {
-                struct ImportEntry *import_entry =
-                    &dir_entry->import_entries[i];
-                tiny_c_printf(
-                    "%d: %x, %s\n", i, import_entry->address, import_entry->name
-                );
-            }
-        }
     }
 }

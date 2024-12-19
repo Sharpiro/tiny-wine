@@ -89,8 +89,7 @@ struct WinPEHeader {
 struct WinSectionHeader {
     uint8_t name[8];       // Section name (8 bytes)
     uint32_t virtual_size; // Total size of the section when loaded into memory
-    uint32_t
-        virtual_address; // Address of the section relative to the image base
+    uint32_t base_address; // Address of the section relative to the image base
     uint32_t size_of_raw_data;       // Size of the section in the file
     uint32_t pointer_to_raw_data;    // File offset
     uint32_t pointer_to_relocations; // File pointer to relocations (deprecated)
@@ -123,9 +122,23 @@ struct ImportDirectoryEntry {
 
 #define IMPORT_DIRECTORY_RAW_ENTRY_SIZE sizeof(struct ImportDirectoryRawEntry)
 
-struct KeyValue {
-    size_t key;
-    size_t value;
+struct ExportDirectoryRawEntry {
+    uint32_t export_flags;
+    uint32_t timestamp;
+    uint16_t major_version;
+    uint16_t minor_version;
+    uint32_t name_offset;
+    uint32_t ordinal_base;
+    uint32_t address_table_len;
+    uint32_t name_points_len;
+    uint32_t export_address_table_offset;
+    uint32_t name_pointer_offset;
+    uint32_t ordinal_table_offset;
+};
+
+struct ExportEntry {
+    size_t address;
+    char *name;
 };
 
 // @todo: alignment problems on some platforms?
@@ -152,6 +165,11 @@ struct WinSymbol {
 #define SYMBOL_CLASS_EXTERNAL 0x02
 #define SYMBOL_CLASS_STATIC 0x03
 
+struct KeyValue {
+    size_t key;
+    size_t value;
+};
+
 struct PeData {
     struct ImageDosHeader *dos_header;
     struct WinPEHeader *winpe_header;
@@ -163,6 +181,8 @@ struct PeData {
     size_t import_address_table_offset;
     struct KeyValue *import_address_table;
     size_t import_address_table_len;
+    struct ExportEntry *export_entries;
+    size_t export_entries_len;
     struct WinSymbol *symbols;
     size_t symbols_len;
 };

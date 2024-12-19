@@ -44,13 +44,10 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     tinyc_lseek(fd, section_headers_start, SEEK_SET);
     tiny_c_read(fd, section_headers, section_headers_size);
 
-    struct WinSectionHeader *idata_header = NULL;
-    for (size_t i = 0; i < section_headers_len; i++) {
-        if (tiny_c_strcmp((const char *)section_headers[i].name, ".idata") ==
-            0) {
-            idata_header = &section_headers[i];
-        }
-    }
+    /* Import data section */
+
+    const struct WinSectionHeader *idata_header =
+        find_win_section_header(section_headers, section_headers_len, ".idata");
     if (idata_header == NULL) {
         BAIL(".idata section not found");
     }
@@ -65,7 +62,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             sizeof(struct ImportDirectoryEntry) * MAX_ARRAY_LENGTH
         );
 
-    size_t idata_base = idata_header->virtual_address;
+    size_t idata_base = idata_header->base_address;
     size_t import_dir_entries_len = 0;
     for (size_t i = 0; true; i++) {
         struct ImportDirectoryRawEntry *raw_dir_entry = &raw_dir_entries[i];
@@ -156,7 +153,50 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         }
     }
 
+    /* Export data section */
+
+    const struct WinSectionHeader *edata_header =
+        find_win_section_header(section_headers, section_headers_len, ".edata");
+    struct ExportEntry *export_entries = NULL;
+    size_t export_entries_len = 0;
+    if (edata_header != NULL) {
+        uint8_t *edata_buffer =
+            loader_malloc_arena(edata_header->size_of_raw_data);
+        tinyc_lseek(fd, edata_header->pointer_to_raw_data, SEEK_SET);
+        tiny_c_read(fd, edata_buffer, edata_header->size_of_raw_data);
+        struct ExportDirectoryRawEntry *export_directory =
+            (struct ExportDirectoryRawEntry *)edata_buffer;
+        if (export_directory->address_table_len !=
+            export_directory->name_points_len) {
+            BAIL("Unsupported address table data\n");
+        }
+
+        size_t edata_base = edata_header->base_address;
+        uint32_t *address_offsets =
+            (uint32_t *)(edata_buffer +
+                         export_directory->export_address_table_offset -
+                         edata_base);
+        uint32_t *export_name_offsets =
+            (uint32_t *)(edata_buffer + export_directory->name_pointer_offset -
+                         edata_base);
+        export_entries_len = export_directory->name_points_len;
+        export_entries = loader_malloc_arena(
+            sizeof(struct ExportEntry) * export_entries_len
+        );
+        for (size_t i = 0; i < export_entries_len; i++) {
+            uint32_t address_offset = address_offsets[i];
+            uint32_t name_offset = export_name_offsets[i];
+            size_t name_file_offset = name_offset - edata_base;
+            char *name = (char *)edata_buffer + name_file_offset;
+            export_entries[i] = (struct ExportEntry){
+                .address = address_offset,
+                .name = name,
+            };
+        }
+    }
+
     /* String table */
+
     size_t raw_symbols_len = winpe_header->image_file_header.number_of_symbols;
     size_t raw_symbols_size = sizeof(struct RawWinSymbol) * raw_symbols_len;
     size_t symbol_table_offset =
@@ -171,6 +211,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     tiny_c_read(fd, string_table, string_table_size);
 
     /* Symbol table */
+
     struct RawWinSymbol *raw_symbols = loader_malloc_arena(raw_symbols_size);
     tinyc_lseek(fd, (off_t)symbol_table_offset, SEEK_SET);
     tiny_c_read(fd, raw_symbols, raw_symbols_size);
@@ -211,6 +252,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .import_address_table_offset = import_address_table_offset,
         .import_address_table = import_address_table,
         .import_address_table_len = iat_len,
+        .export_entries = export_entries,
+        .export_entries_len = export_entries_len,
         .symbols = symbols,
         .symbols_len = symbols_len,
     };
@@ -245,9 +288,9 @@ bool get_memory_regions_info_win(
         }
 
         memory_regions[i] = (struct MemoryRegion){
-            .start = address_offset + program_header->virtual_address,
-            .end = address_offset + program_header->virtual_address +
-                MAX_REGION_SIZE,
+            .start = address_offset + program_header->base_address,
+            .end =
+                address_offset + program_header->base_address + MAX_REGION_SIZE,
             .is_direct_file_map = false,
             .file_offset = program_header->pointer_to_raw_data,
             .file_size = program_header->virtual_size,
