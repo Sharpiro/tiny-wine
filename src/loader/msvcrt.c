@@ -1,6 +1,11 @@
+#include "msvcrt.h"
+#include <stddef.h>
 #include <stdint.h>
 
-int32_t puts(char *x) {
-    // write();
-    return 0;
+void DllMainCRTStartup(void) {
+}
+
+void puts([[maybe_unused]] const char *data) {
+    const char *DATA = "my libc puts\n";
+    write(1, DATA, 8);
 }

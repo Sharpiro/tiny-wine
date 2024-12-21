@@ -21,3 +21,4 @@ a.out
 /unit_test
 /winloader
 /readwin
+*.dll
