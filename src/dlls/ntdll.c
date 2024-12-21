@@ -37,14 +37,9 @@ size_t write(int32_t file_handle, const char *data, size_t size) {
     return syscall(SYS_write, &args);
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winvalid-noreturn"
-
-void exit(int32_t code) {
+void sys_exit(int32_t code) {
     struct SysArgs args = {
         .param_one = (size_t)code,
     };
     syscall(SYS_exit, &args);
 }
-
-#pragma clang diagnostic pop

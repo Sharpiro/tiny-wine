@@ -21,4 +21,5 @@ a.out
 /unit_test
 /winloader
 /readwin
+/windynamic_linux
 *.dll

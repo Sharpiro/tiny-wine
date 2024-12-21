@@ -58,10 +58,10 @@ __attribute__((naked)) void win_loader_end(void) {
             "syscall\n");
 }
 
-void puts_internal(const char *data) {
-    LOADER_LOG("puts internal\n");
-    tiny_c_fputs(STDOUT, data);
-}
+// void puts_internal(const char *data) {
+//     LOADER_LOG("puts internal\n");
+//     tiny_c_fputs(STDOUT, data);
+// }
 
 void dynamic_callback(void) {
     size_t *rbp;
@@ -109,9 +109,9 @@ void dynamic_callback(void) {
     if (import_entry == NULL) {
         EXIT("dynamic entry offset '%x' not found\n", func_iat_value)
     };
-    if (tiny_c_strcmp(import_entry->name, "puts") != 0) {
-        EXIT("unsupported arbitrary function lookup\n", func_iat_value)
-    };
+    // if (tiny_c_strcmp(import_entry->name, "puts") != 0) {
+    //     EXIT("unsupported arbitrary function lookup\n", func_iat_value)
+    // };
 
     LOADER_LOG(
         "%s(%x, %x, %x, %x, %x, %x)\n",
@@ -124,7 +124,10 @@ void dynamic_callback(void) {
         p6
     );
 
-    size_t dynamic_func_address = (size_t)puts_internal;
+    // @todo: find function
+    size_t dynamic_func_address = (size_t)0x00;
+    EXIT("unsupported arbitrary function lookup\n", func_iat_value)
+
     LOADER_LOG("completed dynamic linking\n");
 
     __asm__("mov r15, %0\n"
@@ -149,6 +152,23 @@ void dynamic_callback(void) {
 __attribute__((naked)) void dynamic_callback_trampoline(void) {
     __asm__("lea r15, [rip - 0x0c]\n"
             "jmp %0\n" ::"r"(dynamic_callback));
+}
+
+static bool initialize_lib_ntdll() {
+    int32_t ntdll_file = tiny_c_open("libntdll.so", O_RDONLY);
+    if (ntdll_file == -1) {
+        BAIL("failed opening libntdll.so\n");
+    }
+
+    struct ElfData ntdll_elf;
+    if (!get_elf_data(ntdll_file, &ntdll_elf)) {
+        BAIL("failed getting elf data\n");
+    }
+    // if (shared_lib_elf.dynamic_data == NULL) {
+    //     BAIL("Expected shared library to have dynamic data\n");
+    // }
+
+    return false;
 }
 
 int main(int argc, char **argv) {
@@ -179,7 +199,6 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    // struct PeData pe_data;
     if (!get_pe_data(fd, &pe_data)) {
         tiny_c_fprintf(STDERR, "error parsing pe data\n");
         return -1;
@@ -241,12 +260,12 @@ int main(int argc, char **argv) {
     }
 
     /* Map Import Address Table memory */
+    // @todo: is this redundant?
 
     const struct WinSectionHeader *idata_header = find_win_section_header(
         pe_data.section_headers, pe_data.section_headers_len, ".idata"
     );
     size_t iat_mem_start = idata_header->base_address;
-
     struct MemoryRegion iat_regions = {
         .start = IAT_BASE_START + iat_mem_start,
         .end = IAT_BASE_START + iat_mem_start + 0x1000,
@@ -288,7 +307,14 @@ int main(int argc, char **argv) {
         );
     }
 
+    /* Load libntdll.so */
+
+    if (!initialize_lib_ntdll()) {
+        EXIT("initialize_lib_ntdll failed\n");
+    }
+
     /* Jump to program */
+
     size_t *frame_pointer = (size_t *)argv - 1;
     size_t *inferior_frame_pointer = frame_pointer + 1;
     *inferior_frame_pointer = (size_t)(argc - 1);

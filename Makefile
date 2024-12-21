@@ -17,6 +17,7 @@ all: \
 	libtinyc.a \
 	libtinyc.so \
 	libntdll.so \
+	libmsvcrt.so \
 	ntdll.dll \
 	msvcrt.dll \
 	loader \
@@ -28,6 +29,7 @@ all: \
 	programs/linux/static_pie \
 	programs/linux/dynamic \
 	programs/windows/win_dynamic \
+	programs/windows/win_dynamic_linux \
 	tools/readwin
 
 tinyc_start.o: src/tiny_c/tinyc_start.c
@@ -129,12 +131,28 @@ libntdll.so:
 		-g \
 		-DAMD64 \
 		-masm=intel \
-		-nostdlib -static \
+		-nostdlib \
 		-shared \
 		-fPIC \
 		-o libntdll.so \
-		src/loader/ntdll.c
+		src/dlls/ntdll.c
 	@$(OBJDUMP) -D libntdll.so > libntdll.so.dump
+
+libmsvcrt.so: libntdll.so
+	@$(CC) $(CFLAGS) \
+		-O0 \
+		$(WARNINGS) \
+		-fno-stack-protector \
+		-g \
+		-DAMD64 \
+		-masm=intel \
+		-nostdlib \
+		-shared \
+		-fPIC \
+		-o libmsvcrt.so \
+		./libntdll.so \
+		src/dlls/msvcrt.c
+	@$(OBJDUMP) -D libmsvcrt.so > libmsvcrt.so.dump
 
 ntdll.dll:
 	@$(CC) $(CFLAGS) \
@@ -149,7 +167,7 @@ ntdll.dll:
 		-shared \
 		-fPIC \
 		-o ntdll.dll \
-		src/loader/ntdll.c
+		src/dlls/ntdll.c
 	@$(OBJDUMP) -D ntdll.dll > ntdll.dll.dump
 
 msvcrt.dll: ntdll.dll
@@ -165,7 +183,7 @@ msvcrt.dll: ntdll.dll
 		-shared \
 		-fPIC \
 		-o msvcrt.dll \
-		src/loader/msvcrt.c \
+		src/dlls/msvcrt.c \
 		ntdll.dll
 	@$(OBJDUMP) -D msvcrt.dll > msvcrt.dll.dump
 
@@ -205,6 +223,7 @@ winloader: tinyc_start.o libtinyc.a src/loader/win_loader_main.c
 		src/loader/loader_lib.c \
 		src/loader/memory_map.c \
 		src/loader/pe_tools.c \
+		src/loader/elf_tools.c \
 		tinyc_start.o \
 		libtinyc.a
 	@$(OBJDUMP) -D winloader > winloader.dump
@@ -306,6 +325,22 @@ programs/windows/win_dynamic:
 		msvcrt.dll
 	@$(OBJDUMP) -D windynamic.exe > windynamic.exe.dump
 
+programs/windows/win_dynamic_linux: libmsvcrt.so
+	@$(CC) $(CFLAGS) \
+		-O0 \
+		$(WARNINGS) \
+		-fno-stack-protector \
+		-g \
+		-DAMD64 \
+		-masm=intel \
+		-nostdlib \
+		-fPIC \
+		-o windynamic_linux \
+		-Wl,-rpath,. \
+		./libmsvcrt.so \
+		src/programs/windows/win_dynamic/win_dynamic_main.c
+	@$(OBJDUMP) -D windynamic_linux > windynamic_linux.dump
+
 tools/readwin: tools/readwin/readwin_main.c tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
@@ -322,6 +357,7 @@ clean:
 	@rm -f \
 		*.dump *.o *.s *.a *.so *.dll *.exe \
 		loader env string tinyfetch dynamic unit_test static_pie winloader readwin \
+		windynamic_linux
 
 install: libtinyc.a libtinyc.so
 	cp src/tiny_c/tiny_c.h /usr/local/include
