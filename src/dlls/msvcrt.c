@@ -7,7 +7,7 @@ void DllMainCRTStartup(void) {
 
 void puts([[maybe_unused]] const char *data) {
     const char *DATA = "my libc puts\n";
-    write(1, DATA, 13);
+    sys_write(1, DATA, 13);
 }
 
 #pragma clang diagnostic push

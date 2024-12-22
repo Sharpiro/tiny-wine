@@ -11,14 +11,6 @@
 
 extern int32_t loader_log_handle;
 
-void *loader_malloc_arena(size_t n);
-
-void loader_free_arena(void);
-
-bool read_to_string(const char *path, char **content, size_t size);
-
-bool print_memory_regions(void);
-
 #ifdef VERBOSE
 
 #define LOADER_LOG(fmt, ...)                                                   \
@@ -41,7 +33,7 @@ struct RuntimeRelocation {
     size_t lib_dyn_offset;
 };
 
-struct SharedLibrary {
+struct RuntimeObject {
     const char *name;
     size_t dynamic_offset;
     struct ElfData elf_data;
@@ -78,4 +70,19 @@ bool find_got_entry(
     size_t got_entries_len,
     size_t offset,
     struct GotEntry **got_entry
+);
+
+void *loader_malloc_arena(size_t n);
+
+void loader_free_arena(void);
+
+bool read_to_string(const char *path, char **content, size_t size);
+
+bool print_memory_regions(void);
+
+bool get_function_relocations(
+    const struct DynamicData *dyn_data,
+    size_t dyn_offset,
+    struct RuntimeRelocation **runtime_func_relocations,
+    size_t *runtime_func_relocations_len
 );

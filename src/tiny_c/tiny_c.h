@@ -72,7 +72,7 @@ off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence);
 
 #define EXIT(fmt, ...)                                                         \
     tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
-    tiny_c_exit(1);
+    tiny_c_exit(1)
 
 #ifdef ARM32
 

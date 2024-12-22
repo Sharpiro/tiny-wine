@@ -151,3 +151,32 @@ bool print_memory_regions(void) {
     LOADER_LOG("Mapped address regions:\n%s\n", maps_buffer);
     return true;
 }
+
+bool get_function_relocations(
+    const struct DynamicData *dyn_data,
+    size_t dyn_offset,
+    struct RuntimeRelocation **runtime_func_relocations,
+    size_t *runtime_func_relocations_len
+) {
+    *runtime_func_relocations = loader_malloc_arena(
+        sizeof(struct RuntimeRelocation) * dyn_data->func_relocations_len
+    );
+
+    for (size_t i = 0; i < dyn_data->func_relocations_len; i++) {
+        struct Relocation *curr_relocation = &dyn_data->func_relocations[i];
+        size_t value = curr_relocation->symbol.value == 0
+            ? 0
+            : dyn_offset + curr_relocation->symbol.value;
+        struct RuntimeRelocation runtime_relocation = {
+            .offset = dyn_offset + curr_relocation->offset,
+            .value = value,
+            .name = curr_relocation->symbol.name,
+            .type = curr_relocation->type,
+            .lib_dyn_offset = dyn_offset,
+        };
+        (*runtime_func_relocations)[i] = runtime_relocation;
+    }
+
+    *runtime_func_relocations_len = dyn_data->func_relocations_len;
+    return true;
+}

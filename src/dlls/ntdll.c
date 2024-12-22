@@ -28,7 +28,7 @@ static size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
-size_t write(int32_t file_handle, const char *data, size_t size) {
+size_t sys_write(int32_t file_handle, const char *data, size_t size) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
         .param_two = (size_t)data,

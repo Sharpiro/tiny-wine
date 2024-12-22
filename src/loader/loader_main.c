@@ -8,18 +8,14 @@
 #include <string.h>
 #include <sys/mman.h>
 
-static struct ElfData inferior_elf;
-struct SharedLibrary *shared_libraries;
+struct RuntimeObject *executable_object;
+struct RuntimeObject *shared_objects;
 size_t shared_libraries_len = 0;
 struct RuntimeSymbol *runtime_dyn_symbols;
 size_t runtime_dyn_symbols_len = 0;
-struct RuntimeRelocation *runtime_func_relocations;
-size_t runtime_func_relocations_len = 0;
-struct RuntimeRelocation *runtime_var_relocations;
-size_t runtime_var_relocations_len = 0;
 struct GotEntry *runtime_got_entries;
 size_t runtime_got_entries_len = 0;
-size_t GOT_LIB_DYN_OFFSET_TABLE[100] = {};
+size_t got_lib_dyn_offset_table[100] = {};
 
 #ifdef AMD64
 
@@ -82,8 +78,7 @@ void dynamic_linker_callback(void) {
     size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
     size_t relocation_index = *(rbp + 2);
     if (lib_dyn_offset == NULL) {
-        tiny_c_fprintf(STDERR, "lib_dyn_offset was null\n");
-        tiny_c_exit(-1);
+        EXIT("lib_dyn_offset was null\n");
     }
 
     LOADER_LOG(
@@ -91,22 +86,20 @@ void dynamic_linker_callback(void) {
     );
     struct RuntimeRelocation *runtime_relocation;
     if (*lib_dyn_offset == 0) {
-        // @todo: better handling of base binary relocations
-        runtime_relocation = &runtime_func_relocations[relocation_index];
+        runtime_relocation =
+            &executable_object->runtime_func_relocations[relocation_index];
     } else {
         for (size_t i = 0; i < shared_libraries_len; i++) {
-            struct SharedLibrary *current_lib = &shared_libraries[i];
+            struct RuntimeObject *current_lib = &shared_objects[i];
             if (current_lib->dynamic_offset != *lib_dyn_offset) {
                 continue;
             }
             if (relocation_index >= current_lib->runtime_func_relocations_len) {
-                tiny_c_fprintf(
-                    STDERR,
+                EXIT(
                     "relocation index %d is not less than %d\n",
                     relocation_index,
                     current_lib->runtime_func_relocations_len
                 );
-                tiny_c_exit(-1);
             }
 
             runtime_relocation =
@@ -125,12 +118,7 @@ void dynamic_linker_callback(void) {
             0,
             &runtime_symbol
         )) {
-        tiny_c_fprintf(
-            STDERR,
-            "couldn't find runtime symbol '%s'\n",
-            runtime_relocation->name
-        );
-        tiny_c_exit(-1);
+        EXIT("couldn't find runtime symbol '%s'\n", runtime_relocation->name);
     }
 
     *got_entry = runtime_symbol->value;
@@ -200,37 +188,6 @@ static void run_asm(
             :);
 }
 
-bool compute_variable_relocations(void) {
-    LOADER_LOG("Variable relocations: %x\n", runtime_var_relocations_len);
-    for (size_t i = 0; i < runtime_var_relocations_len; i++) {
-        struct RuntimeRelocation *var_relocation = &runtime_var_relocations[i];
-        LOADER_LOG(
-            "Varaible relocation: %x: %x:%x\n",
-            i + 1,
-            var_relocation->offset,
-            var_relocation->value
-        );
-        if (var_relocation->type != R_ARM_GLOB_DAT) {
-            BAIL("unsupported relocation type\n");
-        }
-
-        struct GotEntry *runtime_got_entry;
-        if (!find_got_entry(
-                runtime_got_entries,
-                runtime_got_entries_len,
-                var_relocation->offset,
-                &runtime_got_entry
-            )) {
-            BAIL("Variable got entry %x not found\n", var_relocation->offset);
-        }
-
-        runtime_got_entry->value = var_relocation->value;
-        runtime_got_entry->is_variable = true;
-    }
-
-    return true;
-}
-
 // @todo: $fp is now broken and pointing to $sp in arm32?
 void dynamic_linker_callback(void) {
     __asm__("mov r10, r0\n");
@@ -256,8 +213,7 @@ void dynamic_linker_callback(void) {
             (size_t)got_entry,
             &runtime_relocation
         )) {
-        tiny_c_fprintf(STDERR, "relocation %x not found\n", got_entry);
-        tiny_c_exit(-1);
+        EXIT("relocation %x not found\n", got_entry);
     }
     if (!get_runtime_address(
             runtime_relocation->name,
@@ -265,12 +221,7 @@ void dynamic_linker_callback(void) {
             runtime_dyn_symbols_len,
             got_entry
         )) {
-        tiny_c_fprintf(
-            STDERR,
-            "couldn't find runtime symbol '%s'\n",
-            runtime_relocation->name
-        );
-        tiny_c_exit(-1);
+        EXIT("couldn't find runtime symbol '%s'\n", runtime_relocation->name);
     }
 
     LOADER_LOG(
@@ -308,28 +259,27 @@ void dynamic_linker_callback(void) {
 #endif
 
 static bool initialize_dynamic_data(
-    struct SharedLibrary **shared_libraries, size_t *shared_libraries_len
+    struct DynamicData *inferior_dyn_data,
+    struct RuntimeObject **shared_objects,
+    size_t *shared_libraries_len
 ) {
     LOADER_LOG("initializing dynamic data\n");
-    if (shared_libraries == NULL) {
+    if (shared_objects == NULL) {
         BAIL("shared_libraries was null\n");
     }
     if (shared_libraries_len == NULL) {
         BAIL("shared_libraries_len was null\n");
     }
 
-    struct DynamicData *inferior_dyn_data = inferior_elf.dynamic_data;
-
     /* Map shared libraries */
     *shared_libraries_len = inferior_dyn_data->shared_libraries_len;
     runtime_dyn_symbols_len = inferior_dyn_data->symbols_len;
-    runtime_func_relocations_len = inferior_dyn_data->func_relocations_len;
-    runtime_var_relocations_len = inferior_dyn_data->var_relocations_len;
+    // runtime_var_relocations_len = inferior_dyn_data->var_relocations_len;
     runtime_got_entries_len = inferior_dyn_data->got_len;
-    *shared_libraries = loader_malloc_arena(
-        sizeof(struct SharedLibrary) * inferior_dyn_data->shared_libraries_len
+    *shared_objects = loader_malloc_arena(
+        sizeof(struct RuntimeObject) * inferior_dyn_data->shared_libraries_len
     );
-    if (shared_libraries == NULL) {
+    if (shared_objects == NULL) {
         BAIL("malloc failed\n");
     }
 
@@ -372,10 +322,6 @@ static bool initialize_dynamic_data(
         }
 
         runtime_dyn_symbols_len += shared_lib_elf.dynamic_data->symbols_len;
-        runtime_func_relocations_len +=
-            shared_lib_elf.dynamic_data->func_relocations_len;
-        runtime_var_relocations_len +=
-            shared_lib_elf.dynamic_data->var_relocations_len;
         runtime_got_entries_len += shared_lib_elf.dynamic_data->got_len;
 
         uint8_t *bss = 0;
@@ -390,23 +336,28 @@ static bool initialize_dynamic_data(
             bss_len = bss_section_header->size;
         }
 
-        struct SharedLibrary shared_library = {
+        struct RuntimeRelocation *runtime_func_relocations;
+        size_t runtime_func_relocations_len;
+        if (!get_function_relocations(
+                shared_lib_elf.dynamic_data,
+                dynamic_lib_offset,
+                &runtime_func_relocations,
+                &runtime_func_relocations_len
+            )) {
+            BAIL("get_function_relocations failed\n");
+        }
+
+        struct RuntimeObject shared_library = {
             .name = shared_lib_name,
             .dynamic_offset = dynamic_lib_offset,
             .elf_data = shared_lib_elf,
             .memory_regions_info = memory_regions_info,
-            // @todo: should probably refactor to compute this here since x64
-            //        does relocations this way
-            .runtime_func_relocations = loader_malloc_arena(
-                sizeof(struct RuntimeRelocation) *
-                shared_lib_elf.dynamic_data->func_relocations_len
-            ),
-            .runtime_func_relocations_len =
-                shared_lib_elf.dynamic_data->func_relocations_len,
+            .runtime_func_relocations = runtime_func_relocations,
+            .runtime_func_relocations_len = runtime_func_relocations_len,
             .bss = bss,
             .bss_len = bss_len
         };
-        (*shared_libraries)[i] = shared_library;
+        (*shared_objects)[i] = shared_library;
         dynamic_lib_offset = memory_regions_info.end;
     }
 
@@ -430,7 +381,7 @@ static bool initialize_dynamic_data(
 
     size_t symbol_index = inferior_dyn_data->symbols_len;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
-        struct SharedLibrary *curr_lib = &(*shared_libraries)[i];
+        struct RuntimeObject *curr_lib = &(*shared_objects)[i];
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
         for (size_t i = 0; i < shared_dyn_data->symbols_len; i++) {
             struct Symbol *curr_symbol = &shared_dyn_data->symbols[i];
@@ -446,51 +397,10 @@ static bool initialize_dynamic_data(
         }
     }
 
-    /** Get runtime function relocations */
-    runtime_func_relocations = loader_malloc_arena(
-        sizeof(struct RuntimeRelocation) * runtime_func_relocations_len
-    );
-    if (runtime_func_relocations == NULL) {
-        BAIL("malloc failed\n");
-    }
-
-    for (size_t i = 0; i < inferior_dyn_data->func_relocations_len; i++) {
-        struct Relocation *curr_relocation =
-            &inferior_dyn_data->func_relocations[i];
-        struct RuntimeRelocation runtime_relocation = {
-            .offset = curr_relocation->offset,
-            .value = curr_relocation->symbol.value,
-            .name = curr_relocation->symbol.name,
-            .type = curr_relocation->type,
-            .lib_dyn_offset = 0,
-        };
-        runtime_func_relocations[i] = runtime_relocation;
-    }
-
-    size_t func_reloc_index = inferior_dyn_data->func_relocations_len;
-    for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
-        struct SharedLibrary *curr_lib = &(*shared_libraries)[i];
-        struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
-        for (size_t i = 0; i < shared_dyn_data->func_relocations_len; i++) {
-            struct Relocation *curr_relocation =
-                &shared_dyn_data->func_relocations[i];
-            size_t value = curr_relocation->symbol.value == 0
-                ? 0
-                : curr_lib->dynamic_offset + curr_relocation->symbol.value;
-            struct RuntimeRelocation runtime_relocation = {
-                .offset = curr_lib->dynamic_offset + curr_relocation->offset,
-                .value = value,
-                .name = curr_relocation->symbol.name,
-                .type = curr_relocation->type,
-                .lib_dyn_offset = curr_lib->dynamic_offset,
-            };
-            runtime_func_relocations[func_reloc_index++] = runtime_relocation;
-            curr_lib->runtime_func_relocations[i] = runtime_relocation;
-        }
-    }
-
     /** Get runtime variable relocations */
-    runtime_var_relocations = loader_malloc_arena(
+
+    size_t runtime_var_relocations_len = inferior_dyn_data->var_relocations_len;
+    struct RuntimeRelocation *runtime_var_relocations = loader_malloc_arena(
         sizeof(struct RuntimeRelocation) * runtime_var_relocations_len
     );
     if (runtime_var_relocations == NULL) {
@@ -519,7 +429,7 @@ static bool initialize_dynamic_data(
 
     size_t var_reloc_index = inferior_dyn_data->var_relocations_len;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
-        struct SharedLibrary *curr_lib = &(*shared_libraries)[i];
+        struct RuntimeObject *curr_lib = &(*shared_objects)[i];
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
         for (size_t i = 0; i < shared_dyn_data->var_relocations_len; i++) {
             struct Relocation *curr_relocation =
@@ -575,7 +485,7 @@ static bool initialize_dynamic_data(
         if (elf_got_entry->is_loader_callback) {
             runtime_value = (size_t)dynamic_linker_callback;
         } else if (elf_got_entry->is_library_base_address) {
-            runtime_value = (size_t)GOT_LIB_DYN_OFFSET_TABLE;
+            runtime_value = (size_t)got_lib_dyn_offset_table;
         } else if (elf_got_entry->value == 0) {
             runtime_value = 0;
         } else {
@@ -592,7 +502,7 @@ static bool initialize_dynamic_data(
 
     size_t got_index = inferior_dyn_data->got_len;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
-        struct SharedLibrary *curr_lib = &(*shared_libraries)[i];
+        struct RuntimeObject *curr_lib = &(*shared_objects)[i];
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
         for (size_t j = 0; j < shared_dyn_data->got_len; j++) {
             struct GotEntry *elf_got_entry = &shared_dyn_data->got_entries[j];
@@ -600,7 +510,7 @@ static bool initialize_dynamic_data(
             if (elf_got_entry->is_loader_callback) {
                 runtime_value = (size_t)dynamic_linker_callback;
             } else if (elf_got_entry->is_library_base_address) {
-                size_t *lib_dyn_offset = GOT_LIB_DYN_OFFSET_TABLE + i + 1;
+                size_t *lib_dyn_offset = got_lib_dyn_offset_table + i + 1;
                 *lib_dyn_offset = curr_lib->dynamic_offset;
                 runtime_value = (size_t)lib_dyn_offset;
             } else if (elf_got_entry->value == 0) {
@@ -640,7 +550,7 @@ static bool initialize_dynamic_data(
 
     /** Init shared lib .bss */
     for (size_t i = 0; i < *shared_libraries_len; i++) {
-        struct SharedLibrary *shared_lib = &(*shared_libraries)[i];
+        struct RuntimeObject *shared_lib = &(*shared_objects)[i];
         if (shared_lib->bss != NULL) {
             LOADER_LOG("initializing shared lib .bss\n");
             memset(shared_lib->bss, 0, shared_lib->bss_len);
@@ -692,8 +602,7 @@ static bool initialize_dynamic_data(
 
 int main(int32_t argc, char **argv) {
     if (argc < 2) {
-        tiny_c_fprintf(STDERR, "Filename required\n", argc);
-        return -1;
+        EXIT("Filename required\n", argc);
     }
 
     char *filename = argv[1];
@@ -705,33 +614,21 @@ int main(int32_t argc, char **argv) {
     // @todo: old gcc maps this by default for some reason
     const size_t ADDRESS = 0x10000;
     if (tiny_c_munmap(ADDRESS, 0x1000)) {
-        tiny_c_fprintf(STDERR, "munmap of self failed\n");
-        return -1;
+        EXIT("munmap of self failed\n");
     }
 
     int32_t fd = tiny_c_open(filename, O_RDONLY);
     if (fd < 0) {
-        tiny_c_fprintf(
-            STDERR,
-            "file error, %d, %s\n",
-            tinyc_errno,
-            tinyc_strerror(tinyc_errno)
-        );
-        return -1;
+        EXIT("file error, %d, %s\n", tinyc_errno, tinyc_strerror(tinyc_errno));
     }
 
+    struct ElfData inferior_elf;
     if (!get_elf_data(fd, &inferior_elf)) {
-        tiny_c_fprintf(STDERR, "error parsing elf data\n");
-        return -1;
+        EXIT("error parsing elf data\n");
     }
 
     if (inferior_elf.header.e_type != ET_EXEC) {
-        tiny_c_fprintf(
-            STDERR,
-            "Program type '%d' not supported\n",
-            inferior_elf.header.e_type
-        );
-        return -1;
+        EXIT("Program type '%d' not supported\n", inferior_elf.header.e_type);
     }
 
     LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);
@@ -743,13 +640,11 @@ int main(int32_t argc, char **argv) {
             0,
             &memory_regions_info
         )) {
-        tiny_c_fprintf(STDERR, "failed getting memory regions\n");
-        return -1;
+        EXIT("failed getting memory regions\n");
     }
 
     if (!map_memory_regions(fd, &memory_regions_info)) {
-        tiny_c_fprintf(STDERR, "loader map memory regions failed\n");
-        return -1;
+        EXIT("loader map memory regions failed\n");
     }
 
     print_memory_regions();
@@ -757,20 +652,47 @@ int main(int32_t argc, char **argv) {
     const struct SectionHeader *bss_section_header = find_section_header(
         inferior_elf.section_headers, inferior_elf.section_headers_len, ".bss"
     );
+    uint8_t *bss = NULL;
+    size_t bss_len = 0;
     if (bss_section_header != NULL) {
         LOADER_LOG("initializing .bss\n");
-        uint8_t *bss = (uint8_t *)bss_section_header->addr;
-        memset(bss, 0, bss_section_header->size);
+        bss = (uint8_t *)bss_section_header->addr;
+        bss_len = bss_section_header->size;
+        memset(bss, 0, bss_len);
     }
 
+    struct RuntimeRelocation *runtime_func_relocations = NULL;
+    size_t runtime_func_relocations_len = 0;
     if (inferior_elf.dynamic_data != NULL) {
-        if (!initialize_dynamic_data(
-                &shared_libraries, &shared_libraries_len
+        if (!get_function_relocations(
+                inferior_elf.dynamic_data,
+                0,
+                &runtime_func_relocations,
+                &runtime_func_relocations_len
             )) {
-            tiny_c_fprintf(STDERR, "failed initializing dynamic data\n");
-            return -1;
+            EXIT("get_function_relocations failed\n");
+        }
+
+        if (!initialize_dynamic_data(
+                inferior_elf.dynamic_data,
+                &shared_objects,
+                &shared_libraries_len
+            )) {
+            EXIT("failed initializing dynamic data\n");
         }
     }
+
+    executable_object = loader_malloc_arena(sizeof(struct RuntimeObject));
+    *executable_object = (struct RuntimeObject){
+        .name = filename,
+        .dynamic_offset = 0,
+        .elf_data = inferior_elf,
+        .memory_regions_info = memory_regions_info,
+        .runtime_func_relocations = runtime_func_relocations,
+        .runtime_func_relocations_len = runtime_func_relocations_len,
+        .bss = bss,
+        .bss_len = bss_len,
+    };
 
     /* Jump to program */
     size_t *frame_pointer = (size_t *)argv - 1;

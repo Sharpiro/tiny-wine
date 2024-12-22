@@ -14,6 +14,7 @@ const size_t IAT_BASE_START = 0x7d7e0000;
 const size_t DYNAMIC_CALLBACK_TRAMPOLINE_SIZE = 0x0e;
 
 struct PeData pe_data;
+struct RuntimeObject *lib_ntdll_object;
 
 // @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
 //        does arm?
@@ -58,11 +59,6 @@ __attribute__((naked)) void win_loader_end(void) {
             "syscall\n");
 }
 
-// void puts_internal(const char *data) {
-//     LOADER_LOG("puts internal\n");
-//     tiny_c_fputs(STDOUT, data);
-// }
-
 void dynamic_callback(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
@@ -89,7 +85,7 @@ void dynamic_callback(void) {
         }
     }
     if (func_iat_key == 0) {
-        EXIT("dynamic entry offset '%x' not found\n", func_iat_value)
+        EXIT("dynamic entry offset '%x' not found\n", func_iat_value);
     }
 
     LOADER_LOG(
@@ -107,11 +103,8 @@ void dynamic_callback(void) {
         }
     }
     if (import_entry == NULL) {
-        EXIT("dynamic entry offset '%x' not found\n", func_iat_value)
+        EXIT("dynamic entry offset '%x' not found\n", func_iat_value);
     };
-    // if (tiny_c_strcmp(import_entry->name, "puts") != 0) {
-    //     EXIT("unsupported arbitrary function lookup\n", func_iat_value)
-    // };
 
     LOADER_LOG(
         "%s(%x, %x, %x, %x, %x, %x)\n",
@@ -126,7 +119,7 @@ void dynamic_callback(void) {
 
     // @todo: find function
     size_t dynamic_func_address = (size_t)0x00;
-    EXIT("unsupported arbitrary function lookup\n", func_iat_value)
+    EXIT("unsupported arbitrary function lookup\n", func_iat_value);
 
     LOADER_LOG("completed dynamic linking\n");
 
@@ -154,8 +147,10 @@ __attribute__((naked)) void dynamic_callback_trampoline(void) {
             "jmp %0\n" ::"r"(dynamic_callback));
 }
 
-static bool initialize_lib_ntdll() {
-    int32_t ntdll_file = tiny_c_open("libntdll.so", O_RDONLY);
+static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
+    const char *LIB_NTDLL_SO_NAME = "libntdll.so";
+
+    int32_t ntdll_file = tiny_c_open(LIB_NTDLL_SO_NAME, O_RDONLY);
     if (ntdll_file == -1) {
         BAIL("failed opening libntdll.so\n");
     }
@@ -164,11 +159,63 @@ static bool initialize_lib_ntdll() {
     if (!get_elf_data(ntdll_file, &ntdll_elf)) {
         BAIL("failed getting elf data\n");
     }
-    // if (shared_lib_elf.dynamic_data == NULL) {
-    //     BAIL("Expected shared library to have dynamic data\n");
-    // }
+    if (ntdll_elf.dynamic_data == NULL) {
+        BAIL("Expected shared library to have dynamic data\n");
+    }
 
-    return false;
+    size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
+    struct MemoryRegionsInfo memory_regions_info;
+    if (!get_memory_regions_info_x86(
+            ntdll_elf.program_headers,
+            ntdll_elf.header.e_phnum,
+            dynamic_lib_offset,
+            &memory_regions_info
+        )) {
+        BAIL("failed getting memory regions\n");
+    }
+
+    LOADER_LOG("Mapping library memory regions\n");
+    if (!map_memory_regions(ntdll_file, &memory_regions_info)) {
+        BAIL("loader lib map memory regions failed\n");
+    }
+
+    tiny_c_close(ntdll_file);
+
+    // @todo: computed not initialized
+    uint8_t *bss = 0;
+    size_t bss_len = 0;
+    const struct SectionHeader *bss_section_header = find_section_header(
+        ntdll_elf.section_headers, ntdll_elf.section_headers_len, ".bss"
+    );
+    if (bss_section_header != NULL) {
+        bss = (uint8_t *)(dynamic_lib_offset + bss_section_header->addr);
+        bss_len = bss_section_header->size;
+    }
+
+    struct RuntimeRelocation *runtime_func_relocations;
+    size_t runtime_func_relocations_len;
+    if (!get_function_relocations(
+            ntdll_elf.dynamic_data,
+            dynamic_lib_offset,
+            &runtime_func_relocations,
+            &runtime_func_relocations_len
+        )) {
+        BAIL("get_function_relocations failed\n");
+    }
+
+    *lib_ntdll_object = (struct RuntimeObject){
+        .name = LIB_NTDLL_SO_NAME,
+        // @todo: need runtime tracking for other shared libs
+        .dynamic_offset = LOADER_SHARED_LIB_START,
+        .elf_data = ntdll_elf,
+        .memory_regions_info = memory_regions_info,
+        .runtime_func_relocations = runtime_func_relocations,
+        .runtime_func_relocations_len = runtime_func_relocations_len,
+        .bss = bss,
+        .bss_len = bss_len,
+    };
+
+    return true;
 }
 
 int main(int argc, char **argv) {
@@ -284,8 +331,6 @@ int main(int argc, char **argv) {
         EXIT("loader map memory regions failed\n");
     }
 
-    print_memory_regions();
-
     if (DYNAMIC_CALLBACK_TRAMPOLINE_SIZE > 0x10) {
         EXIT("unsupported trampoline size, must be less than 16 bytes\n");
     }
@@ -309,9 +354,12 @@ int main(int argc, char **argv) {
 
     /* Load libntdll.so */
 
-    if (!initialize_lib_ntdll()) {
+    lib_ntdll_object = loader_malloc_arena(sizeof(struct RuntimeObject));
+    if (!initialize_lib_ntdll(lib_ntdll_object)) {
         EXIT("initialize_lib_ntdll failed\n");
     }
+
+    print_memory_regions();
 
     /* Jump to program */
 
