@@ -309,7 +309,7 @@ programs/linux/dynamic: libtinyc.so libdynamic.so
 		tinyc_start.o
 	@$(OBJDUMP) -M intel -D dynamic > dynamic.dump
 
-programs/windows/win_dynamic:
+programs/windows/win_dynamic: msvcrt.dll ntdll.dll
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -321,11 +321,12 @@ programs/windows/win_dynamic:
 		-nostdlib \
 		-fPIC \
 		-o windynamic.exe \
-		src/programs/windows/win_dynamic/win_dynamic_main.c \
-		msvcrt.dll
+		ntdll.dll \
+		msvcrt.dll \
+		src/programs/windows/win_dynamic/win_dynamic_main.c
 	@$(OBJDUMP) -D windynamic.exe > windynamic.exe.dump
 
-programs/windows/win_dynamic_linux: libmsvcrt.so
+programs/windows/win_dynamic_linux: libmsvcrt.so libntdll.so
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -337,6 +338,7 @@ programs/windows/win_dynamic_linux: libmsvcrt.so
 		-fPIC \
 		-o windynamic_linux \
 		-Wl,-rpath,. \
+		./libntdll.so \
 		./libmsvcrt.so \
 		src/programs/windows/win_dynamic/win_dynamic_main.c
 	@$(OBJDUMP) -D windynamic_linux > windynamic_linux.dump

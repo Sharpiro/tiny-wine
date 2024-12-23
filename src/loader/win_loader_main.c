@@ -92,12 +92,14 @@ void dynamic_callback(void) {
         "Dynamic linker callback hit, %x:%x\n", func_iat_key, func_iat_value
     );
 
+    const char *lib_name = NULL;
     struct ImportEntry *import_entry = NULL;
     for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
         struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
         for (size_t i = 0; i < dir_entry->import_entries_len; i++) {
             struct ImportEntry *current_entry = &dir_entry->import_entries[i];
             if (current_entry->address == func_iat_value) {
+                lib_name = dir_entry->lib_name;
                 import_entry = current_entry;
             }
         }
@@ -107,7 +109,8 @@ void dynamic_callback(void) {
     };
 
     LOADER_LOG(
-        "%s(%x, %x, %x, %x, %x, %x)\n",
+        "%s: %s(%x, %x, %x, %x, %x, %x)\n",
+        lib_name,
         import_entry->name,
         p1,
         p2,
@@ -340,7 +343,12 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
         size_t *iat_entry = iat_offset + i;
         size_t iat_entry_init = *iat_entry;
-        size_t *entry_trampoline = (size_t *)(IAT_BASE_START + *iat_entry);
+        if (iat_entry_init == 0) {
+            LOADER_LOG("WARNING: IAT %x is 0\n", iat_entry);
+            continue;
+        }
+
+        size_t *entry_trampoline = (size_t *)(IAT_BASE_START + iat_entry_init);
         *iat_entry = (size_t)entry_trampoline;
         memcpy(
             entry_trampoline,

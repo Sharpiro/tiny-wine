@@ -79,22 +79,38 @@ int main(int argc, char **argv) {
 
     /* Imports */
 
-    tiny_c_printf("\nImport Address Table:\n");
-    for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
-        struct KeyValue *iat_entry = &pe_data.import_address_table[i];
-        tiny_c_printf("%d: %x:%x\n", i, iat_entry->key, iat_entry->value);
-    }
-
     tiny_c_printf("\nImports:\n");
+    struct KeyValue *flat_imports =
+        tinyc_malloc_arena(sizeof(struct KeyValue) * 1000);
+    size_t keys_len = 0;
     for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
         struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
         tiny_c_printf("Lib: %s:\n", dir_entry->lib_name);
-        for (size_t i = 0; i < dir_entry->import_entries_len; i++) {
-            struct ImportEntry *import_entry = &dir_entry->import_entries[i];
+        for (size_t j = 0; j < dir_entry->import_entries_len; j++) {
+            struct ImportEntry *import_entry = &dir_entry->import_entries[j];
+            flat_imports[keys_len++] = (struct KeyValue){
+                .key = import_entry->address,
+                .value = (size_t)import_entry->name,
+            };
             tiny_c_printf(
-                "%d: %x, %s\n", i, import_entry->address, import_entry->name
+                "%d: %x, %s\n", j, import_entry->address, import_entry->name
             );
         }
+    }
+
+    tiny_c_printf("\nImport Address Table:\n");
+    for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
+        struct KeyValue *iat_entry = &pe_data.import_address_table[i];
+        const char *entry_name = "-";
+        for (size_t j = 0; j < keys_len; j++) {
+            struct KeyValue *flat_import = &flat_imports[j];
+            if (flat_import->key == iat_entry->value) {
+                entry_name = (char *)flat_import->value;
+            }
+        }
+        tiny_c_printf(
+            "%d: %x:%x %s\n", i, iat_entry->key, iat_entry->value, entry_name
+        );
     }
 
     /* Exports */
