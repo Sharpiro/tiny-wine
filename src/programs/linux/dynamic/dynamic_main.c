@@ -45,4 +45,8 @@ int main(void) {
         "lib get_test_number_data_internal_ref: %d\n",
         get_test_number_data_internal_ref()
     );
+
+    /* Dynamic variable relocation from shared object */
+    char *os_release_buffer = tinyc_malloc_arena(0x1000);
+    tiny_c_printf("malloc: %s\n", os_release_buffer == NULL ? "err" : "ok");
 }

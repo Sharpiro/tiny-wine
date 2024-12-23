@@ -274,7 +274,7 @@ static bool initialize_dynamic_data(
     /* Map shared libraries */
     *shared_libraries_len = inferior_dyn_data->shared_libraries_len;
     runtime_dyn_symbols_len = inferior_dyn_data->symbols_len;
-    // runtime_var_relocations_len = inferior_dyn_data->var_relocations_len;
+    size_t runtime_var_relocations_len = inferior_dyn_data->var_relocations_len;
     runtime_got_entries_len = inferior_dyn_data->got_len;
     *shared_objects = loader_malloc_arena(
         sizeof(struct RuntimeObject) * inferior_dyn_data->shared_libraries_len
@@ -322,6 +322,8 @@ static bool initialize_dynamic_data(
         }
 
         runtime_dyn_symbols_len += shared_lib_elf.dynamic_data->symbols_len;
+        runtime_var_relocations_len +=
+            shared_lib_elf.dynamic_data->var_relocations_len;
         runtime_got_entries_len += shared_lib_elf.dynamic_data->got_len;
 
         uint8_t *bss = 0;
@@ -399,7 +401,6 @@ static bool initialize_dynamic_data(
 
     /** Get runtime variable relocations */
 
-    size_t runtime_var_relocations_len = inferior_dyn_data->var_relocations_len;
     struct RuntimeRelocation *runtime_var_relocations = loader_malloc_arena(
         sizeof(struct RuntimeRelocation) * runtime_var_relocations_len
     );
