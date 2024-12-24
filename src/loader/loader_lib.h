@@ -1,6 +1,7 @@
 #pragma once
 
 #include "elf_tools.h"
+#include "list.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -44,11 +45,13 @@ struct RuntimeObject {
     size_t bss_len;
 };
 
-struct RuntimeSymbol {
+typedef struct RuntimeSymbol {
     size_t value;
     const char *name;
     size_t size;
-};
+} RuntimeSymbol;
+
+CREATE_LIST_STRUCT(RuntimeSymbol)
 
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,
@@ -85,4 +88,10 @@ bool get_function_relocations(
     size_t dyn_offset,
     struct RuntimeRelocation **runtime_func_relocations,
     size_t *runtime_func_relocations_len
+);
+
+bool get_symbols(
+    const struct DynamicData *dyn_data,
+    size_t dyn_offset,
+    RuntimeSymbolList *runtime_symbols
 );

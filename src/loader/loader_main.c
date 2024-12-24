@@ -11,8 +11,7 @@
 struct RuntimeObject *executable_object;
 struct RuntimeObject *shared_objects;
 size_t shared_libraries_len = 0;
-struct RuntimeSymbol *runtime_dyn_symbols;
-size_t runtime_dyn_symbols_len = 0;
+RuntimeSymbolList runtime_symbols;
 struct GotEntry *runtime_got_entries;
 size_t runtime_got_entries_len = 0;
 size_t got_lib_dyn_offset_table[100] = {};
@@ -113,8 +112,8 @@ void dynamic_linker_callback(void) {
     const struct RuntimeSymbol *runtime_symbol;
     if (!get_runtime_symbol(
             runtime_relocation->name,
-            runtime_dyn_symbols,
-            runtime_dyn_symbols_len,
+            runtime_symbols.data,
+            runtime_symbols.length,
             0,
             &runtime_symbol
         )) {
@@ -272,8 +271,8 @@ static bool initialize_dynamic_data(
     }
 
     /* Map shared libraries */
+
     *shared_libraries_len = inferior_dyn_data->shared_libraries_len;
-    runtime_dyn_symbols_len = inferior_dyn_data->symbols_len;
     size_t runtime_var_relocations_len = inferior_dyn_data->var_relocations_len;
     runtime_got_entries_len = inferior_dyn_data->got_len;
     *shared_objects = loader_malloc_arena(
@@ -321,7 +320,6 @@ static bool initialize_dynamic_data(
             BAIL("print_memory_regions failed\n");
         }
 
-        runtime_dyn_symbols_len += shared_lib_elf.dynamic_data->symbols_len;
         runtime_var_relocations_len +=
             shared_lib_elf.dynamic_data->var_relocations_len;
         runtime_got_entries_len += shared_lib_elf.dynamic_data->got_len;
@@ -364,38 +362,21 @@ static bool initialize_dynamic_data(
     }
 
     /** Get runtime symbols */
-    runtime_dyn_symbols = loader_malloc_arena(
-        sizeof(struct RuntimeSymbol) * runtime_dyn_symbols_len
-    );
-    if (runtime_dyn_symbols == NULL) {
-        BAIL("malloc failed\n");
+
+    runtime_symbols = (RuntimeSymbolList){
+        .allocator = loader_malloc_arena,
+    };
+    if (!get_symbols(inferior_dyn_data, 0, &runtime_symbols)) {
+        BAIL("failed getting symbols\n");
     }
 
-    for (size_t i = 0; i < inferior_dyn_data->symbols_len; i++) {
-        struct Symbol *curr_symbol = &inferior_dyn_data->symbols[i];
-        struct RuntimeSymbol runtime_symbol = {
-            .value = curr_symbol->value,
-            .name = curr_symbol->name,
-            .size = curr_symbol->size,
-        };
-        runtime_dyn_symbols[i] = runtime_symbol;
-    }
-
-    size_t symbol_index = inferior_dyn_data->symbols_len;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
         struct RuntimeObject *curr_lib = &(*shared_objects)[i];
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
-        for (size_t i = 0; i < shared_dyn_data->symbols_len; i++) {
-            struct Symbol *curr_symbol = &shared_dyn_data->symbols[i];
-            size_t value = curr_symbol->value == 0
-                ? 0
-                : curr_lib->dynamic_offset + curr_symbol->value;
-            struct RuntimeSymbol runtime_symbol = {
-                .value = value,
-                .name = curr_symbol->name,
-                .size = curr_symbol->size,
-            };
-            runtime_dyn_symbols[symbol_index++] = runtime_symbol;
+        if (!get_symbols(
+                shared_dyn_data, curr_lib->dynamic_offset, &runtime_symbols
+            )) {
+            BAIL("failed getting symbols\n");
         }
     }
 
@@ -459,8 +440,8 @@ static bool initialize_dynamic_data(
         const struct RuntimeSymbol *runtime_symbol;
         if (!get_runtime_symbol(
                 run_var_reloc->name,
-                runtime_dyn_symbols,
-                runtime_dyn_symbols_len,
+                runtime_symbols.data,
+                runtime_symbols.length,
                 0,
                 &runtime_symbol
             )) {
@@ -583,8 +564,8 @@ static bool initialize_dynamic_data(
         const struct RuntimeSymbol *runtime_symbol;
         if (!get_runtime_symbol(
                 var_relocation->name,
-                runtime_dyn_symbols,
-                runtime_dyn_symbols_len,
+                runtime_symbols.data,
+                runtime_symbols.length,
                 var_relocation->offset,
                 &runtime_symbol
             )) {

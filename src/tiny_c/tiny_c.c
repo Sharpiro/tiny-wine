@@ -466,7 +466,7 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
         ((uint8_t *)dest)[i] = ((uint8_t *)src)[i];
     }
 
-    return NULL;
+    return dest;
 }
 
 #ifdef ARM32

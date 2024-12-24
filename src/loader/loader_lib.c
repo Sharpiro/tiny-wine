@@ -180,3 +180,25 @@ bool get_function_relocations(
     *runtime_func_relocations_len = dyn_data->func_relocations_len;
     return true;
 }
+
+bool get_symbols(
+    const struct DynamicData *dyn_data,
+    size_t dyn_offset,
+    RuntimeSymbolList *runtime_symbols
+) {
+    for (size_t i = 0; i < dyn_data->symbols_len; i++) {
+        struct Symbol *curr_symbol = &dyn_data->symbols[i];
+        size_t value =
+            curr_symbol->value == 0 ? 0 : dyn_offset + curr_symbol->value;
+        struct RuntimeSymbol runtime_symbol = {
+            .value = value,
+            .name = curr_symbol->name,
+            .size = curr_symbol->size,
+        };
+        if (!RuntimeSymbolList_add(runtime_symbols, runtime_symbol)) {
+            BAIL("malloc failed\n");
+        }
+    }
+
+    return true;
+}
