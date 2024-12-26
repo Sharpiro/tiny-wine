@@ -58,7 +58,6 @@ int main(int argc, char **argv) {
     tiny_c_printf("\nSection Headers:\n");
     for (size_t i = 0; i < pe_data.section_headers_len; i++) {
         struct WinSectionHeader *section_header = &pe_data.section_headers[i];
-        size_t address = image_base + section_header->base_address;
         size_t file_offset = section_header->pointer_to_raw_data;
         size_t permissions = section_header->characteristics >> 28;
         char *read = permissions & 4 ? "r" : "-";
@@ -69,7 +68,7 @@ int main(int argc, char **argv) {
             i,
             section_header->name,
             section_header->virtual_size,
-            address,
+            section_header->base_address,
             file_offset,
             read,
             write,
