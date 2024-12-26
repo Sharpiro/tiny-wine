@@ -17,11 +17,11 @@
         const int MIN_CAPACITY = 20;                                           \
         if (list->length == list->capacity) {                                  \
             type *old_list_data = list->data;                                  \
-            size_t old_list_size = sizeof(type##List) * list->capacity;        \
+            size_t old_list_size = sizeof(type) * list->capacity;              \
             list->capacity = list->capacity < MIN_CAPACITY                     \
                 ? MIN_CAPACITY                                                 \
                 : list->capacity * 2;                                          \
-            list->data = list->allocator(sizeof(type##List) * list->capacity); \
+            list->data = list->allocator(sizeof(type) * list->capacity);       \
             if (list->data == NULL) {                                          \
                 return false;                                                  \
             }                                                                  \

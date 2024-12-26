@@ -355,7 +355,8 @@ static bool initialize_dynamic_data(
             .runtime_func_relocations = runtime_func_relocations,
             .runtime_func_relocations_len = runtime_func_relocations_len,
             .bss = bss,
-            .bss_len = bss_len
+            .bss_len = bss_len,
+            .runtime_symbols = {},
         };
         (*shared_objects)[i] = shared_library;
         dynamic_lib_offset = memory_regions_info.end;
@@ -674,6 +675,7 @@ int main(int32_t argc, char **argv) {
         .runtime_func_relocations_len = runtime_func_relocations_len,
         .bss = bss,
         .bss_len = bss_len,
+        .runtime_symbols = {},
     };
 
     /* Jump to program */

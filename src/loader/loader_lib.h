@@ -34,6 +34,14 @@ struct RuntimeRelocation {
     size_t lib_dyn_offset;
 };
 
+typedef struct RuntimeSymbol {
+    size_t value;
+    const char *name;
+    size_t size;
+} RuntimeSymbol;
+
+CREATE_LIST_STRUCT(RuntimeSymbol)
+
 struct RuntimeObject {
     const char *name;
     size_t dynamic_offset;
@@ -43,15 +51,8 @@ struct RuntimeObject {
     size_t runtime_func_relocations_len;
     uint8_t *bss;
     size_t bss_len;
+    RuntimeSymbolList runtime_symbols;
 };
-
-typedef struct RuntimeSymbol {
-    size_t value;
-    const char *name;
-    size_t size;
-} RuntimeSymbol;
-
-CREATE_LIST_STRUCT(RuntimeSymbol)
 
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,

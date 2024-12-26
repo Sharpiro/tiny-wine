@@ -120,9 +120,28 @@ void dynamic_callback(void) {
         p6
     );
 
-    // @todo: find function
-    size_t dynamic_func_address = (size_t)0x00;
-    EXIT("unsupported arbitrary function lookup\n", func_iat_value);
+    RuntimeSymbol *runtime_symbol = NULL;
+    if (tiny_c_strcmp(lib_name, "ntdll.dll") == 0) {
+        for (size_t i = 0; i < lib_ntdll_object->runtime_symbols.length; i++) {
+            RuntimeSymbol *curr_symbol =
+                &lib_ntdll_object->runtime_symbols.data[i];
+            if (tiny_c_strcmp(curr_symbol->name, import_entry->name) == 0) {
+                runtime_symbol = curr_symbol;
+                break;
+            }
+        }
+    } else {
+        EXIT("unsupported arbitrary function lookup\n");
+    }
+    if (runtime_symbol == NULL) {
+        EXIT("expected runtime symbol\n");
+    }
+
+    LOADER_LOG(
+        "runtime symbol %x, size: %d\n",
+        runtime_symbol->value,
+        runtime_symbol->size
+    );
 
     LOADER_LOG("completed dynamic linking\n");
 
@@ -135,7 +154,7 @@ void dynamic_callback(void) {
             "mov r9, %6\n"
             "mov rsp, rbp\n"
             "pop rbp\n"
-            "jmp r15\n" ::"r"(dynamic_func_address),
+            "jmp r15\n" ::"r"(runtime_symbol->value),
             "r"(p1),
             "r"(p2),
             "r"(p3),
@@ -166,6 +185,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         BAIL("Expected shared library to have dynamic data\n");
     }
 
+    // @todo: need runtime tracking for other shared libs
     size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
     struct MemoryRegionsInfo memory_regions_info;
     if (!get_memory_regions_info_x86(
@@ -206,9 +226,17 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         BAIL("get_function_relocations failed\n");
     }
 
+    RuntimeSymbolList runtime_symbols = {
+        .allocator = loader_malloc_arena,
+    };
+    if (!get_symbols(
+            ntdll_elf.dynamic_data, dynamic_lib_offset, &runtime_symbols
+        )) {
+        BAIL("failed getting symbols\n");
+    }
+
     *lib_ntdll_object = (struct RuntimeObject){
         .name = LIB_NTDLL_SO_NAME,
-        // @todo: need runtime tracking for other shared libs
         .dynamic_offset = LOADER_SHARED_LIB_START,
         .elf_data = ntdll_elf,
         .memory_regions_info = memory_regions_info,
@@ -216,6 +244,8 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         .runtime_func_relocations_len = runtime_func_relocations_len,
         .bss = bss,
         .bss_len = bss_len,
+        .runtime_symbols = runtime_symbols,
+
     };
 
     return true;
