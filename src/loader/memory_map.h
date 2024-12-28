@@ -18,5 +18,5 @@ bool get_memory_regions_info_x86(
 );
 
 bool map_memory_regions(
-    int32_t fd, const struct MemoryRegionsInfo *memory_regions_info
+    int32_t fd, const struct MemoryRegion *regions, size_t regions_len
 );

@@ -13,7 +13,6 @@
 CREATE_LIST_STRUCT(WinRuntimeObject)
 
 const size_t IAT_BASE_START = 0x7d7e0000;
-const size_t DYNAMIC_CALLBACK_TRAMPOLINE_SIZE = 0x0e;
 
 struct PeData executable;
 struct RuntimeObject *lib_ntdll_object;
@@ -65,8 +64,6 @@ __attribute__((naked)) void win_loader_end(void) {
 void dynamic_callback(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
-    size_t source_address = 0;
-    __asm__("mov %0, r15\n" : "=r"(source_address));
     size_t p1;
     __asm__("mov %0, rcx" : "=r"(p1));
     size_t p2;
@@ -75,10 +72,12 @@ void dynamic_callback(void) {
     __asm__("mov %0, r8" : "=r"(p3));
     size_t p4;
     __asm__("mov %0, r9" : "=r"(p4));
-    size_t p5 = rbp[6];
-    size_t p6 = rbp[7];
+    size_t p5 = rbp[7];
+    size_t p6 = rbp[8];
 
-    size_t func_iat_value = source_address - IAT_BASE_START;
+    size_t dyn_trampoline_end = *(rbp + 1);
+    size_t func_iat_value =
+        dyn_trampoline_end - DYNAMIC_CALLBACK_TRAMPOLINE_SIZE - IAT_BASE_START;
     size_t func_iat_key = 0;
 
     for (size_t i = 0; i < executable.import_address_table_len; i++) {
@@ -169,8 +168,7 @@ void dynamic_callback(void) {
 }
 
 __attribute__((naked)) void dynamic_callback_trampoline(void) {
-    __asm__("lea r15, [rip - 0x0c]\n"
-            "jmp %0\n" ::"r"(dynamic_callback));
+    __asm__("call %0\n" ::"r"(dynamic_callback));
 }
 
 static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
@@ -202,7 +200,11 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     }
 
     LOADER_LOG("Mapping library memory regions\n");
-    if (!map_memory_regions(ntdll_file, &memory_regions_info)) {
+    if (!map_memory_regions(
+            ntdll_file,
+            memory_regions_info.regions,
+            memory_regions_info.regions_len
+        )) {
         BAIL("loader lib map memory regions failed\n");
     }
 
@@ -289,7 +291,12 @@ static bool initialize_dynamic_data(
         }
 
         LOADER_LOG("Mapping library memory regions\n");
-        if (!map_memory_regions(shared_lib_file, &memory_regions_info)) {
+
+        if (!map_memory_regions_win(
+                shared_lib_file,
+                memory_regions_info.regions,
+                memory_regions_info.regions_len
+            )) {
             BAIL("loader lib map memory regions failed\n");
         }
 
@@ -362,55 +369,20 @@ int main(int argc, char **argv) {
         EXIT("map_memory_regions_win failed\n");
     }
 
-    /* Map Import Address Table memory */
+    /* Map Import Address Table */
 
     const struct WinSectionHeader *idata_header = find_win_section_header(
         executable.section_headers, executable.section_headers_len, ".idata"
     );
-    size_t iat_mem_start = idata_header->base_address;
-    struct MemoryRegion iat_regions = {
-        .start = IAT_BASE_START + iat_mem_start,
-        .end = IAT_BASE_START + iat_mem_start + 0x1000,
-        .is_direct_file_map = false,
-        .file_offset = 0,
-        .file_size = 0,
-        .permissions = 4 | 2 | 1,
-    };
-    struct MemoryRegionsInfo iat_mem_info = {
-        .start = 0,
-        .end = 0,
-        .regions = &iat_regions,
-        .regions_len = 1,
-    };
-    if (!map_memory_regions(fd, &iat_mem_info)) {
-        EXIT("loader map memory regions failed\n");
-    }
-
-    if (DYNAMIC_CALLBACK_TRAMPOLINE_SIZE > 0x10) {
-        EXIT("unsupported trampoline size, must be less than 16 bytes\n");
-    }
-
-    size_t *iat_offset =
-        (size_t *)(image_base + executable.import_address_table_offset);
-    for (size_t i = 0; i < executable.import_address_table_len; i++) {
-        size_t *iat_entry = iat_offset + i;
-        size_t iat_entry_init = *iat_entry;
-        if (iat_entry_init == 0) {
-            LOADER_LOG("WARNING: IAT %x is 0\n", iat_entry);
-            continue;
-        }
-
-        size_t *entry_trampoline = (size_t *)(IAT_BASE_START + iat_entry_init);
-        *iat_entry = (size_t)entry_trampoline;
-        memcpy(
-            entry_trampoline,
-            (void *)dynamic_callback_trampoline,
-            DYNAMIC_CALLBACK_TRAMPOLINE_SIZE
-        );
-        LOADER_LOG(
-            "IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_trampoline
-        );
-    }
+    map_import_address_table(
+        fd,
+        IAT_BASE_START,
+        idata_header->base_address,
+        image_base,
+        executable.import_address_table_offset,
+        executable.import_address_table_len,
+        (size_t)dynamic_callback_trampoline
+    );
 
     /* Load libntdll.so */
 

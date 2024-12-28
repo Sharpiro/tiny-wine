@@ -11,7 +11,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-static const int MAX_ARRAY_LENGTH = 1000;
+#define MAX_ARRAY_LENGTH 1000
 
 bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (pe_data == NULL) {
@@ -332,13 +332,7 @@ bool map_memory_regions_win(
         memory_region->permissions = 4 | 2 | 1;
     }
 
-    struct MemoryRegionsInfo memory_regions_info = {
-        .start = 0,
-        .end = 0,
-        .regions = editable_regions,
-        .regions_len = regions_len,
-    };
-    if (!map_memory_regions(fd, &memory_regions_info)) {
+    if (!map_memory_regions(fd, editable_regions, regions_len)) {
         BAIL("loader map memory regions failed\n");
     }
 
@@ -364,6 +358,53 @@ bool map_memory_regions_win(
                 tinyc_strerror(tinyc_errno)
             );
         }
+    }
+
+    return true;
+}
+
+bool map_import_address_table(
+    int32_t fd,
+    size_t iat_base,
+    size_t idata_base,
+    size_t image_base,
+    size_t import_address_table_offset,
+    size_t import_address_table_len,
+    size_t dynamic_callback_trampoline
+) {
+    struct MemoryRegion iat_regions = {
+        .start = iat_base + idata_base,
+        .end = iat_base + idata_base + 0x1000,
+        .is_direct_file_map = false,
+        .file_offset = 0,
+        .file_size = 0,
+        .permissions = 4 | 2 | 1,
+    };
+    if (!map_memory_regions(fd, &iat_regions, 1)) {
+        EXIT("loader map memory regions failed\n");
+    }
+
+    static_assert(DYNAMIC_CALLBACK_TRAMPOLINE_SIZE <= 0x08);
+
+    size_t *iat_offset = (size_t *)(image_base + import_address_table_offset);
+    for (size_t i = 0; i < import_address_table_len; i++) {
+        size_t *iat_entry = iat_offset + i;
+        size_t iat_entry_init = *iat_entry;
+        if (iat_entry_init == 0) {
+            LOADER_LOG("WARNING: IAT %x is 0\n", iat_entry);
+            continue;
+        }
+
+        size_t *entry_trampoline = (size_t *)(iat_base + iat_entry_init);
+        *iat_entry = (size_t)entry_trampoline;
+        memcpy(
+            entry_trampoline,
+            (void *)dynamic_callback_trampoline,
+            DYNAMIC_CALLBACK_TRAMPOLINE_SIZE
+        );
+        LOADER_LOG(
+            "IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_trampoline
+        );
     }
 
     return true;

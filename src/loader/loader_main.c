@@ -312,7 +312,11 @@ static bool initialize_dynamic_data(
         }
 
         LOADER_LOG("Mapping library memory regions\n");
-        if (!map_memory_regions(shared_lib_file, &memory_regions_info)) {
+        if (!map_memory_regions(
+                shared_lib_file,
+                memory_regions_info.regions,
+                memory_regions_info.regions_len
+            )) {
             BAIL("loader lib map memory regions failed\n");
         }
 
@@ -627,7 +631,9 @@ int main(int32_t argc, char **argv) {
         EXIT("failed getting memory regions\n");
     }
 
-    if (!map_memory_regions(fd, &memory_regions_info)) {
+    if (!map_memory_regions(
+            fd, memory_regions_info.regions, memory_regions_info.regions_len
+        )) {
         EXIT("loader map memory regions failed\n");
     }
 

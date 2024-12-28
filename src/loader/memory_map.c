@@ -157,11 +157,10 @@ bool get_memory_regions_info_x86(
 }
 
 bool map_memory_regions(
-    int32_t fd, const struct MemoryRegionsInfo *memory_regions_info
+    int32_t fd, const struct MemoryRegion *regions, size_t regions_len
 ) {
-    for (size_t i = 0; i < memory_regions_info->regions_len; i++) {
-        const struct MemoryRegion *memory_region =
-            &memory_regions_info->regions[i];
+    for (size_t i = 0; i < regions_len; i++) {
+        const struct MemoryRegion *memory_region = &regions[i];
         size_t memory_region_len = memory_region->end - memory_region->start;
         size_t prot_read = (memory_region->permissions & 4) >> 2;
         size_t prot_write = memory_region->permissions & 2;

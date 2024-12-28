@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define DOS_MAGIC 0x5a4d
+#define DYNAMIC_CALLBACK_TRAMPOLINE_SIZE 7
 
 struct ImageDosHeader {
     uint16_t magic;      // Magic number ("MZ")
@@ -204,4 +205,14 @@ const struct WinSectionHeader *find_win_section_header(
 
 bool map_memory_regions_win(
     int32_t fd, const struct MemoryRegion *regions, size_t regions_len
+);
+
+bool map_import_address_table(
+    int32_t fd,
+    size_t iat_base,
+    size_t idata_base,
+    size_t image_base,
+    size_t import_address_table_offset,
+    size_t import_address_table_len,
+    size_t dynamic_callback_trampoline
 );
