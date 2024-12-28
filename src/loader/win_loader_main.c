@@ -10,11 +10,14 @@
 #include <string.h>
 #include <sys/types.h>
 
+CREATE_LIST_STRUCT(WinRuntimeObject)
+
 const size_t IAT_BASE_START = 0x7d7e0000;
 const size_t DYNAMIC_CALLBACK_TRAMPOLINE_SIZE = 0x0e;
 
-struct PeData pe_data;
+struct PeData executable;
 struct RuntimeObject *lib_ntdll_object;
+WinRuntimeObjectList shared_libraries = {};
 
 // @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
 //        does arm?
@@ -78,8 +81,8 @@ void dynamic_callback(void) {
     size_t func_iat_value = source_address - IAT_BASE_START;
     size_t func_iat_key = 0;
 
-    for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
-        struct KeyValue *iat_entry = &pe_data.import_address_table[i];
+    for (size_t i = 0; i < executable.import_address_table_len; i++) {
+        struct KeyValue *iat_entry = &executable.import_address_table[i];
         if (iat_entry->value == func_iat_value) {
             func_iat_key = iat_entry->key;
         }
@@ -94,8 +97,9 @@ void dynamic_callback(void) {
 
     const char *lib_name = NULL;
     struct ImportEntry *import_entry = NULL;
-    for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
-        struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
+    for (size_t i = 0; i < executable.import_dir_entries_len; i++) {
+        struct ImportDirectoryEntry *dir_entry =
+            &executable.import_dir_entries[i];
         for (size_t i = 0; i < dir_entry->import_entries_len; i++) {
             struct ImportEntry *current_entry = &dir_entry->import_entries[i];
             if (current_entry->address == func_iat_value) {
@@ -251,6 +255,61 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     return true;
 }
 
+static bool initialize_dynamic_data(
+    struct PeData *inferior_executable, WinRuntimeObjectList *shared_libraries
+) {
+    /* Map shared libraries */
+
+    for (size_t i = 0; i < inferior_executable->import_dir_entries_len; i++) {
+        struct ImportDirectoryEntry *dir_entry =
+            &inferior_executable->import_dir_entries[i];
+        const char *shared_lib_name = dir_entry->lib_name;
+        LOADER_LOG("mapping shared library '%s'\n", shared_lib_name);
+        int32_t shared_lib_file = tiny_c_open(shared_lib_name, O_RDONLY);
+        if (shared_lib_file == -1) {
+            BAIL("failed opening shared lib '%s'\n", shared_lib_name);
+        }
+
+        struct PeData shared_lib_pe;
+        if (!get_pe_data(shared_lib_file, &shared_lib_pe)) {
+            BAIL("failed getting data for shared lib '%s'\n", shared_lib_name);
+        }
+
+        // @todo: provide offset by loader?
+        size_t image_base =
+            shared_lib_pe.winpe_header->image_optional_header.image_base;
+        struct MemoryRegionsInfo memory_regions_info;
+        if (!get_memory_regions_info_win(
+                inferior_executable->section_headers,
+                inferior_executable->section_headers_len,
+                image_base,
+                &memory_regions_info
+            )) {
+            BAIL("failed getting memory regions\n");
+        }
+
+        LOADER_LOG("Mapping library memory regions\n");
+        if (!map_memory_regions(shared_lib_file, &memory_regions_info)) {
+            BAIL("loader lib map memory regions failed\n");
+        }
+
+        tiny_c_close(shared_lib_file);
+        if (!print_memory_regions()) {
+            BAIL("print_memory_regions failed\n");
+        }
+
+        struct WinRuntimeObject shared_lib = {
+            .name = dir_entry->lib_name,
+            // @todo:
+            .dynamic_offset = 0,
+            .memory_regions_info = memory_regions_info,
+        };
+        WinRuntimeObjectList_add(shared_libraries, shared_lib);
+    }
+
+    return true;
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -279,71 +338,34 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    if (!get_pe_data(fd, &pe_data)) {
+    if (!get_pe_data(fd, &executable)) {
         tiny_c_fprintf(STDERR, "error parsing pe data\n");
         return -1;
     }
 
-    size_t image_base = pe_data.winpe_header->image_optional_header.image_base;
+    size_t image_base =
+        executable.winpe_header->image_optional_header.image_base;
 
     struct MemoryRegionsInfo memory_regions_info;
     if (!get_memory_regions_info_win(
-            pe_data.section_headers,
-            pe_data.section_headers_len,
+            executable.section_headers,
+            executable.section_headers_len,
             image_base,
             &memory_regions_info
         )) {
         EXIT("failed getting memory regions\n");
     }
 
-    for (size_t i = 0; i < memory_regions_info.regions_len; i++) {
-        struct MemoryRegion *memory_region = &memory_regions_info.regions[i];
-        memory_region->permissions = 4 | 2 | 1;
-    }
-
-    if (!map_memory_regions(fd, &memory_regions_info)) {
-        EXIT("loader map memory regions failed\n");
-    }
-
-    /* Protect memory regions */
-
-    get_memory_regions_info_win(
-        pe_data.section_headers,
-        pe_data.section_headers_len,
-        image_base,
-        &memory_regions_info
-    );
-    for (size_t i = 0; i < memory_regions_info.regions_len; i++) {
-        struct MemoryRegion *memory_region = &memory_regions_info.regions[i];
-        uint8_t *region_start = (uint8_t *)memory_region->start;
-        tinyc_lseek(fd, (off_t)memory_region->file_offset, SEEK_SET);
-        if ((int32_t)tiny_c_read(fd, region_start, memory_region->file_size) <
-            0) {
-            EXIT("read failed\n");
-        }
-
-        // @todo: needs to happen later
-        // int32_t prot_read = (memory_region->permissions & 4) >> 2;
-        // int32_t prot_write = memory_region->permissions & 2;
-        // int32_t prot_execute = ((int32_t)memory_region->permissions & 1) <<
-        // 2; int32_t map_protection = prot_read | prot_write | prot_execute;
-        // size_t memory_region_len = memory_region->end - memory_region->start;
-        // if (tiny_c_mprotect(region_start, memory_region_len, map_protection)
-        // <
-        //     0) {
-        //     EXIT(
-        //         "tiny_c_mprotect failed, %d, %s\n",
-        //         tinyc_errno,
-        //         tinyc_strerror(tinyc_errno)
-        //     );
-        // }
+    if (!map_memory_regions_win(
+            fd, memory_regions_info.regions, memory_regions_info.regions_len
+        )) {
+        EXIT("map_memory_regions_win failed\n");
     }
 
     /* Map Import Address Table memory */
-    // @todo: is this redundant?
 
     const struct WinSectionHeader *idata_header = find_win_section_header(
-        pe_data.section_headers, pe_data.section_headers_len, ".idata"
+        executable.section_headers, executable.section_headers_len, ".idata"
     );
     size_t iat_mem_start = idata_header->base_address;
     struct MemoryRegion iat_regions = {
@@ -369,8 +391,8 @@ int main(int argc, char **argv) {
     }
 
     size_t *iat_offset =
-        (size_t *)(image_base + pe_data.import_address_table_offset);
-    for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
+        (size_t *)(image_base + executable.import_address_table_offset);
+    for (size_t i = 0; i < executable.import_address_table_len; i++) {
         size_t *iat_entry = iat_offset + i;
         size_t iat_entry_init = *iat_entry;
         if (iat_entry_init == 0) {
@@ -397,6 +419,15 @@ int main(int argc, char **argv) {
         EXIT("initialize_lib_ntdll failed\n");
     }
 
+    /* Load dlls */
+
+    shared_libraries = (WinRuntimeObjectList){
+        .allocator = loader_malloc_arena,
+    };
+    if (!initialize_dynamic_data(&executable, &shared_libraries)) {
+        EXIT("initialize_dynamic_data failed\n");
+    }
+
     print_memory_regions();
 
     /* Jump to program */
@@ -406,13 +437,15 @@ int main(int argc, char **argv) {
     *inferior_frame_pointer = (size_t)(argc - 1);
     size_t *stack_start = inferior_frame_pointer;
     *stack_start = (size_t)win_loader_end;
-    LOADER_LOG("entrypoint: %x\n", pe_data.entrypoint);
+    LOADER_LOG("entrypoint: %x\n", executable.entrypoint);
     LOADER_LOG("frame_pointer: %x\n", frame_pointer);
     LOADER_LOG("stack_start: %x\n", stack_start);
     LOADER_LOG("end func: %x\n", *stack_start);
     LOADER_LOG("------------running program------------\n");
 
     run_asm(
-        (size_t)inferior_frame_pointer, (size_t)stack_start, pe_data.entrypoint
+        (size_t)inferior_frame_pointer,
+        (size_t)stack_start,
+        executable.entrypoint
     );
 }

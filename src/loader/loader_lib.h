@@ -42,7 +42,8 @@ typedef struct RuntimeSymbol {
 
 CREATE_LIST_STRUCT(RuntimeSymbol)
 
-struct RuntimeObject {
+// @todo: make this generic?
+typedef struct RuntimeObject {
     const char *name;
     size_t dynamic_offset;
     struct ElfData elf_data;
@@ -52,7 +53,19 @@ struct RuntimeObject {
     uint8_t *bss;
     size_t bss_len;
     RuntimeSymbolList runtime_symbols;
-};
+} RuntimeObject;
+
+typedef struct WinRuntimeObject {
+    const char *name;
+    size_t dynamic_offset;
+    // struct ElfData elf_data;
+    struct MemoryRegionsInfo memory_regions_info;
+    // struct RuntimeRelocation *runtime_func_relocations;
+    // size_t runtime_func_relocations_len;
+    // uint8_t *bss;
+    // size_t bss_len;
+    // RuntimeSymbolList runtime_symbols;
+} WinRuntimeObject;
 
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,

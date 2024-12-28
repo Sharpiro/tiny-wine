@@ -187,7 +187,7 @@ struct PeData {
     size_t symbols_len;
 };
 
-bool get_pe_data(int32_t fd, struct PeData *elf_data);
+bool get_pe_data(int32_t fd, struct PeData *pe_data);
 
 bool get_memory_regions_info_win(
     const struct WinSectionHeader *program_headers,
@@ -200,4 +200,8 @@ const struct WinSectionHeader *find_win_section_header(
     const struct WinSectionHeader *section_headers,
     size_t section_headers_len,
     const char *name
+);
+
+bool map_memory_regions_win(
+    int32_t fd, const struct MemoryRegion *regions, size_t regions_len
 );

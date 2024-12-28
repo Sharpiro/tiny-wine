@@ -59,12 +59,13 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < pe_data.section_headers_len; i++) {
         struct WinSectionHeader *section_header = &pe_data.section_headers[i];
         size_t file_offset = section_header->pointer_to_raw_data;
-        size_t permissions = section_header->characteristics >> 28;
-        char *read = permissions & 4 ? "r" : "-";
-        char *write = permissions & 8 ? "w" : "-";
-        char *execute = permissions & 2 ? "e" : "-";
+        size_t win_permissions = section_header->characteristics >> 28;
+        char *read = win_permissions & 4 ? "r" : "-";
+        char *write = win_permissions & 8 ? "w" : "-";
+        char *execute = win_permissions & 2 ? "e" : "-";
+        char *visibility = win_permissions & 1 ? "s" : "p";
         tiny_c_printf(
-            "%d, %s, %x, %x, %x, %s%s%s\n",
+            "%d, %s, %x, %x, %x, %s%s%s%s\n",
             i,
             section_header->name,
             section_header->virtual_size,
@@ -72,7 +73,8 @@ int main(int argc, char **argv) {
             file_offset,
             read,
             write,
-            execute
+            execute,
+            visibility
         );
     }
 

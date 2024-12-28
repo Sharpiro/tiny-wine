@@ -352,6 +352,7 @@ tools/readwin: tools/readwin/readwin_main.c tinyc_start.o libtinyc.a
 		tools/readwin/readwin_main.c \
 		src/loader/loader_lib.c \
 		src/loader/pe_tools.c \
+		src/loader/memory_map.c \
 		tinyc_start.o \
 		libtinyc.a
 

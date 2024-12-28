@@ -259,11 +259,11 @@ void dynamic_linker_callback(void) {
 
 static bool initialize_dynamic_data(
     struct DynamicData *inferior_dyn_data,
-    struct RuntimeObject **shared_objects,
+    struct RuntimeObject **shared_libraries,
     size_t *shared_libraries_len
 ) {
     LOADER_LOG("initializing dynamic data\n");
-    if (shared_objects == NULL) {
+    if (shared_libraries == NULL) {
         BAIL("shared_libraries was null\n");
     }
     if (shared_libraries_len == NULL) {
@@ -275,10 +275,10 @@ static bool initialize_dynamic_data(
     *shared_libraries_len = inferior_dyn_data->shared_libraries_len;
     size_t runtime_var_relocations_len = inferior_dyn_data->var_relocations_len;
     runtime_got_entries_len = inferior_dyn_data->got_len;
-    *shared_objects = loader_malloc_arena(
+    *shared_libraries = loader_malloc_arena(
         sizeof(struct RuntimeObject) * inferior_dyn_data->shared_libraries_len
     );
-    if (shared_objects == NULL) {
+    if (shared_libraries == NULL) {
         BAIL("malloc failed\n");
     }
 
@@ -290,6 +290,7 @@ static bool initialize_dynamic_data(
         if (shared_lib_file == -1) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
         }
+
         struct ElfData shared_lib_elf;
         if (!get_elf_data(shared_lib_file, &shared_lib_elf)) {
             BAIL(
@@ -358,7 +359,7 @@ static bool initialize_dynamic_data(
             .bss_len = bss_len,
             .runtime_symbols = {},
         };
-        (*shared_objects)[i] = shared_library;
+        (*shared_libraries)[i] = shared_library;
         dynamic_lib_offset = memory_regions_info.end;
     }
 
@@ -372,7 +373,7 @@ static bool initialize_dynamic_data(
     }
 
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
-        struct RuntimeObject *curr_lib = &(*shared_objects)[i];
+        struct RuntimeObject *curr_lib = &(*shared_libraries)[i];
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
         if (!get_symbols(
                 shared_dyn_data, curr_lib->dynamic_offset, &runtime_symbols
@@ -412,7 +413,7 @@ static bool initialize_dynamic_data(
 
     size_t var_reloc_index = inferior_dyn_data->var_relocations_len;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
-        struct RuntimeObject *curr_lib = &(*shared_objects)[i];
+        struct RuntimeObject *curr_lib = &(*shared_libraries)[i];
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
         for (size_t i = 0; i < shared_dyn_data->var_relocations_len; i++) {
             struct Relocation *curr_relocation =
@@ -485,7 +486,7 @@ static bool initialize_dynamic_data(
 
     size_t got_index = inferior_dyn_data->got_len;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
-        struct RuntimeObject *curr_lib = &(*shared_objects)[i];
+        struct RuntimeObject *curr_lib = &(*shared_libraries)[i];
         struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
         for (size_t j = 0; j < shared_dyn_data->got_len; j++) {
             struct GotEntry *elf_got_entry = &shared_dyn_data->got_entries[j];
@@ -533,7 +534,7 @@ static bool initialize_dynamic_data(
 
     /** Init shared lib .bss */
     for (size_t i = 0; i < *shared_libraries_len; i++) {
-        struct RuntimeObject *shared_lib = &(*shared_objects)[i];
+        struct RuntimeObject *shared_lib = &(*shared_libraries)[i];
         if (shared_lib->bss != NULL) {
             LOADER_LOG("initializing shared lib .bss\n");
             memset(shared_lib->bss, 0, shared_lib->bss_len);
