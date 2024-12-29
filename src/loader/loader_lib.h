@@ -2,6 +2,7 @@
 
 #include "elf_tools.h"
 #include "list.h"
+#include "pe_tools.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -55,16 +56,20 @@ typedef struct RuntimeObject {
     RuntimeSymbolList runtime_symbols;
 } RuntimeObject;
 
+typedef struct WinRuntimeExport {
+    size_t address;
+    const char *name;
+} WinRuntimeExport;
+
+CREATE_LIST_STRUCT(WinRuntimeExport)
+
 typedef struct WinRuntimeObject {
     const char *name;
-    size_t dynamic_offset;
-    // struct ElfData elf_data;
+    struct PeData pe_data;
     struct MemoryRegionsInfo memory_regions_info;
-    // struct RuntimeRelocation *runtime_func_relocations;
-    // size_t runtime_func_relocations_len;
-    // uint8_t *bss;
-    // size_t bss_len;
-    // RuntimeSymbolList runtime_symbols;
+    WinRuntimeExportList function_exports;
+    size_t iat_runtime_base;
+    size_t iat_runtime_offset;
 } WinRuntimeObject;
 
 bool find_runtime_relocation(

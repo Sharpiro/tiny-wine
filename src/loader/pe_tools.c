@@ -370,17 +370,19 @@ bool map_import_address_table(
     size_t image_base,
     size_t import_address_table_offset,
     size_t import_address_table_len,
-    size_t dynamic_callback_trampoline
+    size_t dynamic_callback_trampoline,
+    size_t *iat_runtime_base
 ) {
-    struct MemoryRegion iat_regions = {
-        .start = iat_base + idata_base,
+    *iat_runtime_base = iat_base + idata_base;
+    struct MemoryRegion iat_region = {
+        .start = *iat_runtime_base,
         .end = iat_base + idata_base + 0x1000,
         .is_direct_file_map = false,
         .file_offset = 0,
         .file_size = 0,
         .permissions = 4 | 2 | 1,
     };
-    if (!map_memory_regions(fd, &iat_regions, 1)) {
+    if (!map_memory_regions(fd, &iat_region, 1)) {
         EXIT("loader map memory regions failed\n");
     }
 
