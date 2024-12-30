@@ -121,7 +121,7 @@ libdynamic.so:
 		-fPIC \
 		-o libdynamic.so \
 		src/programs/linux/dynamic/dynamic_lib.c
-	@$(OBJDUMP) -D libdynamic.so > libdynamic.so.dump
+	@$(OBJDUMP) -M intel -D libdynamic.so > libdynamic.so.dump
 
 libntdll.so:
 	@$(CC) $(CFLAGS) \
@@ -136,7 +136,7 @@ libntdll.so:
 		-fPIC \
 		-o libntdll.so \
 		src/dlls/ntdll.c
-	@$(OBJDUMP) -D libntdll.so > libntdll.so.dump
+	@$(OBJDUMP) -M intel -D libntdll.so > libntdll.so.dump
 
 libmsvcrt.so: libntdll.so
 	@$(CC) $(CFLAGS) \
@@ -152,7 +152,7 @@ libmsvcrt.so: libntdll.so
 		-o libmsvcrt.so \
 		./libntdll.so \
 		src/dlls/msvcrt.c
-	@$(OBJDUMP) -D libmsvcrt.so > libmsvcrt.so.dump
+	@$(OBJDUMP) -M intel -D libmsvcrt.so > libmsvcrt.so.dump
 
 ntdll.dll:
 	@$(CC) $(CFLAGS) \
@@ -168,7 +168,7 @@ ntdll.dll:
 		-fPIC \
 		-o ntdll.dll \
 		src/dlls/ntdll.c
-	@$(OBJDUMP) -D ntdll.dll > ntdll.dll.dump
+	@$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 
 msvcrt.dll: ntdll.dll
 	@$(CC) $(CFLAGS) \
@@ -185,7 +185,7 @@ msvcrt.dll: ntdll.dll
 		-o msvcrt.dll \
 		src/dlls/msvcrt.c \
 		ntdll.dll
-	@$(OBJDUMP) -D msvcrt.dll > msvcrt.dll.dump
+	@$(OBJDUMP) -M intel -D msvcrt.dll > msvcrt.dll.dump
 
 loader: tinyc_start.o libtinyc.a src/loader/loader_main.c
 	@$(CC) $(CFLAGS) \
@@ -205,7 +205,7 @@ loader: tinyc_start.o libtinyc.a src/loader/loader_main.c
 		src/loader/elf_tools.c \
 		tinyc_start.o \
 		libtinyc.a
-	@$(OBJDUMP) -D loader > loader.dump
+	@$(OBJDUMP) -M intel -D loader > loader.dump
 
 winloader: tinyc_start.o libtinyc.a src/loader/win_loader_main.c
 	@$(CC) $(CFLAGS) \
@@ -226,7 +226,7 @@ winloader: tinyc_start.o libtinyc.a src/loader/win_loader_main.c
 		src/loader/elf_tools.c \
 		tinyc_start.o \
 		libtinyc.a
-	@$(OBJDUMP) -D winloader > winloader.dump
+	@$(OBJDUMP) -M intel -D winloader > winloader.dump
 
 programs/linux/unit_test: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
@@ -250,7 +250,7 @@ programs/linux/env: tinyc_start.o libtinyc.a
 		src/programs/linux/env/env_main.c \
 		tinyc_start.o \
 		libtinyc.a
-	@$(OBJDUMP) -D env > env.dump
+	@$(OBJDUMP) -M intel -D env > env.dump
 
 programs/linux/string: libtinyc.a libstatic.a
 	@$(CC) $(CFLAGS) -g \
@@ -262,7 +262,7 @@ programs/linux/string: libtinyc.a libstatic.a
 		tinyc_start.o \
 		libtinyc.a \
 		libstatic.a
-	@$(OBJDUMP) -D string > string.dump
+	@$(OBJDUMP) -M intel -D string > string.dump
 
 programs/linux/tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 	@$(CC) $(CFLAGS) -g \
@@ -275,7 +275,7 @@ programs/linux/tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 		./libdynamic.so \
 		src/programs/linux/tinyfetch/tinyfetch_main.c \
 		tinyc_start.o
-	@$(OBJDUMP) -D tinyfetch > tinyfetch.dump
+	@$(OBJDUMP) -M intel -D tinyfetch > tinyfetch.dump
 
 programs/linux/static_pie: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
@@ -287,7 +287,7 @@ programs/linux/static_pie: tinyc_start.o libtinyc.a
 		src/programs/linux/static_pie/static_pie_main.c \
 		tinyc_start.o \
 		libtinyc.a
-	@$(OBJDUMP) -D static_pie > static_pie.dump
+	@$(OBJDUMP) -M intel -D static_pie > static_pie.dump
 
 programs/linux/dynamic: libtinyc.so libdynamic.so
 	@$(CC) $(CFLAGS) -g \

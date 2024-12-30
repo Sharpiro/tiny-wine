@@ -16,4 +16,4 @@ struct SysArgs {
 
 size_t sys_write(int32_t file_handle, const char *data, size_t size);
 
-void sys_exit(int32_t code);
+size_t sys_exit(int32_t code, int32_t unused);

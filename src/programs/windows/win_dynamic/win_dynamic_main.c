@@ -4,12 +4,13 @@
 #include <stdlib.h>
 
 void start_inferior() {
-    puts("real libc puts");
+    const char *DATA = "my libc puts";
+    puts(DATA);
 }
 
-int mainCRTStartup() {
+void mainCRTStartup() {
     start_inferior();
-    return 0;
+    exit(0);
 }
 
 void _start() {

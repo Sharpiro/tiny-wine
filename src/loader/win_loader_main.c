@@ -57,13 +57,6 @@ static void run_asm(
             : "rax");
 }
 
-// @todo: replace with sys_exit
-__attribute__((naked)) void win_loader_end(void) {
-    __asm__("mov rdi, rax\n"
-            "mov rax, 0x3c\n"
-            "syscall\n");
-}
-
 static void dynamic_callback(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
@@ -84,10 +77,13 @@ static void dynamic_callback(void) {
     size_t iat_runtime_base = dyn_trampoline_start / 0x1000 * 0x1000;
     size_t func_iat_value_temp = dyn_trampoline_start - IAT_BASE_START;
 
-    // WinRuntimeObject *shared_lib = NULL;
+    /** Find entry in Import Address Table */
+
+    struct PeData *source_pe = NULL;
     size_t func_iat_key = 0;
     size_t func_iat_value = 0;
     if (iat_runtime_base == runtime_exe.iat_runtime_base) {
+        source_pe = &runtime_exe.pe_data;
         for (size_t i = 0; i < runtime_exe.pe_data.import_address_table_len;
              i++) {
             struct KeyValue *iat_entry =
@@ -107,6 +103,7 @@ static void dynamic_callback(void) {
                 continue;
             }
 
+            source_pe = &curr_shared_lib->pe_data;
             for (size_t i = 0;
                  i < curr_shared_lib->pe_data.import_address_table_len;
                  i++) {
@@ -131,11 +128,13 @@ static void dynamic_callback(void) {
         "Dynamic linker callback hit, %x:%x\n", func_iat_key, func_iat_value
     );
 
+    /** Find import entry using IAT entry */
+
     const char *lib_name = NULL;
     struct ImportEntry *import_entry = NULL;
-    for (size_t i = 0; i < runtime_exe.pe_data.import_dir_entries_len; i++) {
+    for (size_t i = 0; i < source_pe->import_dir_entries_len; i++) {
         struct ImportDirectoryEntry *dir_entry =
-            &runtime_exe.pe_data.import_dir_entries[i];
+            &source_pe->import_dir_entries[i];
         for (size_t i = 0; i < dir_entry->import_entries_len; i++) {
             struct ImportEntry *current_entry = &dir_entry->import_entries[i];
             if (current_entry->address == func_iat_value) {
@@ -160,13 +159,17 @@ static void dynamic_callback(void) {
         p6
     );
 
-    WinRuntimeExport *function_export = NULL;
+    /** Find function using library and function name */
+
+    WinRuntimeExport function_export = {};
+    bool is_win_dll;
     if (tiny_c_strcmp(lib_name, "ntdll.dll") == 0) {
+        is_win_dll = false;
         for (size_t i = 0; i < lib_ntdll_object->runtime_symbols.length; i++) {
             RuntimeSymbol *curr_symbol =
                 &lib_ntdll_object->runtime_symbols.data[i];
             if (tiny_c_strcmp(curr_symbol->name, import_entry->name) == 0) {
-                *function_export = (WinRuntimeExport){
+                function_export = (WinRuntimeExport){
                     .address = curr_symbol->value,
                     .name = curr_symbol->name,
                 };
@@ -174,6 +177,7 @@ static void dynamic_callback(void) {
             }
         }
     } else {
+        is_win_dll = true;
         for (size_t i = 0; i < shared_libraries.length; i++) {
             WinRuntimeObject *shared_lib = &shared_libraries.data[i];
             for (size_t i = 0; i < shared_lib->function_exports.length; i++) {
@@ -181,37 +185,57 @@ static void dynamic_callback(void) {
                     &shared_lib->function_exports.data[i];
                 if (tiny_c_strcmp(curr_func_export->name, import_entry->name) ==
                     0) {
-                    function_export = curr_func_export;
+                    function_export = *curr_func_export;
                     break;
                 }
             }
         }
     }
-    if (function_export == NULL) {
+    if (function_export.address == 0) {
         EXIT("expected runtime function\n");
     }
 
-    LOADER_LOG("runtime function %x\n", function_export->address);
+    LOADER_LOG("runtime function %x\n", function_export.address);
 
     LOADER_LOG("completed dynamic linking\n");
 
-    __asm__("mov r15, %0\n"
-            "mov rdi, %1\n"
-            "mov rsi, %2\n"
-            "mov rdx, %3\n"
-            "mov rcx, %4\n"
-            "mov r8, %5\n"
-            "mov r9, %6\n"
-            "mov rsp, rbp\n"
-            "pop rbp\n"
-            "jmp r15\n" ::"r"(function_export->address),
-            "r"(p1),
-            "r"(p2),
-            "r"(p3),
-            "r"(p4),
-            "r"(p5),
-            "r"(p6)
-            : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
+    if (is_win_dll) {
+        __asm__("mov r15, %0\n"
+                "mov rcx, %1\n"
+                "mov rdx, %2\n"
+                "mov r8, %3\n"
+                "mov r9, %4\n"
+                "mov rsp, rbp\n"
+                "pop rbp\n"
+                "add rsp, 8\n"
+                "jmp r15\n" ::"r"(function_export.address),
+                "r"(p1),
+                "r"(p2),
+                "r"(p3),
+                "r"(p4),
+                "r"(p5),
+                "r"(p6)
+                : "r15", "rcx", "rdx", "r8", "r9");
+    } else {
+        __asm__("mov r15, %0\n"
+                "mov rdi, %1\n"
+                "mov rsi, %2\n"
+                "mov rdx, %3\n"
+                "mov rcx, %4\n"
+                "mov r8, %5\n"
+                "mov r9, %6\n"
+                "mov rsp, rbp\n"
+                "pop rbp\n"
+                "add rsp, 8\n"
+                "jmp r15\n" ::"r"(function_export.address),
+                "r"(p1),
+                "r"(p2),
+                "r"(p3),
+                "r"(p4),
+                "r"(p5),
+                "r"(p6)
+                : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
+    }
 }
 
 __attribute__((naked)) static void dynamic_callback_trampoline(void) {
@@ -414,6 +438,11 @@ static bool initialize_dynamic_data(
 
     return true;
 }
+__attribute__((naked)) void win_loader_implicit_end(void) {
+    __asm__("mov rdi, rax\n"
+            "mov rax, 0x3c\n"
+            "syscall\n");
+}
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -513,13 +542,26 @@ int main(int argc, char **argv) {
         .iat_runtime_offset = 0,
     };
 
+    // const struct RuntimeSymbol *exit_func = NULL;
+    // for (size_t i = 0; i < lib_ntdll_object->runtime_symbols.length; i++) {
+    //     const struct RuntimeSymbol *curr_symbol =
+    //         &lib_ntdll_object->runtime_symbols.data[i];
+    //     if (tiny_c_strcmp(curr_symbol->name, "sys_exit") == 0) {
+    //         exit_func = curr_symbol;
+    //     }
+    // }
+    // if (exit_func == NULL || exit_func->value == 0) {
+    //     EXIT("expected exit_func");
+    // }
+
     /* Jump to program */
 
     size_t *frame_pointer = (size_t *)argv - 1;
     size_t *inferior_frame_pointer = frame_pointer + 1;
     *inferior_frame_pointer = (size_t)(argc - 1);
     size_t *stack_start = inferior_frame_pointer;
-    *stack_start = (size_t)win_loader_end;
+    // *stack_start = exit_func->value;
+    *stack_start = (size_t)win_loader_implicit_end;
     LOADER_LOG("entrypoint: %x\n", pe_exe.entrypoint);
     LOADER_LOG("frame_pointer: %x\n", frame_pointer);
     LOADER_LOG("stack_start: %x\n", stack_start);
