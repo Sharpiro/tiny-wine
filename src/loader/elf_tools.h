@@ -38,6 +38,7 @@ struct GotEntry {
     bool is_library_base_address;
     bool is_loader_callback;
     bool is_variable;
+    size_t lib_dynamic_offset;
 };
 
 struct SectionHeader {
@@ -83,7 +84,7 @@ struct DynamicData {
     struct Symbol *symbols;
     size_t symbols_len;
     struct GotEntry *got_entries;
-    size_t got_len;
+    size_t got_entries_len;
     struct Relocation *func_relocations;
     size_t func_relocations_len;
     struct Relocation *var_relocations;

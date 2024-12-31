@@ -38,10 +38,9 @@ static size_t sys_write(int32_t file_handle, const char *data, size_t size) {
 }
 
 // @todo: param 2 used to avoid memset internal relocation
-static size_t sys_exit(int32_t code, int32_t unused) {
+static size_t sys_exit(int32_t code) {
     struct SysArgs args = {
         .param_one = (size_t)code,
-        .param_two = (size_t)unused,
     };
     return syscall(SYS_exit, &args);
 }
@@ -72,6 +71,6 @@ NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
         return -1;
     }
 
-    int32_t result = (int32_t)sys_exit(ExitStatus, -1);
+    int32_t result = (int32_t)sys_exit(ExitStatus);
     return result;
 }

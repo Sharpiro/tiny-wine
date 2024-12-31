@@ -407,7 +407,7 @@ static bool get_dynamic_data(
         .symbols = dyn_symbols,
         .symbols_len = dyn_symbols_len,
         .got_entries = total_got_entries,
-        .got_len = total_got_entries_len,
+        .got_entries_len = total_got_entries_len,
         .func_relocations = func_relocations,
         .func_relocations_len = func_relocations_len,
         .var_relocations = var_relocations,

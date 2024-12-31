@@ -27,6 +27,14 @@ extern int32_t loader_log_handle;
 
 #endif
 
+typedef struct RuntimeGotEntry {
+    size_t index;
+    size_t value;
+    size_t lib_dynamic_offset;
+} RuntimeGotEntry;
+
+CREATE_LIST_STRUCT(RuntimeGotEntry)
+
 struct RuntimeRelocation {
     size_t offset;
     size_t value;
@@ -88,10 +96,10 @@ bool get_runtime_symbol(
 );
 
 bool find_got_entry(
-    const struct GotEntry *got_entries,
+    const struct RuntimeGotEntry *got_entries,
     size_t got_entries_len,
     size_t offset,
-    struct GotEntry **got_entry
+    struct RuntimeGotEntry **got_entry
 );
 
 void *loader_malloc_arena(size_t n);
@@ -109,8 +117,16 @@ bool get_function_relocations(
     size_t *runtime_func_relocations_len
 );
 
-bool get_symbols(
+bool get_runtime_symbols(
     const struct DynamicData *dyn_data,
     size_t dyn_offset,
     RuntimeSymbolList *runtime_symbols
+);
+
+bool get_runtime_got(
+    const struct DynamicData *dyn_data,
+    size_t lib_dyn_offset,
+    size_t dynamic_linker_callback_address,
+    size_t *got_lib_dyn_offset_table,
+    RuntimeGotEntryList *runtime_symbols
 );

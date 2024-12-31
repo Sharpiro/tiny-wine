@@ -19,6 +19,7 @@ struct RuntimeObject *lib_ntdll_object;
 WinRuntimeObjectList shared_libraries = {};
 size_t current_iat_base = IAT_BASE_START;
 size_t current_iat_offset = 0;
+size_t got_lib_dyn_offset_table[100] = {};
 
 // @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
 //        does arm?
@@ -57,6 +58,7 @@ static void run_asm(
             : "rax");
 }
 
+// @todo: need another for linux to linux dynamic linking
 static void dynamic_callback(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
@@ -306,15 +308,49 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     RuntimeSymbolList runtime_symbols = {
         .allocator = loader_malloc_arena,
     };
-    if (!get_symbols(
+    if (!get_runtime_symbols(
             ntdll_elf.dynamic_data, dynamic_lib_offset, &runtime_symbols
         )) {
         BAIL("failed getting symbols\n");
     }
 
+    RuntimeGotEntryList runtime_got_entries = {
+        .allocator = loader_malloc_arena,
+    };
+    if (!get_runtime_got(
+            ntdll_elf.dynamic_data,
+            dynamic_lib_offset,
+            (size_t)dynamic_callback,
+            got_lib_dyn_offset_table + 1,
+            &runtime_got_entries
+        )) {
+        BAIL("get_runtime_got failed\n");
+    }
+
+    /** Init GOT */
+
+    LOADER_LOG("GOT entries: %d\n", runtime_got_entries.length);
+    for (size_t i = 0; i < runtime_got_entries.length; i++) {
+        struct RuntimeGotEntry *runtime_got_entry =
+            &runtime_got_entries.data[i];
+        LOADER_LOG(
+            "GOT entry %d: %x == %x, variable: %s\n",
+            i + 1,
+            runtime_got_entry->index,
+            runtime_got_entry->value
+        );
+        size_t *got_pointer = (size_t *)runtime_got_entry->index;
+        *got_pointer = runtime_got_entry->value;
+
+        if (runtime_got_entry->lib_dynamic_offset > 0) {
+            size_t *lib_dyn_offset_table = (size_t *)runtime_got_entry->value;
+            *lib_dyn_offset_table = runtime_got_entry->lib_dynamic_offset;
+        }
+    }
+
     *lib_ntdll_object = (struct RuntimeObject){
         .name = LIB_NTDLL_SO_NAME,
-        .dynamic_offset = LOADER_SHARED_LIB_START,
+        .dynamic_offset = dynamic_lib_offset,
         .elf_data = ntdll_elf,
         .memory_regions_info = memory_regions_info,
         .runtime_func_relocations = runtime_func_relocations,

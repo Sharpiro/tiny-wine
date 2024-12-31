@@ -105,10 +105,10 @@ bool get_runtime_symbol(
 }
 
 bool find_got_entry(
-    const struct GotEntry *got_entries,
+    const struct RuntimeGotEntry *got_entries,
     size_t got_entries_len,
     size_t offset,
-    struct GotEntry **got_entry
+    struct RuntimeGotEntry **got_entry
 ) {
     if (got_entries == NULL) {
         BAIL("got_entries was null\n");
@@ -118,9 +118,9 @@ bool find_got_entry(
     }
 
     for (size_t j = 0; j < got_entries_len; j++) {
-        const struct GotEntry *curr_got_entry = &got_entries[j];
+        const struct RuntimeGotEntry *curr_got_entry = &got_entries[j];
         if (curr_got_entry->index == offset) {
-            *got_entry = (struct GotEntry *)curr_got_entry;
+            *got_entry = (struct RuntimeGotEntry *)curr_got_entry;
             return true;
         }
     }
@@ -181,15 +181,15 @@ bool get_function_relocations(
     return true;
 }
 
-bool get_symbols(
+bool get_runtime_symbols(
     const struct DynamicData *dyn_data,
-    size_t dyn_offset,
+    size_t lib_dyn_offset,
     RuntimeSymbolList *runtime_symbols
 ) {
     for (size_t i = 0; i < dyn_data->symbols_len; i++) {
         struct Symbol *curr_symbol = &dyn_data->symbols[i];
         size_t value =
-            curr_symbol->value == 0 ? 0 : dyn_offset + curr_symbol->value;
+            curr_symbol->value == 0 ? 0 : lib_dyn_offset + curr_symbol->value;
         struct RuntimeSymbol runtime_symbol = {
             .value = value,
             .name = curr_symbol->name,
@@ -198,6 +198,39 @@ bool get_symbols(
         if (!RuntimeSymbolList_add(runtime_symbols, runtime_symbol)) {
             BAIL("malloc failed\n");
         }
+    }
+
+    return true;
+}
+
+bool get_runtime_got(
+    const struct DynamicData *dyn_data,
+    size_t lib_dyn_offset,
+    size_t dynamic_linker_callback_address,
+    size_t *got_lib_dyn_offset_table,
+    RuntimeGotEntryList *runtime_got_entries
+) {
+    for (size_t j = 0; j < dyn_data->got_entries_len; j++) {
+        struct GotEntry *elf_got_entry = &dyn_data->got_entries[j];
+        size_t runtime_value;
+        size_t lib_dynamic_offset = 0;
+        if (elf_got_entry->is_loader_callback) {
+            runtime_value = (size_t)dynamic_linker_callback_address;
+        } else if (elf_got_entry->is_library_base_address) {
+            runtime_value = (size_t)got_lib_dyn_offset_table;
+            lib_dynamic_offset = lib_dyn_offset;
+        } else if (elf_got_entry->value == 0) {
+            runtime_value = 0;
+        } else {
+            runtime_value = lib_dyn_offset + elf_got_entry->value;
+        }
+
+        struct RuntimeGotEntry runtime_got_entry = {
+            .index = lib_dyn_offset + elf_got_entry->index,
+            .value = runtime_value,
+            .lib_dynamic_offset = lib_dynamic_offset,
+        };
+        RuntimeGotEntryList_add(runtime_got_entries, runtime_got_entry);
     }
 
     return true;
