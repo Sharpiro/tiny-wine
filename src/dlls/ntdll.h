@@ -1,3 +1,4 @@
+#include "win_type.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -14,6 +15,16 @@ struct SysArgs {
     size_t param_seven;
 };
 
-size_t sys_write(int32_t file_handle, const char *data, size_t size);
+int32_t NtWriteFile(
+    HANDLE file_handle,
+    [[maybe_unused]] HANDLE event,
+    [[maybe_unused]] PVOID apc_routine,
+    [[maybe_unused]] PVOID apc_context,
+    [[maybe_unused]] PIO_STATUS_BLOCK io_status_block,
+    PVOID buffer,
+    ULONG length,
+    [[maybe_unused]] PLARGE_INTEGER byte_offset,
+    [[maybe_unused]] PULONG key
+);
 
-size_t sys_exit(int32_t code, int32_t unused);
+NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus);

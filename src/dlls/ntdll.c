@@ -28,7 +28,7 @@ static size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
-size_t sys_write(int32_t file_handle, const char *data, size_t size) {
+static size_t sys_write(int32_t file_handle, const char *data, size_t size) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
         .param_two = (size_t)data,
@@ -38,10 +38,40 @@ size_t sys_write(int32_t file_handle, const char *data, size_t size) {
 }
 
 // @todo: param 2 used to avoid memset internal relocation
-size_t sys_exit(int32_t code, int32_t unused) {
+static size_t sys_exit(int32_t code, int32_t unused) {
     struct SysArgs args = {
         .param_one = (size_t)code,
         .param_two = (size_t)unused,
     };
     return syscall(SYS_exit, &args);
+}
+
+NTSTATUS NtWriteFile(
+    HANDLE file_handle,
+    [[maybe_unused]] HANDLE event,
+    [[maybe_unused]] PVOID apc_routine,
+    [[maybe_unused]] PVOID apc_context,
+    [[maybe_unused]] PIO_STATUS_BLOCK io_status_block,
+    PVOID buffer,
+    ULONG length,
+    [[maybe_unused]] PLARGE_INTEGER byte_offset,
+    [[maybe_unused]] PULONG key
+) {
+    const int32_t LINUX_FILE_HANDLE = 1;
+
+    if ((int64_t)file_handle != -11) {
+        return -1;
+    }
+
+    int32_t result = (int32_t)sys_write(LINUX_FILE_HANDLE, buffer, length);
+    return result;
+}
+
+NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
+    if ((int64_t)ProcessHandle != -1) {
+        return -1;
+    }
+
+    int32_t result = (int32_t)sys_exit(ExitStatus, -1);
+    return result;
 }

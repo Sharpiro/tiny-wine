@@ -22,15 +22,25 @@ size_t strlen(const char *data) {
 
 void puts(const char *data) {
     size_t data_len = strlen(data);
-    sys_write(1, data, data_len);
-    sys_write(1, "\n", 1);
+    NtWriteFile(
+        (HANDLE)-11,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        (PVOID)data,
+        (ULONG)data_len,
+        NULL,
+        NULL
+    );
+    NtWriteFile((HANDLE)-11, NULL, NULL, NULL, NULL, "\n", 1, NULL, NULL);
 }
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
 
 void exit(int32_t exit_code) {
-    sys_exit(exit_code, 0);
+    NtTerminateProcess((HANDLE)-1, exit_code);
 }
 
 #pragma clang diagnostic pop
