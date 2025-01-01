@@ -15,7 +15,7 @@ CREATE_LIST_STRUCT(WinRuntimeObject)
 #define IAT_BASE_START 0x7d7e0000
 
 struct WinRuntimeObject runtime_exe;
-struct RuntimeObject *lib_ntdll_object;
+struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
 size_t current_iat_base = IAT_BASE_START;
 size_t current_iat_offset = 0;
@@ -58,8 +58,88 @@ static void run_asm(
             : "rax");
 }
 
-// @todo: need another for linux to linux dynamic linking
-static void dynamic_callback(void) {
+static void dynamic_callback_linux(void) {
+    size_t *rbp;
+    __asm__("mov %0, rbp" : "=r"(rbp));
+    size_t *p1;
+    __asm__("mov %0, rdi" : "=r"(p1));
+    size_t *p2;
+    __asm__("mov %0, rsi" : "=r"(p2));
+    size_t *p3;
+    __asm__("mov %0, rdx" : "=r"(p3));
+    size_t *p4;
+    __asm__("mov %0, rcx" : "=r"(p4));
+    size_t *p5;
+    __asm__("mov %0, r8" : "=r"(p5));
+    size_t *p6;
+    __asm__("mov %0, r9" : "=r"(p6));
+
+    LOADER_LOG(
+        "--- Starting Linux -> Linux linking at %x\n", dynamic_callback_linux
+    );
+
+    size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
+    size_t relocation_index = *(rbp + 2);
+    if (lib_dyn_offset == NULL) {
+        EXIT("lib_dyn_offset was null\n");
+    }
+
+    LOADER_LOG(
+        "relocation params: %x, %x\n", *lib_dyn_offset, relocation_index
+    );
+
+    struct RuntimeRelocation *runtime_relocation =
+        &lib_ntdll->runtime_func_relocations[relocation_index];
+
+    size_t *got_entry = (size_t *)runtime_relocation->offset;
+    LOADER_LOG("got_entry: %x: %x\n", got_entry, *got_entry);
+
+    const struct RuntimeSymbol *runtime_symbol;
+    if (!get_runtime_symbol(
+            runtime_relocation->name,
+            lib_ntdll->runtime_symbols.data,
+            lib_ntdll->runtime_symbols.length,
+            0,
+            &runtime_symbol
+        )) {
+        EXIT("couldn't find runtime symbol '%s'\n", runtime_relocation->name);
+    }
+
+    *got_entry = runtime_symbol->value;
+    LOADER_LOG(
+        "%x: %s(%x, %x, %x, %x, %x, %x)\n",
+        runtime_symbol->value,
+        runtime_relocation->name,
+        p1,
+        p2,
+        p3,
+        p4,
+        p5,
+        p6
+    );
+    LOADER_LOG("--- Completed dynamic linking\n");
+
+    __asm__("mov r15, %0\n"
+            "mov rdi, %1\n"
+            "mov rsi, %2\n"
+            "mov rdx, %3\n"
+            "mov rcx, %4\n"
+            "mov r8, %5\n"
+            "mov r9, %6\n"
+            "mov rsp, rbp\n"
+            "pop rbp\n"
+            "add rsp, 16\n"
+            "jmp r15\n" ::"r"(runtime_symbol->value),
+            "r"(p1),
+            "r"(p2),
+            "r"(p3),
+            "r"(p4),
+            "r"(p5),
+            "r"(p6)
+            : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
+}
+
+static void dynamic_callback_windows(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
     size_t p1;
@@ -72,12 +152,17 @@ static void dynamic_callback(void) {
     __asm__("mov %0, r9" : "=r"(p4));
     size_t p5 = rbp[7];
     size_t p6 = rbp[8];
+    size_t p7 = rbp[9];
 
     size_t dyn_trampoline_end = *(rbp + 1);
     size_t dyn_trampoline_start =
         dyn_trampoline_end - DYNAMIC_CALLBACK_TRAMPOLINE_SIZE;
     size_t iat_runtime_base = dyn_trampoline_start / 0x1000 * 0x1000;
     size_t func_iat_value_temp = dyn_trampoline_start - IAT_BASE_START;
+
+    LOADER_LOG(
+        "--- Starting Windows -> ??? linking at %x\n", dynamic_callback_windows
+    );
 
     /** Find entry in Import Address Table */
 
@@ -150,7 +235,7 @@ static void dynamic_callback(void) {
     };
 
     LOADER_LOG(
-        "%s: %s(%x, %x, %x, %x, %x, %x)\n",
+        "%s: %s(%x, %x, %x, %x, %x, %x, %x)\n",
         lib_name,
         import_entry->name,
         p1,
@@ -158,18 +243,18 @@ static void dynamic_callback(void) {
         p3,
         p4,
         p5,
-        p6
+        p6,
+        p7
     );
 
     /** Find function using library and function name */
 
     WinRuntimeExport function_export = {};
-    bool is_win_dll;
+    bool is_lib_ntdll;
     if (tiny_c_strcmp(lib_name, "ntdll.dll") == 0) {
-        is_win_dll = false;
-        for (size_t i = 0; i < lib_ntdll_object->runtime_symbols.length; i++) {
-            RuntimeSymbol *curr_symbol =
-                &lib_ntdll_object->runtime_symbols.data[i];
+        is_lib_ntdll = true;
+        for (size_t i = 0; i < lib_ntdll->runtime_symbols.length; i++) {
+            RuntimeSymbol *curr_symbol = &lib_ntdll->runtime_symbols.data[i];
             if (tiny_c_strcmp(curr_symbol->name, import_entry->name) == 0) {
                 function_export = (WinRuntimeExport){
                     .address = curr_symbol->value,
@@ -179,7 +264,7 @@ static void dynamic_callback(void) {
             }
         }
     } else {
-        is_win_dll = true;
+        is_lib_ntdll = false;
         for (size_t i = 0; i < shared_libraries.length; i++) {
             WinRuntimeObject *shared_lib = &shared_libraries.data[i];
             for (size_t i = 0; i < shared_lib->function_exports.length; i++) {
@@ -199,9 +284,34 @@ static void dynamic_callback(void) {
 
     LOADER_LOG("runtime function %x\n", function_export.address);
 
-    LOADER_LOG("completed dynamic linking\n");
+    LOADER_LOG("Completed dynamic linking\n");
 
-    if (is_win_dll) {
+    // @todo: must conditionally put params on stack
+
+    if (is_lib_ntdll) {
+        __asm__(
+            "mov r15, %0\n"
+            "mov rdi, %1\n"
+            "mov rsi, %2\n"
+            "mov rdx, %3\n"
+            "mov rcx, %4\n"
+            "mov r8, %5\n"
+            "mov r9, %6\n"
+            "mov rsp, rbp\n"
+            "pop rbp\n"
+            "add rsp, 8\n"
+            // "push %7\n"
+            "jmp r15\n" ::"r"(function_export.address),
+            "m"(p1),
+            "m"(p2),
+            "m"(p3),
+            "m"(p4),
+            "m"(p5),
+            "m"(p6),
+            "m"(p7)
+        );
+        // : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
+    } else {
         __asm__("mov r15, %0\n"
                 "mov rcx, %1\n"
                 "mov rdx, %2\n"
@@ -218,30 +328,11 @@ static void dynamic_callback(void) {
                 "r"(p5),
                 "r"(p6)
                 : "r15", "rcx", "rdx", "r8", "r9");
-    } else {
-        __asm__("mov r15, %0\n"
-                "mov rdi, %1\n"
-                "mov rsi, %2\n"
-                "mov rdx, %3\n"
-                "mov rcx, %4\n"
-                "mov r8, %5\n"
-                "mov r9, %6\n"
-                "mov rsp, rbp\n"
-                "pop rbp\n"
-                "add rsp, 8\n"
-                "jmp r15\n" ::"r"(function_export.address),
-                "r"(p1),
-                "r"(p2),
-                "r"(p3),
-                "r"(p4),
-                "r"(p5),
-                "r"(p6)
-                : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
     }
 }
 
 __attribute__((naked)) static void dynamic_callback_trampoline(void) {
-    __asm__("call %0\n" ::"r"(dynamic_callback));
+    __asm__("call %0\n" ::"r"(dynamic_callback_windows));
 }
 
 static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
@@ -320,7 +411,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     if (!get_runtime_got(
             ntdll_elf.dynamic_data,
             dynamic_lib_offset,
-            (size_t)dynamic_callback,
+            (size_t)dynamic_callback_linux,
             got_lib_dyn_offset_table + 1,
             &runtime_got_entries
         )) {
@@ -553,8 +644,8 @@ int main(int argc, char **argv) {
 
     /* Load libntdll.so */
 
-    lib_ntdll_object = loader_malloc_arena(sizeof(struct RuntimeObject));
-    if (!initialize_lib_ntdll(lib_ntdll_object)) {
+    lib_ntdll = loader_malloc_arena(sizeof(struct RuntimeObject));
+    if (!initialize_lib_ntdll(lib_ntdll)) {
         EXIT("initialize_lib_ntdll failed\n");
     }
 

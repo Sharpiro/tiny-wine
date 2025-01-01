@@ -350,6 +350,19 @@ static bool initialize_dynamic_data(
             BAIL("get_function_relocations failed\n");
         }
 
+        /** Get runtime library symbols */
+
+        RuntimeSymbolList runtime_lib_symbols = (RuntimeSymbolList){
+            .allocator = loader_malloc_arena,
+        };
+        if (!get_runtime_symbols(
+                shared_lib_elf.dynamic_data,
+                dynamic_lib_offset,
+                &runtime_lib_symbols
+            )) {
+            BAIL("failed getting symbols\n");
+        }
+
         struct RuntimeObject shared_library = {
             .name = shared_lib_name,
             .dynamic_offset = dynamic_lib_offset,
@@ -359,7 +372,7 @@ static bool initialize_dynamic_data(
             .runtime_func_relocations_len = runtime_func_relocations_len,
             .bss = bss,
             .bss_len = bss_len,
-            .runtime_symbols = {},
+            .runtime_symbols = runtime_lib_symbols,
         };
         (*shared_libraries)[i] = shared_library;
         dynamic_lib_offset = memory_regions_info.end;
@@ -367,20 +380,12 @@ static bool initialize_dynamic_data(
 
     /** Get runtime symbols */
 
-    runtime_symbols = (RuntimeSymbolList){
-        .allocator = loader_malloc_arena,
-    };
-    if (!get_runtime_symbols(inferior_dyn_data, 0, &runtime_symbols)) {
-        BAIL("failed getting symbols\n");
-    }
-
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
         struct RuntimeObject *curr_lib = &(*shared_libraries)[i];
-        struct DynamicData *shared_dyn_data = curr_lib->elf_data.dynamic_data;
-        if (!get_runtime_symbols(
-                shared_dyn_data, curr_lib->dynamic_offset, &runtime_symbols
-            )) {
-            BAIL("failed getting symbols\n");
+        for (size_t i = 0; i < curr_lib->runtime_symbols.length; i++) {
+            struct RuntimeSymbol *runtime_symbol =
+                &curr_lib->runtime_symbols.data[i];
+            RuntimeSymbolList_add(&runtime_symbols, *runtime_symbol);
         }
     }
 
@@ -634,6 +639,12 @@ int main(int32_t argc, char **argv) {
 
     struct RuntimeRelocation *runtime_func_relocations = NULL;
     size_t runtime_func_relocations_len = 0;
+    RuntimeSymbolList exe_runtime_symbols = (RuntimeSymbolList){
+        .allocator = loader_malloc_arena,
+    };
+    runtime_symbols = (RuntimeSymbolList){
+        .allocator = loader_malloc_arena,
+    };
     if (inferior_elf.dynamic_data != NULL) {
         if (!get_function_relocations(
                 inferior_elf.dynamic_data,
@@ -643,6 +654,13 @@ int main(int32_t argc, char **argv) {
             )) {
             EXIT("get_function_relocations failed\n");
         }
+
+        if (!get_runtime_symbols(
+                inferior_elf.dynamic_data, 0, &exe_runtime_symbols
+            )) {
+            EXIT("failed getting symbols\n");
+        }
+        RuntimeSymbolList_clone(&runtime_symbols, &exe_runtime_symbols);
 
         if (!initialize_dynamic_data(
                 inferior_elf.dynamic_data,
@@ -663,7 +681,7 @@ int main(int32_t argc, char **argv) {
         .runtime_func_relocations_len = runtime_func_relocations_len,
         .bss = bss,
         .bss_len = bss_len,
-        .runtime_symbols = {},
+        .runtime_symbols = exe_runtime_symbols,
     };
 
     /* Jump to program */

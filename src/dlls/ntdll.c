@@ -28,7 +28,7 @@ static size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
-static size_t sys_write(int32_t file_handle, const char *data, size_t size) {
+size_t sys_write(int32_t file_handle, const char *data, size_t size) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
         .param_two = (size_t)data,
@@ -37,7 +37,6 @@ static size_t sys_write(int32_t file_handle, const char *data, size_t size) {
     return syscall(SYS_write, &args);
 }
 
-// @todo: param 2 used to avoid memset internal relocation
 static size_t sys_exit(int32_t code) {
     struct SysArgs args = {
         .param_one = (size_t)code,

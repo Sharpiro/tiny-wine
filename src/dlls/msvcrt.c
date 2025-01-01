@@ -22,18 +22,22 @@ size_t strlen(const char *data) {
 
 void puts(const char *data) {
     size_t data_len = strlen(data);
-    NtWriteFile(
-        (HANDLE)-11,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        (PVOID)data,
-        (ULONG)data_len,
-        NULL,
-        NULL
-    );
-    NtWriteFile((HANDLE)-11, NULL, NULL, NULL, NULL, "\n", 1, NULL, NULL);
+    sys_write(1, data, data_len);
+    sys_write(1, "\n", 1);
+    // NtWriteFile(
+    //     (HANDLE)-11,
+    //     NULL,
+    //     NULL,
+    //     NULL,
+    //     NULL,
+    //     (PVOID)data,
+    //     (ULONG)data_len,
+    //     NULL,
+    //     NULL
+    // );
+    // NtWriteFile((HANDLE)-11, NULL, NULL, NULL, NULL, "\n", 1, NULL, NULL);
+
+    // NtWriteFile((HANDLE)-11, NULL, NULL, NULL, NULL, "9\n", 2, NULL, NULL);
 }
 
 #pragma clang diagnostic push

@@ -15,6 +15,8 @@ struct SysArgs {
     size_t param_seven;
 };
 
+size_t sys_write(int32_t file_handle, const char *data, size_t size);
+
 int32_t NtWriteFile(
     HANDLE file_handle,
     [[maybe_unused]] HANDLE event,

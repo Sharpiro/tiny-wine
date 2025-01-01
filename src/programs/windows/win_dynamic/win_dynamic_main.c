@@ -3,17 +3,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void start_inferior() {
+int start_inferior() {
     const char *DATA = "my libc puts";
-    puts(DATA);
+    int result = puts(DATA);
+    result = result < 0 ? result : 0;
+
+    return result;
 }
 
 void mainCRTStartup() {
-    start_inferior();
-    exit(0);
+    int result = start_inferior();
+    exit(result);
 }
 
 void _start() {
-    start_inferior();
-    exit(0);
+    int result = start_inferior();
+    exit(result);
 }
