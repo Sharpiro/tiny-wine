@@ -21,8 +21,6 @@ size_t current_iat_base = IAT_BASE_START;
 size_t current_iat_offset = 0;
 size_t got_lib_dyn_offset_table[100] = {};
 
-// @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
-//        does arm?
 static void run_asm(
     [[maybe_unused]] size_t frame_start,
     size_t stack_start,
@@ -73,6 +71,8 @@ static void dynamic_callback_linux(void) {
     __asm__("mov %0, r8" : "=r"(p5));
     size_t *p6;
     __asm__("mov %0, r9" : "=r"(p6));
+    size_t p7 = *(rbp + 4);
+    size_t p8 = *(rbp + 5);
 
     LOADER_LOG(
         "--- Starting Linux -> Linux linking at %x\n", dynamic_callback_linux
@@ -107,7 +107,7 @@ static void dynamic_callback_linux(void) {
 
     *got_entry = runtime_symbol->value;
     LOADER_LOG(
-        "%x: %s(%x, %x, %x, %x, %x, %x)\n",
+        "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
         p1,
@@ -115,7 +115,9 @@ static void dynamic_callback_linux(void) {
         p3,
         p4,
         p5,
-        p6
+        p6,
+        p7,
+        p8
     );
     LOADER_LOG("--- Completed dynamic linking\n");
 
@@ -139,6 +141,36 @@ static void dynamic_callback_linux(void) {
             : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
 }
 
+__attribute__((naked)) static void swap_stack(void) {
+    __asm__("pop rax\n"
+            "pop r15\n"
+            /* convert stack from windows to linux */
+            "add rsp, 32\n"
+            // /* create temporary stack frame */
+            // "mov rax, [rsp + 8]\n"
+            // "mov [rsp - 24], rax\n"
+            // "mov rax, [rsp + 16]\n"
+            // "mov [rsp - 16], rax\n"
+            // "mov rax, [rsp + 24]\n"
+            // "mov [rsp - 8], rax\n"
+            // "sub rsp, 24\n"
+            /* create temporary stack frame */
+            "sub rsp, 32\n"
+            "mov rax, [rsp + 32]\n"
+            "mov [rsp], rax\n"
+            "mov rax, [rsp + 40]\n"
+            "mov [rsp + 8], rax\n"
+            "mov rax, [rsp + 48]\n"
+            "mov [rsp + 16], rax\n"
+            "mov rax, [rsp + 56]\n"
+            "mov [rsp + 24], rax\n"
+            /* */
+            "call rax\n"
+            "add rsp, 32\n"
+            "mov rax, [rsp - 8]\n"
+            "int 3\n");
+}
+
 static void dynamic_callback_windows(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
@@ -153,6 +185,7 @@ static void dynamic_callback_windows(void) {
     size_t p5 = rbp[7];
     size_t p6 = rbp[8];
     size_t p7 = rbp[9];
+    size_t p8 = rbp[10];
 
     size_t dyn_trampoline_end = *(rbp + 1);
     size_t dyn_trampoline_start =
@@ -235,7 +268,7 @@ static void dynamic_callback_windows(void) {
     };
 
     LOADER_LOG(
-        "%s: %s(%x, %x, %x, %x, %x, %x, %x)\n",
+        "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         lib_name,
         import_entry->name,
         p1,
@@ -244,7 +277,8 @@ static void dynamic_callback_windows(void) {
         p4,
         p5,
         p6,
-        p7
+        p7,
+        p8
     );
 
     /** Find function using library and function name */
@@ -287,10 +321,12 @@ static void dynamic_callback_windows(void) {
     LOADER_LOG("Completed dynamic linking\n");
 
     // @todo: must conditionally put params on stack
+    // size_t hack_stack_address = (size_t)swap_stack;
 
     if (is_lib_ntdll) {
         __asm__(
-            "mov r15, %0\n"
+            "mov r14, %0\n"
+            "mov r15, %7\n"
             "mov rdi, %1\n"
             "mov rsi, %2\n"
             "mov rdx, %3\n"
@@ -300,7 +336,11 @@ static void dynamic_callback_windows(void) {
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 8\n"
-            // "push %7\n"
+            // "add rsp, 16\n"
+            // "pop rax\n"
+            // "add rsp, 32\n"
+            // "push rax\n"
+            "push r14\n"
             "jmp r15\n" ::"r"(function_export.address),
             "m"(p1),
             "m"(p2),
@@ -308,7 +348,7 @@ static void dynamic_callback_windows(void) {
             "m"(p4),
             "m"(p5),
             "m"(p6),
-            "m"(p7)
+            "r"(swap_stack)
         );
         // : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
     } else {
@@ -324,9 +364,7 @@ static void dynamic_callback_windows(void) {
                 "r"(p1),
                 "r"(p2),
                 "r"(p3),
-                "r"(p4),
-                "r"(p5),
-                "r"(p6)
+                "r"(p4)
                 : "r15", "rcx", "rdx", "r8", "r9");
     }
 }

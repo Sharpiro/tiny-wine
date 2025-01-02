@@ -241,3 +241,16 @@ struct passwd *getpwuid(uid_t uid) {
 
     return NULL;
 }
+
+size_t add_many(
+    [[maybe_unused]] size_t one,
+    [[maybe_unused]] size_t two,
+    [[maybe_unused]] size_t three,
+    [[maybe_unused]] size_t four,
+    [[maybe_unused]] size_t five,
+    [[maybe_unused]] size_t six,
+    [[maybe_unused]] size_t seven,
+    [[maybe_unused]] size_t eight
+) {
+    return one + two + three + four + five + six + seven + eight;
+}

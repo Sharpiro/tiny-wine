@@ -50,19 +50,20 @@ NTSTATUS NtWriteFile(
     [[maybe_unused]] PVOID apc_routine,
     [[maybe_unused]] PVOID apc_context,
     [[maybe_unused]] PIO_STATUS_BLOCK io_status_block,
-    PVOID buffer,
+    [[maybe_unused]] PVOID buffer,
     ULONG length,
     [[maybe_unused]] PLARGE_INTEGER byte_offset,
     [[maybe_unused]] PULONG key
 ) {
-    const int32_t LINUX_FILE_HANDLE = 1;
+    // const int32_t LINUX_FILE_HANDLE = 1;
 
     if ((int64_t)file_handle != -11) {
         return -1;
     }
 
-    int32_t result = (int32_t)sys_write(LINUX_FILE_HANDLE, buffer, length);
-    return result;
+    // int32_t result = (int32_t)sys_write(LINUX_FILE_HANDLE, buffer, length);
+    // return result;
+    return (int32_t)length;
 }
 
 NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
@@ -71,5 +72,33 @@ NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
     }
 
     int32_t result = (int32_t)sys_exit(ExitStatus);
+    return result;
+}
+
+size_t add_many_ntdll_internal(
+    size_t one,
+    size_t two,
+    size_t three,
+    size_t four,
+    size_t five,
+    size_t six,
+    size_t seven,
+    size_t eight
+) {
+    return one + two + three + four + five + six + seven + eight;
+}
+
+size_t add_many_ntdll(
+    size_t one,
+    size_t two,
+    size_t three,
+    size_t four,
+    size_t five,
+    size_t six,
+    size_t seven,
+    size_t eight
+) {
+    size_t result =
+        add_many_ntdll_internal(one, two, three, four, five, six, seven, eight);
     return result;
 }

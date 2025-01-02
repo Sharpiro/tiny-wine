@@ -20,10 +20,10 @@ size_t strlen(const char *data) {
     return len;
 }
 
-void puts(const char *data) {
-    size_t data_len = strlen(data);
-    sys_write(1, data, data_len);
-    sys_write(1, "\n", 1);
+void puts([[maybe_unused]] const char *data) {
+    // size_t data_len = strlen(data);
+    // sys_write(1, data, data_len);
+    // sys_write(1, "\n", 1);
     // NtWriteFile(
     //     (HANDLE)-11,
     //     NULL,
@@ -37,7 +37,7 @@ void puts(const char *data) {
     // );
     // NtWriteFile((HANDLE)-11, NULL, NULL, NULL, NULL, "\n", 1, NULL, NULL);
 
-    // NtWriteFile((HANDLE)-11, NULL, NULL, NULL, NULL, "9\n", 2, NULL, NULL);
+    NtWriteFile((HANDLE)-11, NULL, NULL, NULL, NULL, "9\n", 2, NULL, NULL);
 }
 
 #pragma clang diagnostic push
@@ -48,3 +48,18 @@ void exit(int32_t exit_code) {
 }
 
 #pragma clang diagnostic pop
+
+size_t add_many_msvcrt(
+    [[maybe_unused]] size_t one,
+    [[maybe_unused]] size_t two,
+    [[maybe_unused]] size_t three,
+    [[maybe_unused]] size_t four,
+    [[maybe_unused]] size_t five,
+    [[maybe_unused]] size_t six,
+    [[maybe_unused]] size_t seven,
+    [[maybe_unused]] size_t eight
+) {
+    size_t result =
+        add_many_ntdll(one, two, three, four, five, six, seven, eight);
+    return result;
+}

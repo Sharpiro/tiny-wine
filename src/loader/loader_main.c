@@ -16,8 +16,6 @@ size_t got_lib_dyn_offset_table[100] = {};
 
 #ifdef AMD64
 
-// @todo: x86 seems to not need 'frame_start' since frame pointer can be 0'd
-//        does arm?
 static void run_asm(
     [[maybe_unused]] size_t frame_start,
     size_t stack_start,
@@ -54,7 +52,7 @@ static void run_asm(
 }
 
 // @note: unclear why some docs consider r10 to be 4th param instead of rcx
-void dynamic_linker_callback(void) {
+void dynamic_callback_linux(void) {
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
     size_t *p1;
@@ -69,8 +67,10 @@ void dynamic_linker_callback(void) {
     __asm__("mov %0, r8" : "=r"(p5));
     size_t *p6;
     __asm__("mov %0, r9" : "=r"(p6));
+    size_t p7 = *(rbp + 4);
+    size_t p8 = *(rbp + 5);
 
-    LOADER_LOG("starting dynamic linking at %x\n", dynamic_linker_callback);
+    LOADER_LOG("starting dynamic linking at %x\n", dynamic_callback_linux);
 
     size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
     size_t relocation_index = *(rbp + 2);
@@ -120,7 +120,7 @@ void dynamic_linker_callback(void) {
 
     *got_entry = runtime_symbol->value;
     LOADER_LOG(
-        "%x: %s(%x, %x, %x, %x, %x, %x)\n",
+        "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
         p1,
@@ -128,7 +128,9 @@ void dynamic_linker_callback(void) {
         p3,
         p4,
         p5,
-        p6
+        p6,
+        p7,
+        p8
     );
     LOADER_LOG("completed dynamic linking\n");
 
@@ -471,7 +473,7 @@ static bool initialize_dynamic_data(
     if (!get_runtime_got(
             inferior_dyn_data,
             0,
-            (size_t)dynamic_linker_callback,
+            (size_t)dynamic_callback_linux,
             got_lib_dyn_offset_table,
             &runtime_got_entries
         )) {
@@ -485,7 +487,7 @@ static bool initialize_dynamic_data(
         if (!get_runtime_got(
                 shared_dyn_data,
                 curr_lib->dynamic_offset,
-                (size_t)dynamic_linker_callback,
+                (size_t)dynamic_callback_linux,
                 lib_dyn_offset,
                 &runtime_got_entries
             )) {
