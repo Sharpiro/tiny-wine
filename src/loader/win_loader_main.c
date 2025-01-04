@@ -142,33 +142,34 @@ static void dynamic_callback_linux(void) {
 }
 
 __attribute__((naked)) static void swap_stack(void) {
-    __asm__("pop rax\n"
-            "pop r15\n"
-            /* convert stack from windows to linux */
-            "add rsp, 32\n"
-            // /* create temporary stack frame */
-            // "mov rax, [rsp + 8]\n"
-            // "mov [rsp - 24], rax\n"
-            // "mov rax, [rsp + 16]\n"
-            // "mov [rsp - 16], rax\n"
-            // "mov rax, [rsp + 24]\n"
-            // "mov [rsp - 8], rax\n"
-            // "sub rsp, 24\n"
-            /* create temporary stack frame */
-            "sub rsp, 32\n"
-            "mov rax, [rsp + 32]\n"
-            "mov [rsp], rax\n"
-            "mov rax, [rsp + 40]\n"
-            "mov [rsp + 8], rax\n"
-            "mov rax, [rsp + 48]\n"
-            "mov [rsp + 16], rax\n"
-            "mov rax, [rsp + 56]\n"
-            "mov [rsp + 24], rax\n"
-            /* */
-            "call rax\n"
-            "add rsp, 32\n"
-            "mov rax, [rsp - 8]\n"
-            "int 3\n");
+#define WORD_SIZE 8
+#define COPY_SIZE 9 * WORD_SIZE - WORD_SIZE
+
+    __asm__("pop r15\n"
+
+            /* Duplicate windows stack frame */
+
+            "lea rax, [rsp + %[copy_size]]\n"
+            "lea rbx, [rsp]\n"
+            ".start:\n"
+            "cmp rax, rbx\n"
+            "jl .end\n"
+            "push [rax]\n"
+            "sub rax, %[word_size]\n"
+            "jmp .start\n"
+            ".end:\n"
+
+            /* Convert to linux stack frame */
+
+            "add rsp, 7 * %[word_size]\n"
+            "call r15\n"
+
+            /* Convert back to windows stack frame */
+
+            "add rsp, 2 * %[word_size]\n"
+            "ret\n"
+            :
+            : [copy_size] "g"(COPY_SIZE), [word_size] "g"(WORD_SIZE));
 }
 
 static void dynamic_callback_windows(void) {
@@ -321,8 +322,6 @@ static void dynamic_callback_windows(void) {
     LOADER_LOG("Completed dynamic linking\n");
 
     // @todo: must conditionally put params on stack
-    // size_t hack_stack_address = (size_t)swap_stack;
-
     if (is_lib_ntdll) {
         __asm__(
             "mov r14, %0\n"
