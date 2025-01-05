@@ -335,10 +335,6 @@ static void dynamic_callback_windows(void) {
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 8\n"
-            // "add rsp, 16\n"
-            // "pop rax\n"
-            // "add rsp, 32\n"
-            // "push rax\n"
             "push r14\n"
             "jmp r15\n" ::"r"(function_export.address),
             "m"(p1),
@@ -349,7 +345,6 @@ static void dynamic_callback_windows(void) {
             "m"(p6),
             "r"(swap_stack)
         );
-        // : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
     } else {
         __asm__("mov r15, %0\n"
                 "mov rcx, %1\n"

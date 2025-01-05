@@ -28,7 +28,7 @@ static size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
-size_t sys_write(int32_t file_handle, const char *data, size_t size) {
+static size_t sys_write(int32_t file_handle, const char *data, size_t size) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
         .param_two = (size_t)data,
@@ -55,15 +55,14 @@ NTSTATUS NtWriteFile(
     [[maybe_unused]] PLARGE_INTEGER byte_offset,
     [[maybe_unused]] PULONG key
 ) {
-    // const int32_t LINUX_FILE_HANDLE = 1;
+    const int32_t LINUX_FILE_HANDLE = 1;
 
     if ((int64_t)file_handle != -11) {
         return -1;
     }
 
-    // int32_t result = (int32_t)sys_write(LINUX_FILE_HANDLE, buffer, length);
-    // return result;
-    return (int32_t)length;
+    int32_t result = (int32_t)sys_write(LINUX_FILE_HANDLE, buffer, length);
+    return result;
 }
 
 NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {

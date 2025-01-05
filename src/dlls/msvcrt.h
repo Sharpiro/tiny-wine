@@ -1,7 +1,13 @@
 #include "ntdll.h"
 #include <stdint.h>
 
-void puts(const char *data);
+#define STDOUT 1
+#define STDERR 2
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
+
+#define IS_SIGNED(type) (((type) - 1) < 0) ? true : false
 
 size_t add_many_msvcrt(
     [[maybe_unused]] size_t one,
@@ -13,3 +19,5 @@ size_t add_many_msvcrt(
     [[maybe_unused]] size_t seven,
     [[maybe_unused]] size_t eight
 );
+
+double pow(double x, double y);

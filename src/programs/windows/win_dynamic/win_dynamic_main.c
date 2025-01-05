@@ -1,26 +1,13 @@
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
+#include "../../../dlls/msvcrt.h"
+#include "../../../dlls/tinyc_stdio.h"
 #include <stdlib.h>
 
-size_t add_many_msvcrt(
-    [[maybe_unused]] size_t one,
-    [[maybe_unused]] size_t two,
-    [[maybe_unused]] size_t three,
-    [[maybe_unused]] size_t four,
-    [[maybe_unused]] size_t five,
-    [[maybe_unused]] size_t six,
-    [[maybe_unused]] size_t seven,
-    [[maybe_unused]] size_t eight
-);
-
 int start_inferior() {
-    // const char *DATA = "my libc puts";
-    // int result = puts(DATA);
-    size_t result = add_many_msvcrt(1, 2, 3, 4, 5, 6, 7, 8);
-    // result = result < 0 ? result : 0;
+    int32_t num1 = (int32_t)pow(2, 4);
+    int32_t num2 = (int32_t)pow(2, 4);
+    printf("%d + %d = %d\n", num1, num2, num1 + num2);
 
-    return (int)result;
+    return 0;
 }
 
 void mainCRTStartup() {

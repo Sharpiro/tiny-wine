@@ -51,6 +51,7 @@ lib test_number_bss: 54321
 lib get_test_number_data_internal_ref: 12345
 lib get_test_number_data_internal_ref: 54321
 malloc: ok
+add_many_result: 36
 EOF
 `
 assert [ "`$PRELOADER ./loader ./dynamic`" == "$expected" ]

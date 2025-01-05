@@ -27,18 +27,19 @@ size_t tinyc_heap_index = 0;
 
 #endif
 
-void tiny_c_print_len(int32_t file_handle, const char *data, size_t size) {
+void tiny_c_print_len(int32_t file_handle, const char *data, size_t length) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
         .param_two = (size_t)data,
-        .param_three = size,
+        .param_three = length,
     };
     tiny_c_syscall(SYS_write, &args);
 }
 
 static void tiny_c_print(int32_t file_handle, const char *data) {
     if (data == NULL) {
-        tiny_c_print_len(file_handle, "(null)", 6);
+        const char NULL_STRING[] = "(null)";
+        tiny_c_print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
         return;
     }
 
