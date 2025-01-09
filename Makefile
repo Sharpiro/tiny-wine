@@ -3,14 +3,15 @@ ifeq ($(CC),cc)
 endif
 
 OBJDUMP ?= objdump
+
 WARNINGS = \
 	-std=gnu2x \
 	-Wall -Wextra -Wpedantic -Wno-varargs \
 	-Wno-gnu-zero-variadic-macro-arguments \
-	-Wno-gnu-statement-expression-from-macro-expansion \
 	-Wconversion \
-    -Werror=return-type \
-    -Werror=incompatible-pointer-types \
+	-Werror=return-type \
+	-Werror=incompatible-pointer-types \
+	-Wno-gnu-empty-initializer \
 	-Wvla
 
 all: \

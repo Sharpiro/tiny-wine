@@ -278,7 +278,7 @@ static bool initialize_dynamic_data(
         sizeof(struct RuntimeObject) * inferior_dyn_data->shared_libraries_len
     );
     if (shared_libraries == NULL) {
-        BAIL("malloc failed\n");
+        BAIL("loader_malloc_arena failed\n");
     }
 
     size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
@@ -397,7 +397,7 @@ static bool initialize_dynamic_data(
         sizeof(struct RuntimeRelocation) * runtime_var_relocations_len
     );
     if (runtime_var_relocations == NULL) {
-        BAIL("malloc failed\n");
+        BAIL("loader_malloc_arena failed\n");
     }
 
     for (size_t i = 0; i < inferior_dyn_data->var_relocations_len; i++) {

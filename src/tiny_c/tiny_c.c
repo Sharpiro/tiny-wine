@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -57,7 +58,7 @@ static void tiny_c_print(int32_t file_handle, const char *data) {
 static void tiny_c_newline(int32_t file_handle) {
     struct SysArgs args = (struct SysArgs){
         .param_one = (size_t)file_handle,
-        .param_two = (size_t)"\n",
+        .param_two = (size_t) "\n",
         .param_three = 1,
     };
     tiny_c_syscall(SYS_write, &args);
@@ -410,23 +411,39 @@ const char *tinyc_strerror(int32_t err_number) {
 
 // @todo: alignment
 void *tinyc_malloc_arena(size_t n) {
-    const size_t PAGE_SIZE = 0x1000;
+    // const size_t PAGE_SIZE = 0x1000;
 
-    if (tinyc_heap_start == 0) {
-        tinyc_heap_start = tinyc_sys_brk(0);
-        tinyc_heap_end = tinyc_heap_start;
-        tinyc_heap_index = tinyc_heap_start;
-    }
-    if (tinyc_heap_index + n > tinyc_heap_end) {
-        size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        tinyc_heap_end = tinyc_sys_brk(tinyc_heap_end + extend_size);
-        if (tinyc_heap_end <= tinyc_heap_start) {
-            return NULL;
-        }
-    }
+    // if (tinyc_heap_start == 0) {
+    size_t start = tinyc_sys_brk(0);
+    size_t end = start;
+    size_t index = start;
+    // tinyc_heap_start = tinyc_sys_brk(0);
+    // tinyc_heap_end = tinyc_heap_start;
+    // tinyc_heap_index = tinyc_heap_start;
+    // }
+    // if (tinyc_heap_index + n > tinyc_heap_end) {
+    // size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
+    // tinyc_heap_end = tinyc_sys_brk(tinyc_heap_end + extend_size);
+    // tinyc_heap_start = tinyc_sys_brk(0);
+    // tinyc_heap_end = tinyc_sys_brk(tinyc_heap_end + 0x2000);
+    // size_t temp_start = tinyc_sys_brk(0);
+    // size_t temp_end = tinyc_sys_brk(temp_start + 0x2000);
+    // if (temp_end <= temp_start) {
+    //     return NULL;
+    // }
+    end = tinyc_sys_brk(start + 0x2000);
 
-    void *address = (void *)tinyc_heap_index;
-    tinyc_heap_index += n;
+    tinyc_heap_start = start;
+    tinyc_heap_end = end;
+    tinyc_heap_index = index;
+
+    if (end <= start) {
+        return NULL;
+    }
+    // }
+
+    void *address = (void *)index;
+    // tinyc_heap_index += n;
 
     return address;
 }

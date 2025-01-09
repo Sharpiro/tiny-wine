@@ -4,6 +4,7 @@
 #include "elf_tools.h"
 #include "loader_lib.h"
 #include "memory_map.h"
+#include <assert.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>

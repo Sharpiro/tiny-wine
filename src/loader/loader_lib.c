@@ -131,7 +131,7 @@ bool find_got_entry(
 bool read_to_string(const char *path, char **content, size_t size) {
     char *buffer = loader_malloc_arena(size);
     if (buffer == NULL) {
-        BAIL("malloc failed\n");
+        BAIL("loader_malloc_arena failed\n");
     }
 
     int32_t fd = tiny_c_open(path, O_RDONLY);
@@ -196,7 +196,7 @@ bool get_runtime_symbols(
             .size = curr_symbol->size,
         };
         if (!RuntimeSymbolList_add(runtime_symbols, runtime_symbol)) {
-            BAIL("malloc failed\n");
+            BAIL("RuntimeSymbolList_add failed\n");
         }
     }
 
