@@ -1,4 +1,5 @@
 #include "../tiny_c/tiny_c.h"
+#include "../tiny_c/tinyc_sys.h"
 #include "elf_tools.h"
 #include "loader_lib.h"
 #include "memory_map.h"
@@ -13,6 +14,8 @@ struct RuntimeObject *shared_objects;
 size_t shared_libraries_len = 0;
 RuntimeSymbolList runtime_symbols;
 size_t got_lib_dyn_offset_table[100] = {};
+
+// @todo: loaders shouldn't depend on clib, even statically
 
 #ifdef AMD64
 
@@ -320,7 +323,7 @@ static bool initialize_dynamic_data(
         }
 
         tiny_c_close(shared_lib_file);
-        if (!print_memory_regions()) {
+        if (!log_memory_regions()) {
             BAIL("print_memory_regions failed\n");
         }
 
@@ -584,6 +587,17 @@ int main(int32_t argc, char **argv) {
     char *filename = argv[1];
     LOADER_LOG("Starting loader, %s, %d\n", filename, argc);
 
+    // @todo: need to sync this with clib
+    size_t brk_start = tinyc_sys_brk(0);
+    LOADER_LOG("BRK:, %x\n", brk_start);
+    size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
+    LOADER_LOG("BRK:, %x\n", brk_end);
+    if (brk_end <= brk_start) {
+        EXIT("program BRK setup failed");
+    }
+
+    log_memory_regions();
+
     int32_t pid = tiny_c_get_pid();
     LOADER_LOG("pid: %d\n", pid);
 
@@ -625,7 +639,7 @@ int main(int32_t argc, char **argv) {
         EXIT("loader map memory regions failed\n");
     }
 
-    print_memory_regions();
+    log_memory_regions();
 
     const struct SectionHeader *bss_section_header = find_section_header(
         inferior_elf.section_headers, inferior_elf.section_headers_len, ".bss"

@@ -13,10 +13,10 @@ static size_t loader_heap_index = 0;
 void *loader_malloc_arena(size_t n) {
     if (loader_buffer == NULL) {
         loader_buffer = tiny_c_mmapx86(
-            LOADER_BUFFER_ADDRESS,
+            0,
             LOADER_BUFFER_LEN,
             PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
+            MAP_PRIVATE | MAP_ANONYMOUS,
             -1,
             0
         );
@@ -142,7 +142,7 @@ bool read_to_string(const char *path, char **content, size_t size) {
     return true;
 }
 
-bool print_memory_regions(void) {
+bool log_memory_regions(void) {
     char *maps_buffer;
     if (!read_to_string("/proc/self/maps", &maps_buffer, 0x1000)) {
         BAIL("read failed\n");

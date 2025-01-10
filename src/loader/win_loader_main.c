@@ -12,6 +12,7 @@
 
 CREATE_LIST_STRUCT(WinRuntimeObject)
 
+// @todo: hard-coding this may cause random program failures due to ASLR etc.
 #define IAT_BASE_START 0x7d7e0000
 
 struct WinRuntimeObject runtime_exe;
@@ -531,7 +532,7 @@ static bool initialize_dynamic_data(
         }
 
         tiny_c_close(shared_lib_file);
-        if (!print_memory_regions()) {
+        if (!log_memory_regions()) {
             BAIL("print_memory_regions failed\n");
         }
 
@@ -690,7 +691,7 @@ int main(int argc, char **argv) {
         EXIT("initialize_dynamic_data failed\n");
     }
 
-    print_memory_regions();
+    log_memory_regions();
 
     runtime_exe = (struct WinRuntimeObject){
         .name = filename,

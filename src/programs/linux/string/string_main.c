@@ -19,11 +19,6 @@ extern int test_number_data;
 
 int get_test_number_data();
 
-// @todo:
-extern size_t tinyc_heap_start;
-extern size_t tinyc_heap_end;
-extern size_t tinyc_heap_index;
-
 int main(void) {
     tiny_c_printf("inline string\n");
 
@@ -37,14 +32,7 @@ int main(void) {
     tiny_c_printf("bss_int %d\n", bss_int);
     tiny_c_printf("bss_string %s\n", bss_string);
 
-    tiny_c_fprintf(STDERR, "tinyc_heap_start %x\n", tinyc_heap_start);
-    tiny_c_fprintf(STDERR, "tinyc_heap_end %x\n", tinyc_heap_end);
-    tiny_c_fprintf(STDERR, "tinyc_heap_index %x\n", tinyc_heap_index);
-    tiny_c_fprintf(STDERR, "mallocing...\n");
     char *malloc_string = tinyc_malloc_arena(0x1000);
-    tiny_c_fprintf(STDERR, "tinyc_heap_start %x\n", tinyc_heap_start);
-    tiny_c_fprintf(STDERR, "tinyc_heap_end %x\n", tinyc_heap_end);
-    tiny_c_fprintf(STDERR, "tinyc_heap_index %x\n", tinyc_heap_index);
     if (malloc_string == NULL) {
         tiny_c_fprintf(STDERR, "malloc failed\n");
         tiny_c_exit(-1);

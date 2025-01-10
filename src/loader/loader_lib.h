@@ -7,8 +7,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define LOADER_BUFFER_ADDRESS 0x7d8d0000
 #define LOADER_BUFFER_LEN 0x200'000
+// @todo: hard-coding this may cause random program failures due to ASLR etc.
 #define LOADER_SHARED_LIB_START 0x500000
 
 extern int32_t loader_log_handle;
@@ -108,7 +108,7 @@ void loader_free_arena(void);
 
 bool read_to_string(const char *path, char **content, size_t size);
 
-bool print_memory_regions(void);
+bool log_memory_regions(void);
 
 bool get_function_relocations(
     const struct DynamicData *dyn_data,

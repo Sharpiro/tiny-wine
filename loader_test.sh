@@ -8,13 +8,13 @@ assert() {
     fi
 }
 
-# # Unit Test
-# $PRELOADER ./unit_test
-# assert [ $? == 0 ]
+# Unit Test
+$PRELOADER ./unit_test
+assert [ $? == 0 ]
 
-# # Env Test
-# assert [ "`$PRELOADER ./loader ./env | wc -c`" == "8" ]
-# assert [ "`$PRELOADER ./loader ./env x`" == $'2\n./env\nx' ]
+# Env Test
+assert [ "`$PRELOADER ./loader ./env | wc -c`" == "8" ]
+assert [ "`$PRELOADER ./loader ./env x`" == $'2\n./env\nx' ]
 
 # String Test
 expected=`cat <<EOF
@@ -36,24 +36,24 @@ EOF
 `
 assert [ "`$PRELOADER ./loader string silent`" == "$expected" ]
 
-# # Dynamic Test
-# expected=`cat <<EOF
-# 1st call
-# 2nd call
-# 16 + 16 = 32
-# dynamic_var: 0
-# dynamic_var: 42
-# 2nd shared lib length of 'how now brown cow': 17
-# lib test_number_data: 12345
-# lib test_number_data: 54321
-# lib test_number_bss: 0
-# lib test_number_bss: 54321
-# lib get_test_number_data_internal_ref: 12345
-# lib get_test_number_data_internal_ref: 54321
-# malloc: ok
-# add_many_result: 36
-# EOF
-# `
-# assert [ "`$PRELOADER ./loader ./dynamic`" == "$expected" ]
+# Dynamic Test
+expected=`cat <<EOF
+1st call
+2nd call
+16 + 16 = 32
+dynamic_var: 0
+dynamic_var: 42
+2nd shared lib length of 'how now brown cow': 17
+lib test_number_data: 12345
+lib test_number_data: 54321
+lib test_number_bss: 0
+lib test_number_bss: 54321
+lib get_test_number_data_internal_ref: 12345
+lib get_test_number_data_internal_ref: 54321
+malloc: ok
+add_many_result: 36
+EOF
+`
+assert [ "`$PRELOADER ./loader ./dynamic`" == "$expected" ]
 
 echo All tests passed
