@@ -33,6 +33,17 @@ all: \
 	programs/windows/win_dynamic_linux \
 	tools/readwin
 
+linux: \
+	libtinyc.a \
+	libtinyc.so \
+	loader \
+	programs/linux/unit_test \
+	programs/linux/env \
+	programs/linux/string \
+	programs/linux/tinyfetch \
+	programs/linux/static_pie \
+	programs/linux/dynamic
+
 tinyc_start.o: src/tiny_c/tinyc_start.c
 	@$(CC) $(CFLAGS) \
 		-g \

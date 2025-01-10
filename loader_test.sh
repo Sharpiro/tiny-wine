@@ -41,15 +41,13 @@ expected=`cat <<EOF
 1st call
 2nd call
 16 + 16 = 32
-dynamic_var: 0
-dynamic_var: 42
 2nd shared lib length of 'how now brown cow': 17
-lib test_number_data: 12345
-lib test_number_data: 54321
-lib test_number_bss: 0
-lib test_number_bss: 54321
-lib get_test_number_data_internal_ref: 12345
-lib get_test_number_data_internal_ref: 54321
+dynamic_var_data: 12345
+dynamic_var_data: 54321
+dynamic_var_bss: 0
+dynamic_var_bss: 54321
+get_test_number_data_internal_ref: 12345
+get_test_number_data_internal_ref: 54321
 malloc: ok
 add_many_result: 36
 EOF
