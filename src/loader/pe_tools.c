@@ -4,7 +4,6 @@
 #include "elf_tools.h"
 #include "loader_lib.h"
 #include "memory_map.h"
-#include <assert.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -13,6 +12,8 @@
 #include <sys/types.h>
 
 #define MAX_ARRAY_LENGTH 1000
+#define ASM_X64_MOV32_IMMEDIATE 0xb8
+#define ASM_X64_CALL 0xff, 0xd0
 
 bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (pe_data == NULL) {
@@ -364,6 +365,15 @@ bool map_memory_regions_win(
     return true;
 }
 
+typedef union {
+    uint8_t buffer[8];
+    uint64_t u64;
+} Converter;
+
+Converter convert(size_t x) {
+    return (Converter){.u64 = x};
+}
+
 bool map_import_address_table(
     int32_t fd,
     size_t iat_base,
@@ -371,9 +381,13 @@ bool map_import_address_table(
     size_t image_base,
     size_t import_address_table_offset,
     size_t import_address_table_len,
-    size_t dynamic_callback_trampoline,
+    size_t dynamic_callback_windows,
     size_t *iat_runtime_base
 ) {
+    if (dynamic_callback_windows > UINT32_MAX) {
+        BAIL("dynamic_callback_windows location exceeds 32 bits");
+    }
+
     *iat_runtime_base = iat_base + idata_base;
     struct MemoryRegion iat_region = {
         .start = *iat_runtime_base,
@@ -387,8 +401,6 @@ bool map_import_address_table(
         EXIT("loader map memory regions failed\n");
     }
 
-    static_assert(DYNAMIC_CALLBACK_TRAMPOLINE_SIZE <= 0x08);
-
     size_t *iat_offset = (size_t *)(image_base + import_address_table_offset);
     for (size_t i = 0; i < import_address_table_len; i++) {
         size_t *iat_entry = iat_offset + i;
@@ -400,11 +412,17 @@ bool map_import_address_table(
 
         size_t *entry_trampoline = (size_t *)(iat_base + iat_entry_init);
         *iat_entry = (size_t)entry_trampoline;
-        memcpy(
-            entry_trampoline,
-            (void *)dynamic_callback_trampoline,
-            DYNAMIC_CALLBACK_TRAMPOLINE_SIZE
-        );
+
+        Converter dyn_callback_converter = convert(dynamic_callback_windows);
+        const uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
+            ASM_X64_MOV32_IMMEDIATE,
+            dyn_callback_converter.buffer[0],
+            dyn_callback_converter.buffer[1],
+            dyn_callback_converter.buffer[2],
+            dyn_callback_converter.buffer[3],
+            ASM_X64_CALL,
+        };
+        memcpy(entry_trampoline, trampoline_code, sizeof(trampoline_code));
         LOADER_LOG(
             "IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_trampoline
         );

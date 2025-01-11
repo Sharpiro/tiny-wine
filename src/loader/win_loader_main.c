@@ -364,10 +364,6 @@ static void dynamic_callback_windows(void) {
     }
 }
 
-__attribute__((naked)) static void dynamic_callback_trampoline(void) {
-    __asm__("call %0\n" ::"r"(dynamic_callback_windows));
-}
-
 static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     const char *LIB_NTDLL_SO_NAME = "libntdll.so";
 
@@ -570,6 +566,7 @@ static bool initialize_dynamic_data(
             shared_lib_pe.section_headers_len,
             ".idata"
         );
+
         size_t iat_runtime_base;
         map_import_address_table(
             shared_lib_file,
@@ -578,7 +575,7 @@ static bool initialize_dynamic_data(
             shared_lib_image_base,
             shared_lib_pe.import_address_table_offset,
             shared_lib_pe.import_address_table_len,
-            (size_t)dynamic_callback_trampoline,
+            (size_t)dynamic_callback_windows,
             &iat_runtime_base
         );
         size_t iat_runtime_offset = current_iat_offset;
@@ -669,7 +666,7 @@ int main(int argc, char **argv) {
         image_base,
         pe_exe.import_address_table_offset,
         pe_exe.import_address_table_len,
-        (size_t)dynamic_callback_trampoline,
+        (size_t)dynamic_callback_windows,
         &iat_runtime_base
     );
     current_iat_base += 0x1000;

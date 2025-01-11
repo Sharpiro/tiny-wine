@@ -1,12 +1,15 @@
 #pragma once
 
 #include "elf_tools.h"
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #define DOS_MAGIC 0x5a4d
 #define DYNAMIC_CALLBACK_TRAMPOLINE_SIZE 7
+
+static_assert(DYNAMIC_CALLBACK_TRAMPOLINE_SIZE <= 0x08);
 
 struct ImageDosHeader {
     uint16_t magic;      // Magic number ("MZ")

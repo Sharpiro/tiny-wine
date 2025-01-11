@@ -3,7 +3,7 @@
 #include "../../../loader/pe_tools.h"
 #include "../../../tiny_c/tiny_c.h"
 
-#define assert(expr)                                                           \
+#define tw_assert(expr)                                                        \
     if (!(expr)) {                                                             \
         tiny_c_fprintf(STDERR, "%s:%d\n", __FILE__, __LINE__);                 \
         tiny_c_fprintf(STDERR, "%s\n", __func__);                              \
@@ -41,16 +41,16 @@ static void get_memory_regions_basic_test(void) {
         &memory_regions_info
     );
 
-    assert(result);
-    assert(memory_regions_info.start == 0x10000);
-    assert(memory_regions_info.end == 0x13000);
-    assert(memory_regions_info.regions_len == 2);
-    assert(memory_regions_info.regions[0].start == 0x10000);
-    assert(memory_regions_info.regions[0].end == 0x12000);
-    assert(memory_regions_info.regions[0].file_offset == 0);
-    assert(memory_regions_info.regions[1].start == 0x12000);
-    assert(memory_regions_info.regions[1].end == 0x13000);
-    assert(memory_regions_info.regions[1].file_offset == 0);
+    tw_assert(result);
+    tw_assert(memory_regions_info.start == 0x10000);
+    tw_assert(memory_regions_info.end == 0x13000);
+    tw_assert(memory_regions_info.regions_len == 2);
+    tw_assert(memory_regions_info.regions[0].start == 0x10000);
+    tw_assert(memory_regions_info.regions[0].end == 0x12000);
+    tw_assert(memory_regions_info.regions[0].file_offset == 0);
+    tw_assert(memory_regions_info.regions[1].start == 0x12000);
+    tw_assert(memory_regions_info.regions[1].end == 0x13000);
+    tw_assert(memory_regions_info.regions[1].file_offset == 0);
 }
 
 static void get_memory_regions_offset_test(void) {
@@ -83,16 +83,16 @@ static void get_memory_regions_offset_test(void) {
         &memory_regions_info
     );
 
-    assert(result);
-    assert(memory_regions_info.start == 0x10000);
-    assert(memory_regions_info.end == 0x13000);
-    assert(memory_regions_info.regions_len == 2);
-    assert(memory_regions_info.regions[0].start == 0x10000);
-    assert(memory_regions_info.regions[0].end == 0x11000);
-    assert(memory_regions_info.regions[0].file_offset == 0);
-    assert(memory_regions_info.regions[1].start == 0x11000);
-    assert(memory_regions_info.regions[1].end == 0x13000);
-    assert(memory_regions_info.regions[1].file_offset == 0);
+    tw_assert(result);
+    tw_assert(memory_regions_info.start == 0x10000);
+    tw_assert(memory_regions_info.end == 0x13000);
+    tw_assert(memory_regions_info.regions_len == 2);
+    tw_assert(memory_regions_info.regions[0].start == 0x10000);
+    tw_assert(memory_regions_info.regions[0].end == 0x11000);
+    tw_assert(memory_regions_info.regions[0].file_offset == 0);
+    tw_assert(memory_regions_info.regions[1].start == 0x11000);
+    tw_assert(memory_regions_info.regions[1].end == 0x13000);
+    tw_assert(memory_regions_info.regions[1].file_offset == 0);
 }
 
 static void get_memory_regions_big_align_test(void) {
@@ -123,16 +123,16 @@ static void get_memory_regions_big_align_test(void) {
         &memory_regions_info
     );
 
-    assert(result);
-    assert(memory_regions_info.start == 0x10000);
-    assert(memory_regions_info.end == 0x30000);
-    assert(memory_regions_info.regions_len == 2);
-    assert(memory_regions_info.regions[0].start == 0x10000);
-    assert(memory_regions_info.regions[0].end == 0x20000);
-    assert(memory_regions_info.regions[0].file_offset == 0);
-    assert(memory_regions_info.regions[1].start == 0x20000);
-    assert(memory_regions_info.regions[1].end == 0x30000);
-    assert(memory_regions_info.regions[1].file_offset == 0);
+    tw_assert(result);
+    tw_assert(memory_regions_info.start == 0x10000);
+    tw_assert(memory_regions_info.end == 0x30000);
+    tw_assert(memory_regions_info.regions_len == 2);
+    tw_assert(memory_regions_info.regions[0].start == 0x10000);
+    tw_assert(memory_regions_info.regions[0].end == 0x20000);
+    tw_assert(memory_regions_info.regions[0].file_offset == 0);
+    tw_assert(memory_regions_info.regions[1].start == 0x20000);
+    tw_assert(memory_regions_info.regions[1].end == 0x30000);
+    tw_assert(memory_regions_info.regions[1].file_offset == 0);
 }
 
 static void get_memory_regions_x86_test(void) {
@@ -183,30 +183,30 @@ static void get_memory_regions_x86_test(void) {
         &memory_regions_info
     );
 
-    assert(result);
-    assert(memory_regions_info.start == 0x400000);
-    assert(memory_regions_info.end == 0x405000);
-    assert(memory_regions_info.regions_len == 4);
-    assert(memory_regions_info.regions[0].start == 0x400000);
-    assert(memory_regions_info.regions[0].end == 0x401000);
-    assert(memory_regions_info.regions[0].is_direct_file_map == true);
-    assert(memory_regions_info.regions[0].file_offset == 0);
-    assert(memory_regions_info.regions[0].permissions == 4);
-    assert(memory_regions_info.regions[1].start == 0x401000);
-    assert(memory_regions_info.regions[1].end == 0x403000);
-    assert(memory_regions_info.regions[1].is_direct_file_map == true);
-    assert(memory_regions_info.regions[1].file_offset == 0x1000);
-    assert(memory_regions_info.regions[1].permissions == 5);
-    assert(memory_regions_info.regions[2].start == 0x403000);
-    assert(memory_regions_info.regions[2].end == 0x404000);
-    assert(memory_regions_info.regions[2].is_direct_file_map == true);
-    assert(memory_regions_info.regions[2].file_offset == 0x3000);
-    assert(memory_regions_info.regions[2].permissions == 4);
-    assert(memory_regions_info.regions[3].start == 0x404000);
-    assert(memory_regions_info.regions[3].end == 0x405000);
-    assert(memory_regions_info.regions[3].is_direct_file_map == false);
-    assert(memory_regions_info.regions[3].file_offset == 0);
-    assert(memory_regions_info.regions[3].permissions == 6);
+    tw_assert(result);
+    tw_assert(memory_regions_info.start == 0x400000);
+    tw_assert(memory_regions_info.end == 0x405000);
+    tw_assert(memory_regions_info.regions_len == 4);
+    tw_assert(memory_regions_info.regions[0].start == 0x400000);
+    tw_assert(memory_regions_info.regions[0].end == 0x401000);
+    tw_assert(memory_regions_info.regions[0].is_direct_file_map == true);
+    tw_assert(memory_regions_info.regions[0].file_offset == 0);
+    tw_assert(memory_regions_info.regions[0].permissions == 4);
+    tw_assert(memory_regions_info.regions[1].start == 0x401000);
+    tw_assert(memory_regions_info.regions[1].end == 0x403000);
+    tw_assert(memory_regions_info.regions[1].is_direct_file_map == true);
+    tw_assert(memory_regions_info.regions[1].file_offset == 0x1000);
+    tw_assert(memory_regions_info.regions[1].permissions == 5);
+    tw_assert(memory_regions_info.regions[2].start == 0x403000);
+    tw_assert(memory_regions_info.regions[2].end == 0x404000);
+    tw_assert(memory_regions_info.regions[2].is_direct_file_map == true);
+    tw_assert(memory_regions_info.regions[2].file_offset == 0x3000);
+    tw_assert(memory_regions_info.regions[2].permissions == 4);
+    tw_assert(memory_regions_info.regions[3].start == 0x404000);
+    tw_assert(memory_regions_info.regions[3].end == 0x405000);
+    tw_assert(memory_regions_info.regions[3].is_direct_file_map == false);
+    tw_assert(memory_regions_info.regions[3].file_offset == 0);
+    tw_assert(memory_regions_info.regions[3].permissions == 6);
 }
 
 static void get_memory_regions_win_test(void) {
@@ -235,22 +235,22 @@ static void get_memory_regions_win_test(void) {
         &memory_regions_info
     );
 
-    assert(result);
-    assert(memory_regions_info.start == 0);
-    assert(memory_regions_info.end == 0);
-    assert(memory_regions_info.regions_len == 2);
-    assert(memory_regions_info.regions[0].start == 0x140001000);
-    assert(memory_regions_info.regions[0].end == 0x140002000);
-    assert(memory_regions_info.regions[0].is_direct_file_map == false);
-    assert(memory_regions_info.regions[0].file_offset == 0x400);
-    assert(memory_regions_info.regions[0].file_size == 0x48);
-    assert(memory_regions_info.regions[0].permissions == 5);
-    assert(memory_regions_info.regions[1].start == 0x140002000);
-    assert(memory_regions_info.regions[1].end == 0x140003000);
-    assert(memory_regions_info.regions[1].is_direct_file_map == false);
-    assert(memory_regions_info.regions[1].file_offset == 0x600);
-    assert(memory_regions_info.regions[1].file_size == 0x0c);
-    assert(memory_regions_info.regions[1].permissions == 4);
+    tw_assert(result);
+    tw_assert(memory_regions_info.start == 0);
+    tw_assert(memory_regions_info.end == 0);
+    tw_assert(memory_regions_info.regions_len == 2);
+    tw_assert(memory_regions_info.regions[0].start == 0x140001000);
+    tw_assert(memory_regions_info.regions[0].end == 0x140002000);
+    tw_assert(memory_regions_info.regions[0].is_direct_file_map == false);
+    tw_assert(memory_regions_info.regions[0].file_offset == 0x400);
+    tw_assert(memory_regions_info.regions[0].file_size == 0x48);
+    tw_assert(memory_regions_info.regions[0].permissions == 5);
+    tw_assert(memory_regions_info.regions[1].start == 0x140002000);
+    tw_assert(memory_regions_info.regions[1].end == 0x140003000);
+    tw_assert(memory_regions_info.regions[1].is_direct_file_map == false);
+    tw_assert(memory_regions_info.regions[1].file_offset == 0x600);
+    tw_assert(memory_regions_info.regions[1].file_size == 0x0c);
+    tw_assert(memory_regions_info.regions[1].permissions == 4);
 }
 
 static void loader_malloc_arena_align_test(void) {
@@ -259,8 +259,8 @@ static void loader_malloc_arena_align_test(void) {
     size_t malloc_one = (size_t)loader_malloc_arena(15);
     size_t malloc_two = (size_t)loader_malloc_arena(15);
 
-    assert(malloc_one % POINTER_SIZE == 0);
-    assert(malloc_two % POINTER_SIZE == 0);
+    tw_assert(malloc_one % POINTER_SIZE == 0);
+    tw_assert(malloc_two % POINTER_SIZE == 0);
 }
 
 static void get_runtime_function_local_lib_test(void) {
@@ -277,8 +277,8 @@ static void get_runtime_function_local_lib_test(void) {
         &runtime_symbol
     );
 
-    assert(result);
-    assert(runtime_symbol->value == 0x9d8);
+    tw_assert(result);
+    tw_assert(runtime_symbol->value == 0x9d8);
 }
 
 static void get_runtime_function_shared_lib_test(void) {
@@ -302,8 +302,8 @@ static void get_runtime_function_shared_lib_test(void) {
         &runtime_symbol
     );
 
-    assert(result);
-    assert(runtime_symbol->value == 0x209d8);
+    tw_assert(result);
+    tw_assert(runtime_symbol->value == 0x209d8);
 }
 
 #ifdef ARM32
@@ -318,8 +318,8 @@ static void aeabi_uidivmod_test(
     size_t quotient = divmod(numerator, denominator);
     size_t remainder = numerator % denominator;
 
-    assert(quotient == expected_quotient);
-    assert(remainder == expected_remainder);
+    tw_assert(quotient == expected_quotient);
+    tw_assert(remainder == expected_remainder);
 }
 
 #endif
