@@ -46,7 +46,7 @@ Shell: /bin/bash
 ## Tests
 
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine ./loader_test.sh
+docker run --rm -v $PWD:/root/tiny_wine tinywine ./test_loader.sh
 ```
 
 ## Contributing
