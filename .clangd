@@ -13,3 +13,4 @@ CompileFlags:
     - -Wno-gnu-zero-variadic-macro-arguments
     - -Wno-gnu-statement-expression-from-macro-expansion
     - -Wvla
+    - -Wno-format-pedantic

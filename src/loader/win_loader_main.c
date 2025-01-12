@@ -13,7 +13,10 @@
 CREATE_LIST_STRUCT(WinRuntimeObject)
 
 // @todo: hard-coding this may cause random program failures due to ASLR etc.
+// @todo: need smarter way of setting up IAT regions that don't conflict b/w
+//        exes & libs
 #define IAT_BASE_START 0x7d7e0000
+#define IAT_INCREMENT 0x10000
 
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
@@ -403,7 +406,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
 
     tiny_c_close(ntdll_file);
 
-    // @todo: computed not initialized
+    // @todo: bss, computed not initialized?
     uint8_t *bss = 0;
     size_t bss_len = 0;
     const struct SectionHeader *bss_section_header = find_section_header(
@@ -579,8 +582,21 @@ static bool initialize_dynamic_data(
             &iat_runtime_base
         );
         size_t iat_runtime_offset = current_iat_offset;
-        current_iat_base += 0x1000;
-        current_iat_offset += 0x1000;
+        current_iat_base += IAT_INCREMENT;
+        current_iat_offset += IAT_INCREMENT;
+
+        /* Init .bss */
+
+        // @todo: lib bss
+
+        // const struct WinSectionHeader *bss_header = find_win_section_header(
+        //     pe_exe.section_headers, pe_exe.section_headers_len, ".bss"
+        // );
+        // if (bss_header != NULL) {
+        //     uint8_t *bss_region =
+        //         (uint8_t *)(image_base + bss_header->base_address);
+        //     memset(bss_region, 0, bss_header->virtual_size);
+        // }
 
         struct WinRuntimeObject shared_lib = {
             .name = dir_entry->lib_name,
@@ -669,14 +685,25 @@ int main(int argc, char **argv) {
         (size_t)dynamic_callback_windows,
         &iat_runtime_base
     );
-    current_iat_base += 0x1000;
-    current_iat_offset += 0x1000;
+    current_iat_base += IAT_INCREMENT;
+    current_iat_offset += IAT_INCREMENT;
 
     /* Load libntdll.so */
 
     lib_ntdll = loader_malloc_arena(sizeof(struct RuntimeObject));
     if (!initialize_lib_ntdll(lib_ntdll)) {
         EXIT("initialize_lib_ntdll failed\n");
+    }
+
+    /* Init .bss */
+
+    const struct WinSectionHeader *bss_header = find_win_section_header(
+        pe_exe.section_headers, pe_exe.section_headers_len, ".bss"
+    );
+    if (bss_header != NULL) {
+        uint8_t *bss_region =
+            (uint8_t *)(image_base + bss_header->base_address);
+        memset(bss_region, 0, bss_header->virtual_size);
     }
 
     /* Load dlls */

@@ -12,7 +12,8 @@ WARNINGS = \
 	-Werror=return-type \
 	-Werror=incompatible-pointer-types \
 	-Wno-gnu-empty-initializer \
-	-Wvla
+	-Wvla \
+	-Wno-format-pedantic
 
 all: \
 	libtinyc.a \

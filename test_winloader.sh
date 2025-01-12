@@ -11,6 +11,10 @@ assert() {
 # Dynamic Test
 expected=`cat <<EOF
 16 + 16 = 32
+exe_global_var_bss: 0
+exe_global_var_bss: 1
+exe_global_var_data: 42
+exe_global_var_data: 24
 EOF
 `
 assert [ "`./winloader ./windynamic.exe`" == "$expected" ]

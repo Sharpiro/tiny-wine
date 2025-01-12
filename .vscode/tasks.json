@@ -9,7 +9,14 @@
     {
       "label": "build_unit_test",
       "type": "shell",
-      "command": "make clean && CFLAGS='-DVERBOSE' make programs/linux/unit_test"
+      "dependsOn": ["build"],
+      "command": "programs/linux/unit_test"
+    },
+    {
+      "label": "run",
+      "type": "shell",
+      "dependsOn": ["build"],
+      "command": "./winloader ./windynamic.exe"
     }
   ]
 }

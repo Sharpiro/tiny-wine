@@ -180,6 +180,7 @@ static void fprintf_internal(
             print(file_handle, data);
             break;
         }
+        case 'p':
         case 'x': {
             size_t data = va_arg(var_args, size_t);
             print_number_hex(file_handle, data);
