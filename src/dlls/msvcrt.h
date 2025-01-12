@@ -1,13 +1,11 @@
 #include "ntdll.h"
-#include <stdint.h>
 
 #define STDOUT 1
 #define STDERR 2
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
-
 #define IS_SIGNED(type) (((type) - 1) < 0) ? true : false
+
+extern int32_t errnox;
 
 size_t add_many_msvcrt(
     [[maybe_unused]] size_t one,
@@ -21,3 +19,9 @@ size_t add_many_msvcrt(
 );
 
 double pow(double x, double y);
+
+void exit(int32_t exit_code);
+
+int32_t printf(const char *format, ...);
+
+int32_t puts(const char *data);

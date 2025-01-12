@@ -1,9 +1,10 @@
 #include "ntdll.h"
-#include <stddef.h>
-#include <stdint.h>
 
 void DllMainCRTStartup(void) {
 }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
 
 void *memset(void *s_buffer, int c_value, size_t n_count) {
     for (size_t i = 0; i < n_count; i++) {
@@ -11,6 +12,8 @@ void *memset(void *s_buffer, int c_value, size_t n_count) {
     }
     return s_buffer;
 }
+
+#pragma clang diagnostic pop
 
 static size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;

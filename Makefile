@@ -337,7 +337,7 @@ programs/windows/win_dynamic: msvcrt.dll ntdll.dll
 		ntdll.dll \
 		msvcrt.dll \
 		src/programs/windows/win_dynamic/win_dynamic_main.c
-	@$(OBJDUMP) -D windynamic.exe > windynamic.exe.dump
+	@$(OBJDUMP) -M intel -D windynamic.exe > windynamic.exe.dump
 
 programs/windows/win_dynamic_linux: libmsvcrt.so libntdll.so
 	@$(CC) $(CFLAGS) \

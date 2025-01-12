@@ -1,11 +1,19 @@
 #include "msvcrt.h"
 #include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+
+int32_t errnox = 42;
+
+// typedef __builtin_va_list __gnuc_va_list;
+// typedef __gnuc_va_list va_list;
+// #define va_start(ap, param) __builtin_va_start(ap, param)
+// #define va_end(ap) __builtin_va_end(ap)
+// #define va_arg(ap, type) __builtin_va_arg(ap, type)
 
 void DllMainCRTStartup(void) {
 }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
 
 size_t strlen(const char *data) {
     if (data == NULL) {
@@ -21,6 +29,8 @@ size_t strlen(const char *data) {
     }
     return len;
 }
+
+#pragma clang diagnostic pop
 
 static bool print_len(int32_t file_handle, const char *data, size_t length) {
     HANDLE win_handle;

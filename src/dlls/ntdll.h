@@ -1,6 +1,5 @@
 #include "win_type.h"
 #include <stddef.h>
-#include <stdint.h>
 
 #define SYS_write 0x01
 #define SYS_exit 0x3c
