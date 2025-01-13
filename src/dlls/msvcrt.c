@@ -1,7 +1,6 @@
 #include "msvcrt.h"
 #include <stdarg.h>
-
-int32_t errnox = 42;
+#include <stdbool.h>
 
 // typedef __builtin_va_list __gnuc_va_list;
 // typedef __gnuc_va_list va_list;

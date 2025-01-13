@@ -5,8 +5,6 @@
 
 #define IS_SIGNED(type) (((type) - 1) < 0) ? true : false
 
-extern int32_t errnox;
-
 size_t add_many_msvcrt(
     [[maybe_unused]] size_t one,
     [[maybe_unused]] size_t two,
