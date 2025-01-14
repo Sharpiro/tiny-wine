@@ -1,6 +1,12 @@
+#include "../../../dlls/msvcrt.h"
 #include <stdbool.h>
 #include <stdint.h>
 
+int32_t lib_var = 42;
+
+/**
+ * Called on load, unload, etc.
+ */
 bool DllMain(
     [[maybe_unused]] void *hinstDLL,
     [[maybe_unused]] unsigned long fdwReason,
@@ -8,8 +14,6 @@ bool DllMain(
 ) {
     return true;
 }
-
-// int32_t lib_var = 42;
 
 int lib_add(int x, int y) {
     return x + y;
