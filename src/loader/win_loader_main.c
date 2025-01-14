@@ -211,7 +211,7 @@ static void dynamic_callback_windows(void) {
         source_pe = &runtime_exe.pe_data;
         for (size_t i = 0; i < runtime_exe.pe_data.import_address_table_len;
              i++) {
-            struct KeyValue *iat_entry =
+            struct ImportAddressEntry *iat_entry =
                 &runtime_exe.pe_data.import_address_table[i];
             size_t curr_func_iat_value =
                 func_iat_value_temp - runtime_exe.iat_runtime_offset;
@@ -232,7 +232,7 @@ static void dynamic_callback_windows(void) {
             for (size_t i = 0;
                  i < curr_shared_lib->pe_data.import_address_table_len;
                  i++) {
-                struct KeyValue *iat_entry =
+                struct ImportAddressEntry *iat_entry =
                     &curr_shared_lib->pe_data.import_address_table[i];
                 size_t curr_func_iat_value =
                     func_iat_value_temp - curr_shared_lib->iat_runtime_offset;
@@ -564,30 +564,32 @@ static bool initialize_dynamic_data(
 
         /* Map Import Address Table */
 
-        const struct WinSectionHeader *idata_header = find_win_section_header(
-            shared_lib_pe.section_headers,
-            shared_lib_pe.section_headers_len,
-            ".idata"
-        );
-
-        size_t iat_runtime_base;
-        map_import_address_table(
-            shared_lib_file,
-            current_iat_base,
-            idata_header->base_address,
-            shared_lib_image_base,
-            shared_lib_pe.import_address_table_offset,
-            shared_lib_pe.import_address_table_len,
-            (size_t)dynamic_callback_windows,
-            &iat_runtime_base
-        );
-        size_t iat_runtime_offset = current_iat_offset;
-        current_iat_base += IAT_INCREMENT;
-        current_iat_offset += IAT_INCREMENT;
-
-        /* Init .bss */
+        size_t iat_runtime_base = 0;
+        size_t iat_runtime_offset = 0;
+        if (shared_lib_pe.import_address_table_len) {
+            const struct WinSectionHeader *idata_header =
+                find_win_section_header(
+                    shared_lib_pe.section_headers,
+                    shared_lib_pe.section_headers_len,
+                    ".idata"
+                );
+            map_import_address_table(
+                shared_lib_file,
+                current_iat_base,
+                idata_header->base_address,
+                shared_lib_image_base,
+                shared_lib_pe.import_address_table_offset,
+                shared_lib_pe.import_address_table_len,
+                (size_t)dynamic_callback_windows,
+                &iat_runtime_base
+            );
+            iat_runtime_offset = current_iat_offset;
+            current_iat_base += IAT_INCREMENT;
+            current_iat_offset += IAT_INCREMENT;
+        }
 
         // @todo: lib bss
+        /* Init .bss */
 
         // const struct WinSectionHeader *bss_header = find_win_section_header(
         //     pe_exe.section_headers, pe_exe.section_headers_len, ".bss"
@@ -668,31 +670,26 @@ int main(int argc, char **argv) {
         EXIT("map_memory_regions_win failed\n");
     }
 
+    // @todo: may need to be done after dlls loaded
     /* Map Import Address Table */
 
-    const struct WinSectionHeader *idata_header = find_win_section_header(
-        pe_exe.section_headers, pe_exe.section_headers_len, ".idata"
-    );
-
-    size_t iat_runtime_base;
-    map_import_address_table(
-        fd,
-        current_iat_base,
-        idata_header->base_address,
-        image_base,
-        pe_exe.import_address_table_offset,
-        pe_exe.import_address_table_len,
-        (size_t)dynamic_callback_windows,
-        &iat_runtime_base
-    );
-    current_iat_base += IAT_INCREMENT;
-    current_iat_offset += IAT_INCREMENT;
-
-    /* Load libntdll.so */
-
-    lib_ntdll = loader_malloc_arena(sizeof(struct RuntimeObject));
-    if (!initialize_lib_ntdll(lib_ntdll)) {
-        EXIT("initialize_lib_ntdll failed\n");
+    size_t iat_runtime_base = 0;
+    if (pe_exe.import_address_table_len) {
+        const struct WinSectionHeader *idata_header = find_win_section_header(
+            pe_exe.section_headers, pe_exe.section_headers_len, ".idata"
+        );
+        map_import_address_table(
+            fd,
+            current_iat_base,
+            idata_header->base_address,
+            image_base,
+            pe_exe.import_address_table_offset,
+            pe_exe.import_address_table_len,
+            (size_t)dynamic_callback_windows,
+            &iat_runtime_base
+        );
+        current_iat_base += IAT_INCREMENT;
+        current_iat_offset += IAT_INCREMENT;
     }
 
     /* Init .bss */
@@ -704,6 +701,13 @@ int main(int argc, char **argv) {
         uint8_t *bss_region =
             (uint8_t *)(image_base + bss_header->base_address);
         memset(bss_region, 0, bss_header->virtual_size);
+    }
+
+    /* Load libntdll.so */
+
+    lib_ntdll = loader_malloc_arena(sizeof(struct RuntimeObject));
+    if (!initialize_lib_ntdll(lib_ntdll)) {
+        EXIT("initialize_lib_ntdll failed\n");
     }
 
     /* Load dlls */
@@ -726,8 +730,23 @@ int main(int argc, char **argv) {
         .iat_runtime_offset = 0,
     };
 
+    /* Detect external variables */
+
+    // @todo: i kind of want the name here already
+    for (size_t i = 0; i < pe_exe.import_address_table_len; i++) {
+        struct ImportAddressEntry *current_import =
+            &pe_exe.import_address_table[i];
+        LOADER_LOG(
+            "FIND ENTRY: %x:%x %s\n",
+            current_import->key,
+            current_import->value,
+            current_import->name
+        );
+    }
+
     // const struct RuntimeSymbol *exit_func = NULL;
-    // for (size_t i = 0; i < lib_ntdll_object->runtime_symbols.length; i++) {
+    // for (size_t i = 0; i < lib_ntdll_object->runtime_symbols.length; i++)
+    // {
     //     const struct RuntimeSymbol *curr_symbol =
     //         &lib_ntdll_object->runtime_symbols.data[i];
     //     if (tiny_c_strcmp(curr_symbol->name, "sys_exit") == 0) {

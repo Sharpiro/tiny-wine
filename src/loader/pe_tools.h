@@ -171,9 +171,10 @@ struct WinSymbol {
 #define SYMBOL_CLASS_EXTERNAL 0x02
 #define SYMBOL_CLASS_STATIC 0x03
 
-struct KeyValue {
+struct ImportAddressEntry {
     size_t key;
     size_t value;
+    const char *name;
 };
 
 struct PeData {
@@ -185,7 +186,7 @@ struct PeData {
     struct ImportDirectoryEntry *import_dir_entries;
     size_t import_dir_entries_len;
     size_t import_address_table_offset;
-    struct KeyValue *import_address_table;
+    struct ImportAddressEntry *import_address_table;
     size_t import_address_table_len;
     struct ExportEntry *export_entries;
     size_t export_entries_len;

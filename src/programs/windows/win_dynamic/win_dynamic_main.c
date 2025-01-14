@@ -5,11 +5,14 @@ int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
 int start_inferior() {
+    // printf("&lib_var: %x\n", &lib_var);
     // printf("lib_var: %d\n", lib_var);
     // lib_var += 1;
     // printf("lib_var: %d\n", lib_var);
     // lib_var = 44;
     // printf("lib_var: %d\n", lib_var);
+
+    // return lib_var;
 
     int32_t num1 = (int32_t)pow(2, 4);
     int32_t num2 = (int32_t)pow(2, 4);

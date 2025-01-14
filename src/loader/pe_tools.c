@@ -15,6 +15,27 @@
 #define ASM_X64_MOV32_IMMEDIATE 0xb8
 #define ASM_X64_CALL 0xff, 0xd0
 
+static bool find_import_entry(
+    const struct ImportDirectoryEntry *dir_entries,
+    size_t dir_entries_len,
+    size_t iat_value,
+    const struct ImportEntry **import_entry
+) {
+    for (size_t i = 0; i < dir_entries_len; i++) {
+        const struct ImportDirectoryEntry *dir_entry = &dir_entries[i];
+        for (size_t j = 0; j < dir_entry->import_entries_len; j++) {
+            struct ImportEntry *curr_import_entry =
+                &dir_entry->import_entries[j];
+            if (curr_import_entry->address == iat_value) {
+                *import_entry = curr_import_entry;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (pe_data == NULL) {
         BAIL("pe_data was null\n");
@@ -61,7 +82,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     tiny_c_read(fd, idata_buffer, idata_header->size_of_raw_data);
     struct ImportDirectoryRawEntry *raw_dir_entries =
         (struct ImportDirectoryRawEntry *)idata_buffer;
-    struct ImportDirectoryEntry *entries =
+    struct ImportDirectoryEntry *import_dir_entries =
         (struct ImportDirectoryEntry *)loader_malloc_arena(
             sizeof(struct ImportDirectoryEntry) * MAX_ARRAY_LENGTH
         );
@@ -121,7 +142,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             };
         }
 
-        entries[i] = (struct ImportDirectoryEntry){
+        import_dir_entries[i] = (struct ImportDirectoryEntry){
             .import_lookup_table_offset = raw_dir_entry->characteristics,
             .lib_name = lib_name,
             .import_entries = import_entries,
@@ -144,16 +165,29 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t import_address_table_offset =
         import_address_table_dir->virtual_address;
 
-    struct KeyValue *import_address_table = NULL;
+    struct ImportAddressEntry *import_address_table = NULL;
     if (iat_len > 0) {
         import_address_table =
-            loader_malloc_arena(sizeof(struct KeyValue) * iat_len);
+            loader_malloc_arena(sizeof(struct ImportAddressEntry) * iat_len);
         size_t *iat_base = (size_t *)(idata_buffer + iat_file_offset);
         for (size_t i = 0; i < iat_len; i++) {
             size_t key = import_address_table_offset + i * sizeof(size_t);
             size_t value = *(iat_base + i);
-            import_address_table[i] =
-                (struct KeyValue){.key = key, .value = value};
+            const struct ImportEntry *import_entry;
+            const char *import_name = "-";
+            if (find_import_entry(
+                    import_dir_entries,
+                    import_dir_entries_len,
+                    value,
+                    &import_entry
+                )) {
+                import_name = import_entry->name;
+            }
+            import_address_table[i] = (struct ImportAddressEntry){
+                .key = key,
+                .value = value,
+                .name = import_name,
+            };
         }
     }
 
@@ -251,7 +285,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .entrypoint = entrypoint,
         .section_headers = section_headers,
         .section_headers_len = section_headers_len,
-        .import_dir_entries = entries,
+        .import_dir_entries = import_dir_entries,
         .import_dir_entries_len = import_dir_entries_len,
         .import_address_table_offset = import_address_table_offset,
         .import_address_table = import_address_table,
@@ -422,7 +456,12 @@ bool map_import_address_table(
             dyn_callback_converter.buffer[3],
             ASM_X64_CALL,
         };
+        // // @todo
+        // if (iat_entry_init == 0x70a0) {
+        //     *entry_trampoline = 42;
+        // } else {
         memcpy(entry_trampoline, trampoline_code, sizeof(trampoline_code));
+        // }
         LOADER_LOG(
             "IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_trampoline
         );
