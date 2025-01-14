@@ -174,7 +174,8 @@ struct WinSymbol {
 struct ImportAddressEntry {
     size_t key;
     size_t value;
-    const char *name;
+    const char *lib_name;
+    const char *import_name;
 };
 
 struct PeData {
@@ -222,4 +223,14 @@ bool map_import_address_table(
     size_t import_address_table_len,
     size_t dynamic_callback_trampoline,
     size_t *iat_runtime_base
+);
+
+const struct WinRuntimeObject *find_runtime_object(
+    const struct WinRuntimeObject *runtime_objects,
+    size_t runtime_objects_len,
+    const char *name
+);
+
+const struct WinSymbol *find_runtime_symbol(
+    const struct WinSymbol *symbols, size_t symbols_len, const char *name
 );

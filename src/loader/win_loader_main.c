@@ -732,15 +732,25 @@ int main(int argc, char **argv) {
 
     /* Detect external variables */
 
-    // @todo: i kind of want the name here already
     for (size_t i = 0; i < pe_exe.import_address_table_len; i++) {
         struct ImportAddressEntry *current_import =
             &pe_exe.import_address_table[i];
+        // @todo: find library ref
+        const struct WinRuntimeObject *runtime_obj = find_runtime_object(
+            shared_libraries.data,
+            shared_libraries.length,
+            current_import->lib_name
+        );
+        if (runtime_obj == NULL) {
+            //
+        }
+        // @todo: find symbol ref
         LOADER_LOG(
-            "FIND ENTRY: %x:%x %s\n",
+            "FIND ENTRY: %x:%x %s %s\n",
             current_import->key,
             current_import->value,
-            current_import->name
+            current_import->lib_name,
+            current_import->import_name
         );
     }
 

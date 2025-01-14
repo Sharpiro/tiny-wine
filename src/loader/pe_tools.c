@@ -19,15 +19,17 @@ static bool find_import_entry(
     const struct ImportDirectoryEntry *dir_entries,
     size_t dir_entries_len,
     size_t iat_value,
+    const char **lib_name,
     const struct ImportEntry **import_entry
 ) {
     for (size_t i = 0; i < dir_entries_len; i++) {
-        const struct ImportDirectoryEntry *dir_entry = &dir_entries[i];
-        for (size_t j = 0; j < dir_entry->import_entries_len; j++) {
+        const struct ImportDirectoryEntry *curr_dir_entry = &dir_entries[i];
+        for (size_t j = 0; j < curr_dir_entry->import_entries_len; j++) {
             struct ImportEntry *curr_import_entry =
-                &dir_entry->import_entries[j];
+                &curr_dir_entry->import_entries[j];
             if (curr_import_entry->address == iat_value) {
                 *import_entry = curr_import_entry;
+                *lib_name = curr_dir_entry->lib_name;
                 return true;
             }
         }
@@ -173,12 +175,14 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         for (size_t i = 0; i < iat_len; i++) {
             size_t key = import_address_table_offset + i * sizeof(size_t);
             size_t value = *(iat_base + i);
+            const char *lib_name = NULL;
             const struct ImportEntry *import_entry;
-            const char *import_name = "-";
+            const char *import_name = NULL;
             if (find_import_entry(
                     import_dir_entries,
                     import_dir_entries_len,
                     value,
+                    &lib_name,
                     &import_entry
                 )) {
                 import_name = import_entry->name;
@@ -186,7 +190,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             import_address_table[i] = (struct ImportAddressEntry){
                 .key = key,
                 .value = value,
-                .name = import_name,
+                .lib_name = lib_name,
+                .import_name = import_name,
             };
         }
     }
@@ -353,6 +358,33 @@ const struct WinSectionHeader *find_win_section_header(
         }
     }
 
+    return NULL;
+}
+
+// @todo: macrotize?
+const struct WinRuntimeObject *find_runtime_object(
+    const struct WinRuntimeObject *runtime_objects,
+    size_t runtime_objects_len,
+    const char *name
+) {
+    for (size_t i = 0; i < runtime_objects_len; i++) {
+        const struct WinRuntimeObject *curr_obj = &runtime_objects[i];
+        if (strcmp(curr_obj->name, name) == 0) {
+            return curr_obj;
+        }
+    }
+    return NULL;
+}
+
+const struct WinSymbol *find_runtime_symbol(
+    const struct WinSymbol *symbols, size_t symbols_len, const char *name
+) {
+    for (size_t i = 0; i < symbols_len; i++) {
+        const struct WinSymbol *curr_symbol = &symbols[i];
+        if (strcmp(curr_symbol->name, name) == 0) {
+            return curr_symbol;
+        }
+    }
     return NULL;
 }
 

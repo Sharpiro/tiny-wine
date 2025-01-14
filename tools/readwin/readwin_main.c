@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
             i,
             iat_entry->key,
             iat_entry->value,
-            iat_entry->name
+            iat_entry->import_name
         );
     }
 
