@@ -477,6 +477,17 @@ bool map_import_address_table(
             continue;
         }
 
+        // @todo: find variable size
+        // @todo: init .data value
+        if (current_entry->is_variable) {
+            // @todo: find variable address
+            // size_t *dynamic_lib_variable = (size_t *)0x3749a5000;
+            size_t *dynamic_lib_variable = (size_t *)0x3749a2000;
+            // *dynamic_lib_variable = 0;
+            *iat_entry = (size_t)dynamic_lib_variable;
+            continue;
+        }
+
         size_t *entry_value = (size_t *)(iat_base + iat_entry_init);
         *iat_entry = (size_t)entry_value;
 
@@ -490,12 +501,7 @@ bool map_import_address_table(
             ASM_X64_CALL,
         };
 
-        // @todo: init .data value
-        if (current_entry->is_variable) {
-            *entry_value = 0;
-        } else {
-            memcpy(entry_value, trampoline_code, sizeof(trampoline_code));
-        }
+        memcpy(entry_value, trampoline_code, sizeof(trampoline_code));
         LOADER_LOG("IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_value);
     }
 

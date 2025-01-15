@@ -4,7 +4,7 @@
 
 int32_t lib_var_bss = 0;
 
-int32_t lib_var_data = 42;
+int32_t lib_var_data = 0x42;
 
 /**
  * Called on load, unload, etc.
@@ -17,6 +17,10 @@ bool DllMain(
     return true;
 }
 
-int lib_add(int x, int y) {
-    return x + y;
+int32_t *get_lib_var_bss() {
+    return &lib_var_bss;
+}
+
+int32_t *get_lib_var_data() {
+    return &lib_var_data;
 }
