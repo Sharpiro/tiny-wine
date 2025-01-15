@@ -2,7 +2,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-int32_t lib_var = 42;
+int32_t lib_var_bss = 0;
+
+int32_t lib_var_data = 42;
 
 /**
  * Called on load, unload, etc.

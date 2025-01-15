@@ -176,6 +176,7 @@ struct ImportAddressEntry {
     size_t value;
     const char *lib_name;
     const char *import_name;
+    bool is_variable;
 };
 
 struct PeData {
@@ -219,7 +220,7 @@ bool map_import_address_table(
     size_t iat_base,
     size_t idata_base,
     size_t image_base,
-    size_t import_address_table_offset,
+    struct ImportAddressEntry *import_address_table,
     size_t import_address_table_len,
     size_t dynamic_callback_trampoline,
     size_t *iat_runtime_base

@@ -192,6 +192,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
                 .value = value,
                 .lib_name = lib_name,
                 .import_name = import_name,
+                .is_variable = false,
             };
         }
     }
@@ -369,7 +370,7 @@ const struct WinRuntimeObject *find_runtime_object(
 ) {
     for (size_t i = 0; i < runtime_objects_len; i++) {
         const struct WinRuntimeObject *curr_obj = &runtime_objects[i];
-        if (strcmp(curr_obj->name, name) == 0) {
+        if (tiny_c_strcmp(curr_obj->name, name) == 0) {
             return curr_obj;
         }
     }
@@ -381,7 +382,7 @@ const struct WinSymbol *find_runtime_symbol(
 ) {
     for (size_t i = 0; i < symbols_len; i++) {
         const struct WinSymbol *curr_symbol = &symbols[i];
-        if (strcmp(curr_symbol->name, name) == 0) {
+        if (tiny_c_strcmp(curr_symbol->name, name) == 0) {
             return curr_symbol;
         }
     }
@@ -445,7 +446,7 @@ bool map_import_address_table(
     size_t iat_base,
     size_t idata_base,
     size_t image_base,
-    size_t import_address_table_offset,
+    struct ImportAddressEntry *import_address_table,
     size_t import_address_table_len,
     size_t dynamic_callback_windows,
     size_t *iat_runtime_base
@@ -467,17 +468,17 @@ bool map_import_address_table(
         EXIT("loader map memory regions failed\n");
     }
 
-    size_t *iat_offset = (size_t *)(image_base + import_address_table_offset);
     for (size_t i = 0; i < import_address_table_len; i++) {
-        size_t *iat_entry = iat_offset + i;
+        struct ImportAddressEntry *current_entry = &import_address_table[i];
+        size_t *iat_entry = (size_t *)(image_base + current_entry->key);
         size_t iat_entry_init = *iat_entry;
         if (iat_entry_init == 0) {
             LOADER_LOG("WARNING: IAT %x is 0\n", iat_entry);
             continue;
         }
 
-        size_t *entry_trampoline = (size_t *)(iat_base + iat_entry_init);
-        *iat_entry = (size_t)entry_trampoline;
+        size_t *entry_value = (size_t *)(iat_base + iat_entry_init);
+        *iat_entry = (size_t)entry_value;
 
         Converter dyn_callback_converter = convert(dynamic_callback_windows);
         const uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
@@ -488,15 +489,14 @@ bool map_import_address_table(
             dyn_callback_converter.buffer[3],
             ASM_X64_CALL,
         };
-        // // @todo
-        // if (iat_entry_init == 0x70a0) {
-        //     *entry_trampoline = 42;
-        // } else {
-        memcpy(entry_trampoline, trampoline_code, sizeof(trampoline_code));
-        // }
-        LOADER_LOG(
-            "IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_trampoline
-        );
+
+        // @todo: init .data value
+        if (current_entry->is_variable) {
+            *entry_value = 0;
+        } else {
+            memcpy(entry_value, trampoline_code, sizeof(trampoline_code));
+        }
+        LOADER_LOG("IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_value);
     }
 
     return true;

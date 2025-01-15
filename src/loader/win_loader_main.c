@@ -578,7 +578,7 @@ static bool initialize_dynamic_data(
                 current_iat_base,
                 idata_header->base_address,
                 shared_lib_image_base,
-                shared_lib_pe.import_address_table_offset,
+                shared_lib_pe.import_address_table,
                 shared_lib_pe.import_address_table_len,
                 (size_t)dynamic_callback_windows,
                 &iat_runtime_base
@@ -670,39 +670,6 @@ int main(int argc, char **argv) {
         EXIT("map_memory_regions_win failed\n");
     }
 
-    // @todo: may need to be done after dlls loaded
-    /* Map Import Address Table */
-
-    size_t iat_runtime_base = 0;
-    if (pe_exe.import_address_table_len) {
-        const struct WinSectionHeader *idata_header = find_win_section_header(
-            pe_exe.section_headers, pe_exe.section_headers_len, ".idata"
-        );
-        map_import_address_table(
-            fd,
-            current_iat_base,
-            idata_header->base_address,
-            image_base,
-            pe_exe.import_address_table_offset,
-            pe_exe.import_address_table_len,
-            (size_t)dynamic_callback_windows,
-            &iat_runtime_base
-        );
-        current_iat_base += IAT_INCREMENT;
-        current_iat_offset += IAT_INCREMENT;
-    }
-
-    /* Init .bss */
-
-    const struct WinSectionHeader *bss_header = find_win_section_header(
-        pe_exe.section_headers, pe_exe.section_headers_len, ".bss"
-    );
-    if (bss_header != NULL) {
-        uint8_t *bss_region =
-            (uint8_t *)(image_base + bss_header->base_address);
-        memset(bss_region, 0, bss_header->virtual_size);
-    }
-
     /* Load libntdll.so */
 
     lib_ntdll = loader_malloc_arena(sizeof(struct RuntimeObject));
@@ -719,6 +686,91 @@ int main(int argc, char **argv) {
         EXIT("initialize_dynamic_data failed\n");
     }
 
+    // @todo: find library ref
+    /* Detect external variables */
+
+    for (size_t i = 0; i < pe_exe.import_address_table_len; i++) {
+        struct ImportAddressEntry *current_import =
+            &pe_exe.import_address_table[i];
+        if (current_import->value == 0) {
+            continue;
+        }
+
+        const struct WinRuntimeObject *runtime_obj = find_runtime_object(
+            shared_libraries.data,
+            shared_libraries.length,
+            current_import->lib_name
+        );
+        if (runtime_obj == NULL) {
+            EXIT("expected runtime object '%s'\n", current_import->lib_name);
+        }
+
+        const struct WinSymbol *symbol = find_runtime_symbol(
+            runtime_obj->pe_data.symbols,
+            runtime_obj->pe_data.symbols_len,
+            current_import->import_name
+        );
+        if (symbol == NULL) {
+            EXIT("expected symbol '%s'\n", current_import->import_name);
+        }
+        if (symbol->type == SYMBOL_TYPE_FUNCTION) {
+            continue;
+        }
+        // if (symbol->storage_class == SYMBOL_CLASS_STATIC) {
+        //     EXIT("unsupported storage class 'static'");
+        // }
+        if (symbol->storage_class != SYMBOL_CLASS_EXTERNAL) {
+            EXIT("unsupported storage class '%x'", symbol->storage_class);
+        }
+
+        current_import->is_variable = true;
+
+        // @todo: find symbol ref
+        LOADER_LOG(
+            "VARIABLE ENTRY: %x:%x %s %s %x %x\n",
+            current_import->key,
+            current_import->value,
+            current_import->lib_name,
+            current_import->import_name,
+            (size_t)symbol->type,
+            (size_t)symbol->storage_class
+        );
+    }
+
+    /* Map Import Address Table */
+
+    size_t iat_runtime_base = 0;
+    size_t iat_runtime_offset = 0;
+    if (pe_exe.import_address_table_len) {
+        const struct WinSectionHeader *idata_header = find_win_section_header(
+            pe_exe.section_headers, pe_exe.section_headers_len, ".idata"
+        );
+        map_import_address_table(
+            fd,
+            current_iat_base,
+            idata_header->base_address,
+            image_base,
+            pe_exe.import_address_table,
+            pe_exe.import_address_table_len,
+            (size_t)dynamic_callback_windows,
+            &iat_runtime_base
+        );
+        iat_runtime_offset = current_iat_offset;
+        current_iat_base += IAT_INCREMENT;
+        current_iat_offset += IAT_INCREMENT;
+    }
+
+    /* Init .bss */
+
+    const struct WinSectionHeader *bss_header = find_win_section_header(
+        pe_exe.section_headers, pe_exe.section_headers_len, ".bss"
+    );
+    if (bss_header != NULL) {
+        uint8_t *bss_region =
+            (uint8_t *)(image_base + bss_header->base_address);
+        memset(bss_region, 0, bss_header->virtual_size);
+    }
+
     log_memory_regions();
 
     runtime_exe = (struct WinRuntimeObject){
@@ -727,45 +779,8 @@ int main(int argc, char **argv) {
         .memory_regions_info = memory_regions_info,
         .function_exports = {},
         .iat_runtime_base = iat_runtime_base,
-        .iat_runtime_offset = 0,
+        .iat_runtime_offset = iat_runtime_offset,
     };
-
-    /* Detect external variables */
-
-    for (size_t i = 0; i < pe_exe.import_address_table_len; i++) {
-        struct ImportAddressEntry *current_import =
-            &pe_exe.import_address_table[i];
-        // @todo: find library ref
-        const struct WinRuntimeObject *runtime_obj = find_runtime_object(
-            shared_libraries.data,
-            shared_libraries.length,
-            current_import->lib_name
-        );
-        if (runtime_obj == NULL) {
-            //
-        }
-        // @todo: find symbol ref
-        LOADER_LOG(
-            "FIND ENTRY: %x:%x %s %s\n",
-            current_import->key,
-            current_import->value,
-            current_import->lib_name,
-            current_import->import_name
-        );
-    }
-
-    // const struct RuntimeSymbol *exit_func = NULL;
-    // for (size_t i = 0; i < lib_ntdll_object->runtime_symbols.length; i++)
-    // {
-    //     const struct RuntimeSymbol *curr_symbol =
-    //         &lib_ntdll_object->runtime_symbols.data[i];
-    //     if (tiny_c_strcmp(curr_symbol->name, "sys_exit") == 0) {
-    //         exit_func = curr_symbol;
-    //     }
-    // }
-    // if (exit_func == NULL || exit_func->value == 0) {
-    //     EXIT("expected exit_func");
-    // }
 
     /* Jump to program */
 
@@ -773,7 +788,6 @@ int main(int argc, char **argv) {
     size_t *inferior_frame_pointer = frame_pointer + 1;
     *inferior_frame_pointer = (size_t)(argc - 1);
     size_t *stack_start = inferior_frame_pointer;
-    // *stack_start = exit_func->value;
     *stack_start = (size_t)win_loader_implicit_end;
     LOADER_LOG("entrypoint: %x\n", pe_exe.entrypoint);
     LOADER_LOG("frame_pointer: %x\n", frame_pointer);

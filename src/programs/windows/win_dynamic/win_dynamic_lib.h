@@ -13,6 +13,8 @@
 #define EXPORTABLE
 #endif
 
-extern EXPORTABLE int32_t lib_var;
+extern EXPORTABLE int32_t lib_var_bss;
+
+extern EXPORTABLE int32_t lib_var_data;
 
 int lib_add(int x, int y);
