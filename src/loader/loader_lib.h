@@ -80,12 +80,26 @@ typedef struct WinRuntimeObject {
     size_t iat_runtime_offset;
 } WinRuntimeObject;
 
+CREATE_LIST_STRUCT(WinRuntimeObject)
+
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,
     size_t runtime_relocations_len,
     size_t relocation_offset,
     const struct RuntimeRelocation **runtime_relocation
 );
+
+typedef struct RuntimeImportAddressEntry {
+    size_t key;
+    size_t value;
+    const char *lib_name;
+    const char *import_name;
+    bool is_variable;
+    size_t symbol_section;
+    ssize_t section_offset;
+} RuntimeImportAddressEntry;
+
+CREATE_LIST_STRUCT(RuntimeImportAddressEntry)
 
 bool get_runtime_symbol(
     const char *name,

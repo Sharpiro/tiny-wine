@@ -281,6 +281,7 @@ winloader: tinyc_start.o libtinyc.a src/loader/win_loader_main.c
 		-o winloader \
 		src/loader/win_loader_main.c \
 		src/loader/loader_lib.c \
+		src/loader/win_loader_lib.c \
 		src/loader/memory_map.c \
 		src/loader/pe_tools.c \
 		src/loader/elf_tools.c \

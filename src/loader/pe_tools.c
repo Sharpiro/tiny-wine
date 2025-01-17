@@ -12,8 +12,6 @@
 #include <sys/types.h>
 
 #define MAX_ARRAY_LENGTH 1000
-#define ASM_X64_MOV32_IMMEDIATE 0xb8
-#define ASM_X64_CALL 0xff, 0xd0
 
 static bool find_import_entry(
     const struct ImportDirectoryEntry *dir_entries,
@@ -192,7 +190,6 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
                 .value = value,
                 .lib_name = lib_name,
                 .import_name = import_name,
-                .is_variable = false,
             };
         }
     }
@@ -427,82 +424,6 @@ bool map_memory_regions_win(
                 tinyc_strerror(tinyc_errno)
             );
         }
-    }
-
-    return true;
-}
-
-typedef union {
-    uint8_t buffer[8];
-    uint64_t u64;
-} Converter;
-
-Converter convert(size_t x) {
-    return (Converter){.u64 = x};
-}
-
-bool map_import_address_table(
-    int32_t fd,
-    size_t iat_base,
-    size_t idata_base,
-    size_t image_base,
-    struct ImportAddressEntry *import_address_table,
-    size_t import_address_table_len,
-    size_t dynamic_callback_windows,
-    size_t *iat_runtime_base
-) {
-    if (dynamic_callback_windows > UINT32_MAX) {
-        BAIL("dynamic_callback_windows location exceeds 32 bits");
-    }
-
-    *iat_runtime_base = iat_base + idata_base;
-    struct MemoryRegion iat_region = {
-        .start = *iat_runtime_base,
-        .end = iat_base + idata_base + 0x1000,
-        .is_direct_file_map = false,
-        .file_offset = 0,
-        .file_size = 0,
-        .permissions = 4 | 2 | 1,
-    };
-    if (!map_memory_regions(fd, &iat_region, 1)) {
-        EXIT("loader map memory regions failed\n");
-    }
-
-    for (size_t i = 0; i < import_address_table_len; i++) {
-        struct ImportAddressEntry *current_entry = &import_address_table[i];
-        size_t *iat_entry = (size_t *)(image_base + current_entry->key);
-        size_t iat_entry_init = *iat_entry;
-        if (iat_entry_init == 0) {
-            LOADER_LOG("WARNING: IAT %x is 0\n", iat_entry);
-            continue;
-        }
-
-        // @todo: find variable size
-        // @todo: init .data value
-        if (current_entry->is_variable) {
-            // @todo: find variable address
-            // size_t *dynamic_lib_variable = (size_t *)0x3749a5000;
-            size_t *dynamic_lib_variable = (size_t *)0x3749a2000;
-            // *dynamic_lib_variable = 0;
-            *iat_entry = (size_t)dynamic_lib_variable;
-            continue;
-        }
-
-        size_t *entry_value = (size_t *)(iat_base + iat_entry_init);
-        *iat_entry = (size_t)entry_value;
-
-        Converter dyn_callback_converter = convert(dynamic_callback_windows);
-        const uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
-            ASM_X64_MOV32_IMMEDIATE,
-            dyn_callback_converter.buffer[0],
-            dyn_callback_converter.buffer[1],
-            dyn_callback_converter.buffer[2],
-            dyn_callback_converter.buffer[3],
-            ASM_X64_CALL,
-        };
-
-        memcpy(entry_value, trampoline_code, sizeof(trampoline_code));
-        LOADER_LOG("IAT: %x, %x, %x\n", iat_entry, iat_entry_init, entry_value);
     }
 
     return true;

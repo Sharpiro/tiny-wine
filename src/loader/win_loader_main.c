@@ -3,6 +3,7 @@
 #include "elf_tools.h"
 #include "loader_lib.h"
 #include "memory_map.h"
+#include "win_loader_lib.h"
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -10,7 +11,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-CREATE_LIST_STRUCT(WinRuntimeObject)
+// CREATE_LIST_STRUCT(WinRuntimeObject)
 
 // @todo: hard-coding this may cause random program failures due to ASLR etc.
 // @todo: need smarter way of setting up IAT regions that don't conflict b/w
@@ -21,8 +22,8 @@ CREATE_LIST_STRUCT(WinRuntimeObject)
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
-size_t current_iat_base = IAT_BASE_START;
-size_t current_iat_offset = 0;
+size_t current_runtime_iat_base = IAT_BASE_START;
+size_t current_runtime_iat_offset = 0;
 size_t got_lib_dyn_offset_table[100] = {};
 
 static void run_asm(
@@ -564,6 +565,22 @@ static bool initialize_dynamic_data(
 
         /* Map Import Address Table */
 
+        RuntimeImportAddressEntryList runtime_import_table = {
+            .allocator = loader_malloc_arena,
+        };
+        // @todo: move to post-process since no shared libs are available yet?
+        if (!get_runtime_import_address_table(
+                shared_lib_pe.import_address_table,
+                shared_lib_pe.import_address_table_len,
+                // &shared_libraries,
+                NULL,
+                &runtime_import_table,
+                shared_lib_image_base,
+                current_runtime_iat_base
+            )) {
+            EXIT("get_runtime_import_address_table failed\n");
+        }
+
         size_t iat_runtime_base = 0;
         size_t iat_runtime_offset = 0;
         if (shared_lib_pe.import_address_table_len) {
@@ -575,17 +592,15 @@ static bool initialize_dynamic_data(
                 );
             map_import_address_table(
                 shared_lib_file,
-                current_iat_base,
+                current_runtime_iat_base,
                 idata_header->base_address,
-                shared_lib_image_base,
-                shared_lib_pe.import_address_table,
-                shared_lib_pe.import_address_table_len,
+                &runtime_import_table,
                 (size_t)dynamic_callback_windows,
                 &iat_runtime_base
             );
-            iat_runtime_offset = current_iat_offset;
-            current_iat_base += IAT_INCREMENT;
-            current_iat_offset += IAT_INCREMENT;
+            iat_runtime_offset = current_runtime_iat_offset;
+            current_runtime_iat_base += IAT_INCREMENT;
+            current_runtime_iat_offset += IAT_INCREMENT;
         }
 
         // @todo: lib bss
@@ -686,55 +701,63 @@ int main(int argc, char **argv) {
         EXIT("initialize_dynamic_data failed\n");
     }
 
-    // @todo: find library ref
-    /* Detect external variables */
+    // for (size_t i = 0; i < pe_exe.import_address_table_len; i++) {
+    //     struct ImportAddressEntry *current_import =
+    //         &pe_exe.import_address_table[i];
+    //     if (current_import->value == 0) {
+    //         continue;
+    //     }
 
-    for (size_t i = 0; i < pe_exe.import_address_table_len; i++) {
-        struct ImportAddressEntry *current_import =
-            &pe_exe.import_address_table[i];
-        if (current_import->value == 0) {
-            continue;
-        }
+    //     const struct WinRuntimeObject *runtime_obj = find_runtime_object(
+    //         shared_libraries.data,
+    //         shared_libraries.length,
+    //         current_import->lib_name
+    //     );
+    //     if (runtime_obj == NULL) {
+    //         EXIT("expected runtime object '%s'\n", current_import->lib_name);
+    //     }
 
-        const struct WinRuntimeObject *runtime_obj = find_runtime_object(
-            shared_libraries.data,
-            shared_libraries.length,
-            current_import->lib_name
-        );
-        if (runtime_obj == NULL) {
-            EXIT("expected runtime object '%s'\n", current_import->lib_name);
-        }
+    //     const struct WinSymbol *symbol = find_runtime_symbol(
+    //         runtime_obj->pe_data.symbols,
+    //         runtime_obj->pe_data.symbols_len,
+    //         current_import->import_name
+    //     );
+    //     if (symbol == NULL) {
+    //         EXIT("expected symbol '%s'\n", current_import->import_name);
+    //     }
+    //     if (symbol->type == SYMBOL_TYPE_FUNCTION) {
+    //         continue;
+    //     }
+    //     if (symbol->storage_class != SYMBOL_CLASS_EXTERNAL) {
+    //         EXIT("unsupported storage class '%x'", symbol->storage_class);
+    //     }
 
-        const struct WinSymbol *symbol = find_runtime_symbol(
-            runtime_obj->pe_data.symbols,
-            runtime_obj->pe_data.symbols_len,
-            current_import->import_name
-        );
-        if (symbol == NULL) {
-            EXIT("expected symbol '%s'\n", current_import->import_name);
-        }
-        if (symbol->type == SYMBOL_TYPE_FUNCTION) {
-            continue;
-        }
-        // if (symbol->storage_class == SYMBOL_CLASS_STATIC) {
-        //     EXIT("unsupported storage class 'static'");
-        // }
-        if (symbol->storage_class != SYMBOL_CLASS_EXTERNAL) {
-            EXIT("unsupported storage class '%x'", symbol->storage_class);
-        }
+    //     // current_import->is_variable = true;
 
-        current_import->is_variable = true;
+    //     // @todo: find symbol ref
+    //     LOADER_LOG(
+    //         "VARIABLE ENTRY: %x:%x %s %s %x %x\n",
+    //         current_import->key,
+    //         current_import->value,
+    //         current_import->lib_name,
+    //         current_import->import_name,
+    //         (size_t)symbol->type,
+    //         (size_t)symbol->storage_class
+    //     );
+    // }
 
-        // @todo: find symbol ref
-        LOADER_LOG(
-            "VARIABLE ENTRY: %x:%x %s %s %x %x\n",
-            current_import->key,
-            current_import->value,
-            current_import->lib_name,
-            current_import->import_name,
-            (size_t)symbol->type,
-            (size_t)symbol->storage_class
-        );
+    RuntimeImportAddressEntryList runtime_import_table = {
+        .allocator = loader_malloc_arena,
+    };
+    if (!get_runtime_import_address_table(
+            pe_exe.import_address_table,
+            pe_exe.import_address_table_len,
+            &shared_libraries,
+            &runtime_import_table,
+            image_base,
+            current_runtime_iat_base
+        )) {
+        EXIT("get_runtime_import_address_table failed\n");
     }
 
     /* Map Import Address Table */
@@ -747,17 +770,15 @@ int main(int argc, char **argv) {
         );
         map_import_address_table(
             fd,
-            current_iat_base,
+            current_runtime_iat_base,
             idata_header->base_address,
-            image_base,
-            pe_exe.import_address_table,
-            pe_exe.import_address_table_len,
+            &runtime_import_table,
             (size_t)dynamic_callback_windows,
             &iat_runtime_base
         );
-        iat_runtime_offset = current_iat_offset;
-        current_iat_base += IAT_INCREMENT;
-        current_iat_offset += IAT_INCREMENT;
+        iat_runtime_offset = current_runtime_iat_offset;
+        current_runtime_iat_base += IAT_INCREMENT;
+        current_runtime_iat_offset += IAT_INCREMENT;
     }
 
     /* Init .bss */
