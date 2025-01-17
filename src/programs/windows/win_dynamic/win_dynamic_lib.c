@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-int32_t lib_var_bss = 0;
+int32_t lib_var_bss = 0x00;
 
 int32_t lib_var_data = 0x42;
 

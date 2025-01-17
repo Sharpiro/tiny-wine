@@ -572,11 +572,11 @@ static bool initialize_dynamic_data(
         if (!get_runtime_import_address_table(
                 shared_lib_pe.import_address_table,
                 shared_lib_pe.import_address_table_len,
-                // &shared_libraries,
                 NULL,
                 &runtime_import_table,
                 shared_lib_image_base,
-                current_runtime_iat_base
+                current_runtime_iat_base,
+                shared_lib_pe.section_headers
             )) {
             EXIT("get_runtime_import_address_table failed\n");
         }
@@ -603,17 +603,18 @@ static bool initialize_dynamic_data(
             current_runtime_iat_offset += IAT_INCREMENT;
         }
 
-        // @todo: lib bss
         /* Init .bss */
 
-        // const struct WinSectionHeader *bss_header = find_win_section_header(
-        //     pe_exe.section_headers, pe_exe.section_headers_len, ".bss"
-        // );
-        // if (bss_header != NULL) {
-        //     uint8_t *bss_region =
-        //         (uint8_t *)(image_base + bss_header->base_address);
-        //     memset(bss_region, 0, bss_header->virtual_size);
-        // }
+        const struct WinSectionHeader *bss_header = find_win_section_header(
+            shared_lib_pe.section_headers,
+            shared_lib_pe.section_headers_len,
+            ".bss"
+        );
+        if (bss_header != NULL) {
+            uint8_t *bss_region =
+                (uint8_t *)(shared_lib_image_base + bss_header->base_address);
+            memset(bss_region, 0, bss_header->virtual_size);
+        }
 
         struct WinRuntimeObject shared_lib = {
             .name = dir_entry->lib_name,
@@ -755,7 +756,8 @@ int main(int argc, char **argv) {
             &shared_libraries,
             &runtime_import_table,
             image_base,
-            current_runtime_iat_base
+            current_runtime_iat_base,
+            pe_exe.section_headers
         )) {
         EXIT("get_runtime_import_address_table failed\n");
     }
