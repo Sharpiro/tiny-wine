@@ -36,8 +36,8 @@
         type##List *dest, type##List *src                                      \
     ) {                                                                        \
         for (size_t i = 0; i < src->length; i++) {                             \
-            type *runtime_symbol = &src->data[i];                              \
-            type##List_add(dest, *runtime_symbol);                             \
+            type *item = &src->data[i];                                        \
+            type##List_add(dest, *item);                                       \
         }                                                                      \
         return false;                                                          \
     }

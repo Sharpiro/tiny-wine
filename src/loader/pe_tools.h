@@ -157,7 +157,7 @@ struct RawWinSymbol {
     uint8_t auxillary_symbols_len;
 } __attribute__((packed));
 
-struct WinSymbol {
+typedef struct WinSymbol {
     char *name;
     int32_t value;
     uint16_t section_number;
@@ -165,7 +165,7 @@ struct WinSymbol {
     uint8_t storage_class;
     uint8_t auxillary_symbols_len;
     size_t raw_index;
-};
+} WinSymbol;
 
 #define SYMBOL_TYPE_FUNCTION 0x20
 #define SYMBOL_CLASS_EXTERNAL 0x02
@@ -213,14 +213,4 @@ const struct WinSectionHeader *find_win_section_header(
 
 bool map_memory_regions_win(
     int32_t fd, const struct MemoryRegion *regions, size_t regions_len
-);
-
-const struct WinRuntimeObject *find_runtime_object(
-    const struct WinRuntimeObject *runtime_objects,
-    size_t runtime_objects_len,
-    const char *name
-);
-
-const struct WinSymbol *find_runtime_symbol(
-    const struct WinSymbol *symbols, size_t symbols_len, const char *name
 );

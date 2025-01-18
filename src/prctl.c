@@ -57,7 +57,6 @@ void init_prctl(void) {
 }
 
 static int dl_iterate_phdr_callback(struct dl_phdr_info *info, size_t, void *) {
-    // @todo: not portable
     if (strcmp(info->dlpi_name, "/lib64/libc.so.6") != 0) {
         return 0;
     }
@@ -114,7 +113,6 @@ static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
         fprintf(stderr, "unexpected syscall");
     }
 
-    // @todo: doesn't handle stack vars
     int64_t result = syscall(rax, rdi, rsi, rdx, rcx, r8, r9);
     if (LOG_SIGSYS) {
         printf("\nresult: %jd\n", result);

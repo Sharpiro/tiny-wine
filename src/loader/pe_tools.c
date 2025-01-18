@@ -359,33 +359,6 @@ const struct WinSectionHeader *find_win_section_header(
     return NULL;
 }
 
-// @todo: macrotize?
-const struct WinRuntimeObject *find_runtime_object(
-    const struct WinRuntimeObject *runtime_objects,
-    size_t runtime_objects_len,
-    const char *name
-) {
-    for (size_t i = 0; i < runtime_objects_len; i++) {
-        const struct WinRuntimeObject *curr_obj = &runtime_objects[i];
-        if (tiny_c_strcmp(curr_obj->name, name) == 0) {
-            return curr_obj;
-        }
-    }
-    return NULL;
-}
-
-const struct WinSymbol *find_runtime_symbol(
-    const struct WinSymbol *symbols, size_t symbols_len, const char *name
-) {
-    for (size_t i = 0; i < symbols_len; i++) {
-        const struct WinSymbol *curr_symbol = &symbols[i];
-        if (tiny_c_strcmp(curr_symbol->name, name) == 0) {
-            return curr_symbol;
-        }
-    }
-    return NULL;
-}
-
 bool map_memory_regions_win(
     int32_t fd, const struct MemoryRegion *regions, size_t regions_len
 ) {

@@ -76,11 +76,14 @@ typedef struct WinRuntimeObject {
     struct PeData pe_data;
     struct MemoryRegionsInfo memory_regions_info;
     WinRuntimeExportList function_exports;
-    size_t iat_runtime_base;
-    size_t iat_runtime_offset;
+    size_t runtime_iat_object_base;
+    size_t runtime_iat_section_base;
+    size_t runtime_iat_offset;
 } WinRuntimeObject;
 
 CREATE_LIST_STRUCT(WinRuntimeObject)
+
+CREATE_LIST_STRUCT(WinSymbol)
 
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,

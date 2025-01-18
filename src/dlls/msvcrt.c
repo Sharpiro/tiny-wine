@@ -159,7 +159,6 @@ static void fprintf_internal(
             print_items[print_items_index++] = print_item;
 
             struct PrintItem print_item_str = {
-                // @todo: out of bounds
                 .formatter = format[i + 1],
             };
             print_items[print_items_index++] = print_item_str;
