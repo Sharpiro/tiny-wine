@@ -129,7 +129,7 @@ bool map_import_address_table(
     size_t runtime_iat_region_base
 ) {
     if (dynamic_callback_windows > UINT32_MAX) {
-        BAIL("dynamic_callback_windows location exceeds 32 bits");
+        BAIL("dynamic_callback_windows location exceeds 32 bits\n");
     }
 
     struct MemoryRegion iat_region = {

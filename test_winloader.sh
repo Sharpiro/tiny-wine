@@ -16,19 +16,15 @@ exe_global_var_bss: 0x1
 exe_global_var_data: 0x42
 exe_global_var_data: 0x24
 
-&lib_var_bss: 0x3749a5000
 *get_lib_var_bss(): 0x0
 lib_var_bss: 0x0
 lib_var_bss: 0x1
 lib_var_bss: 0x44
-get_lib_var_bss(): 0x3749a5000
 *get_lib_var_bss(): 0x44
-&lib_var_data: 0x3749a2000
 *get_lib_var_data(): 0x42
 lib_var_data: 0x42
 lib_var_data: 0x43
 lib_var_data: 0x44
-get_lib_var_data(): 0x3749a2000
 *get_lib_var_data(): 0x44
 EOF
 `

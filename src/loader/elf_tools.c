@@ -305,7 +305,7 @@ static bool get_dynamic_data(
             RELOCATION *elf_relocation = &elf_func_relocations[i];
 #ifdef AMD64
             if (elf_relocation->r_addend > 0) {
-                BAIL("Unsupported 64 bit function relocation addend");
+                BAIL("Unsupported 64 bit function relocation addend\n");
             }
 #endif
             size_t type = elf_relocation->r_info & 0xff;
@@ -351,12 +351,12 @@ static bool get_dynamic_data(
             RELOCATION *elf_relocation = &elf_var_relocations[i];
 #ifdef AMD64
             if (elf_relocation->r_addend > 0) {
-                BAIL("Unsupported 64 bit variable relocation addend");
+                BAIL("Unsupported 64 bit variable relocation addend\n");
             }
 #endif
             size_t type = elf_relocation->r_info & 0xff;
             if (type != R_X86_64_COPY && type != R_X86_64_GLOB_DAT) {
-                BAIL("Unsupported 64 bit variable relocation type");
+                BAIL("Unsupported 64 bit variable relocation type\n");
             }
             size_t symbol_index =
                 elf_relocation->r_info >> RELOCATION_SYMBOL_SHIFT_LENGTH;

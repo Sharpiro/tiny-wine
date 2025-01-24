@@ -51,22 +51,41 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t image_header_start = (size_t)dos_header->e_lfanew;
     struct WinPEHeader *winpe_header =
         (struct WinPEHeader *)(pe_header_buffer + image_header_start);
-    if (winpe_header->image_optional_header.magic != PE32_PLUS_MAGIC) {
+    bool is_64_bit =
+        winpe_header->image_optional_header.magic == PE32_PLUS_MAGIC;
+    if (!is_64_bit && winpe_header->image_optional_header.magic != PE32_MAGIC) {
         BAIL("Invalid PE header\n");
     }
-    if (winpe_header->image_optional_header.number_of_rva_and_sizes != 16) {
-        BAIL("unsupported data directory size");
+
+    size_t data_dir_len = is_64_bit
+        ? winpe_header->image_optional_header.data_directory_len
+        : winpe_header->image_optional_header_32.data_directory_len;
+    size_t image_base = is_64_bit
+        ? winpe_header->image_optional_header.image_base
+        : winpe_header->image_optional_header_32.image_base;
+    size_t entrypoint =
+        image_base + winpe_header->image_optional_header.address_of_entry_point;
+    struct ImageDataDirectory *import_address_table_dir = is_64_bit
+        ? &winpe_header->image_optional_header
+               .data_directory[DATA_DIR_IAT_INDEX]
+        : &winpe_header->image_optional_header_32
+               .data_directory[DATA_DIR_IAT_INDEX];
+    size_t section_headers_start = (size_t)dos_header->e_lfanew +
+        WIN_OPTIONAL_HEADER_START +
+        (is_64_bit ? sizeof(struct ImageOptionalHeader)
+                   : sizeof(struct ImageOptionalHeader32));
+
+    if (data_dir_len != 16) {
+        BAIL("unsupported data directory size\n");
     }
 
-    off_t section_headers_start =
-        (off_t)dos_header->e_lfanew + (off_t)sizeof(struct WinPEHeader);
     size_t section_headers_len =
         winpe_header->image_file_header.number_of_sections;
     size_t section_headers_size =
         sizeof(struct WinSectionHeader) * section_headers_len;
     struct WinSectionHeader *section_headers =
         loader_malloc_arena(section_headers_size);
-    tinyc_lseek(fd, section_headers_start, SEEK_SET);
+    tinyc_lseek(fd, (off_t)section_headers_start, SEEK_SET);
     tiny_c_read(fd, section_headers, section_headers_size);
 
     /* Import data section */
@@ -74,7 +93,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     const struct WinSectionHeader *idata_header =
         find_win_section_header(section_headers, section_headers_len, ".idata");
     if (idata_header == NULL) {
-        BAIL(".idata section not found");
+        BAIL(".idata section not found\n");
     }
 
     uint8_t *idata_buffer = loader_malloc_arena(idata_header->size_of_raw_data);
@@ -150,12 +169,6 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         };
     }
 
-    size_t image_base = winpe_header->image_optional_header.image_base;
-    size_t entrypoint =
-        image_base + winpe_header->image_optional_header.address_of_entry_point;
-
-    struct ImageDataDirectory *import_address_table_dir =
-        &winpe_header->image_optional_header.data_directory[DATA_DIR_IAT_INDEX];
     size_t iat_len = import_address_table_dir->size == 0
         ? import_address_table_dir->size
         : import_address_table_dir->size / sizeof(size_t) - 1;

@@ -52,14 +52,15 @@ struct ImageDataDirectory {
 #define PE32_PLUS_MAGIC 0x020b
 
 struct ImageOptionalHeader {
-    uint16_t magic;                          // Identifies PE32 or PE32+
-    uint8_t major_linker_version;            // Linker version
-    uint8_t minor_linker_version;            // Linker version
-    uint32_t size_of_code;                   // Size of .text section
-    uint32_t size_of_initialized_data;       // Size of initialized data
-    uint32_t size_of_uninitialized_data;     // Size of uninitialized data
-    uint32_t address_of_entry_point;         // RVA of entry point
-    uint32_t base_of_code;                   // RVA of code section
+    uint16_t magic;                      // Identifies PE32 or PE32+
+    uint8_t major_linker_version;        // Linker version
+    uint8_t minor_linker_version;        // Linker version
+    uint32_t size_of_code;               // Size of .text section
+    uint32_t size_of_initialized_data;   // Size of initialized data
+    uint32_t size_of_uninitialized_data; // Size of uninitialized data
+    uint32_t address_of_entry_point;     // RVA of entry point
+    uint32_t base_of_code;               // RVA of code section
+    // @todo: 32/64 diff starts here
     uint64_t image_base;                     // Preferred load address
     uint32_t section_alignment;              // Alignment of sections in memory
     uint32_t file_alignment;                 // Alignment of sections in file
@@ -69,27 +70,67 @@ struct ImageOptionalHeader {
     uint16_t minor_image_version;
     uint16_t major_subsystem_version; // Subsystem version
     uint16_t minor_subsystem_version;
-    uint32_t win32_version_value;     // Reserved, should be 0
-    uint32_t size_of_image;           // Total image size
-    uint32_t size_of_headers;         // Combined size of headers
-    uint32_t checksum;                // Checksum of the image
-    uint16_t subsystem;               // Subsystem (e.g., GUI, Console)
-    uint16_t dll_characteristics;     // DLL characteristics flags
-    uint64_t size_of_stack_reserve;   // Stack reserve size
-    uint64_t size_of_stack_commit;    // Stack commit size
-    uint64_t size_of_heap_reserve;    // Heap reserve size
-    uint64_t size_of_heap_commit;     // Heap commit size
-    uint32_t loader_flags;            // Loader flags
-    uint32_t number_of_rva_and_sizes; // Number of data directory entries
+    uint32_t win32_version_value;   // Reserved, should be 0
+    uint32_t size_of_image;         // Total image size
+    uint32_t size_of_headers;       // Combined size of headers
+    uint32_t checksum;              // Checksum of the image
+    uint16_t subsystem;             // Subsystem (e.g., GUI, Console)
+    uint16_t dll_characteristics;   // DLL characteristics flags
+    uint64_t size_of_stack_reserve; // Stack reserve size
+    uint64_t size_of_stack_commit;  // Stack commit size
+    uint64_t size_of_heap_reserve;  // Heap reserve size
+    uint64_t size_of_heap_commit;   // Heap commit size
+    uint32_t loader_flags;          // Loader flags
+    uint32_t data_directory_len;    // Number of data directory entries
     struct ImageDataDirectory data_directory[16]; // Array of data directories
 };
+
+struct ImageOptionalHeader32 {
+    uint16_t magic;                      // Identifies PE32 or PE32+
+    uint8_t major_linker_version;        // Linker version
+    uint8_t minor_linker_version;        // Linker version
+    uint32_t size_of_code;               // Size of .text section
+    uint32_t size_of_initialized_data;   // Size of initialized data
+    uint32_t size_of_uninitialized_data; // Size of uninitialized data
+    uint32_t address_of_entry_point;     // RVA of entry point
+    uint32_t base_of_code;               // RVA of code section
+    uint32_t base_of_data;
+    uint32_t image_base;                     // Preferred load address
+    uint32_t section_alignment;              // Alignment of sections in memory
+    uint32_t file_alignment;                 // Alignment of sections in file
+    uint16_t major_operating_system_version; // Minimum OS version
+    uint16_t minor_operating_system_version;
+    uint16_t major_image_version; // Image version
+    uint16_t minor_image_version;
+    uint16_t major_subsystem_version; // Subsystem version
+    uint16_t minor_subsystem_version;
+    uint32_t win32_version_value;   // Reserved, should be 0
+    uint32_t size_of_image;         // Total image size
+    uint32_t size_of_headers;       // Combined size of headers
+    uint32_t checksum;              // Checksum of the image
+    uint16_t subsystem;             // Subsystem (e.g., GUI, Console)
+    uint16_t dll_characteristics;   // DLL characteristics flags
+    uint32_t size_of_stack_reserve; // Stack reserve size
+    uint32_t size_of_stack_commit;  // Stack commit size
+    uint32_t size_of_heap_reserve;  // Heap reserve size
+    uint32_t size_of_heap_commit;   // Heap commit size
+    uint32_t loader_flags;          // Loader flags
+    uint32_t data_directory_len;    // Number of data directory entries
+    struct ImageDataDirectory data_directory[16]; // Array of data directories
+};
+
+#define WIN_OPTIONAL_HEADER_START                                              \
+    sizeof(uint32_t) + sizeof(struct ImageFileHeader)
 
 #define DATA_DIR_IAT_INDEX 12
 
 struct WinPEHeader {
     uint32_t signature;
     struct ImageFileHeader image_file_header;
-    struct ImageOptionalHeader image_optional_header;
+    union {
+        struct ImageOptionalHeader image_optional_header;
+        struct ImageOptionalHeader32 image_optional_header_32;
+    };
 };
 
 struct WinSectionHeader {

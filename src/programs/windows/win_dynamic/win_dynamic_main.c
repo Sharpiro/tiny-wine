@@ -19,24 +19,20 @@ int start_inferior() {
 
     printf("\n");
 
-    printf("&lib_var_bss: %x\n", &lib_var_bss);
     printf("*get_lib_var_bss(): %x\n", *get_lib_var_bss());
     printf("lib_var_bss: %x\n", lib_var_bss);
     lib_var_bss += 1;
     printf("lib_var_bss: %x\n", lib_var_bss);
     lib_var_bss = 0x44;
     printf("lib_var_bss: %x\n", lib_var_bss);
-    printf("get_lib_var_bss(): %x\n", get_lib_var_bss());
     printf("*get_lib_var_bss(): %x\n", *get_lib_var_bss());
 
-    printf("&lib_var_data: %x\n", &lib_var_data);
     printf("*get_lib_var_data(): %x\n", *get_lib_var_data());
     printf("lib_var_data: %x\n", lib_var_data);
     lib_var_data += 1;
     printf("lib_var_data: %x\n", lib_var_data);
     lib_var_data = 0x44;
     printf("lib_var_data: %x\n", lib_var_data);
-    printf("get_lib_var_data(): %x\n", get_lib_var_data());
     printf("*get_lib_var_data(): %x\n", *get_lib_var_data());
 
     return 0;

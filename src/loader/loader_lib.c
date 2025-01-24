@@ -55,7 +55,7 @@ bool find_runtime_relocation(
         BAIL("runtime_relocations was null\n");
     }
     if (runtime_relocation == NULL) {
-        BAIL("runtime_relocation was null");
+        BAIL("runtime_relocation was null\n");
     }
 
     for (size_t j = 0; j < runtime_relocations_len; j++) {
@@ -114,7 +114,7 @@ bool find_got_entry(
         BAIL("got_entries was null\n");
     }
     if (got_entry == NULL) {
-        BAIL("got_entry was null");
+        BAIL("got_entry was null\n");
     }
 
     for (size_t j = 0; j < got_entries_len; j++) {
