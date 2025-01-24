@@ -25,12 +25,15 @@ int main(int argc, char **argv) {
     size_t dos_magic = pe_data.dos_header->magic;
     size_t pe_magic = pe_data.winpe_header->image_optional_header.magic;
     char *class = pe_magic == PE32_MAGIC ? "PE32" : "PE32+";
+    bool is_64_bit = pe_magic == PE32_PLUS_MAGIC;
     size_t image_header_start = (size_t)pe_data.dos_header->e_lfanew;
     size_t section_headers_start =
         image_header_start + sizeof(struct WinPEHeader);
-    size_t image_base = pe_data.winpe_header->image_optional_header.image_base;
     size_t base_of_code =
         pe_data.winpe_header->image_optional_header.base_of_code;
+    size_t image_base = is_64_bit
+        ? pe_data.winpe_header->image_optional_header.image_base
+        : pe_data.winpe_header->image_optional_header_32.image_base;
 
     /* General information */
 
@@ -38,8 +41,8 @@ int main(int argc, char **argv) {
     tiny_c_printf("DOS magic: %s\n", (char *)&dos_magic);
     tiny_c_printf("PE magic: %x\n", pe_magic);
     tiny_c_printf("Class: %s\n", class);
-    tiny_c_printf("Image base: %x\n", image_base);
     tiny_c_printf("Base of code: %x\n", base_of_code);
+    tiny_c_printf("Image base: %x\n", image_base);
     tiny_c_printf("Entry point address: %x\n", pe_data.entrypoint);
     tiny_c_printf("Section headers start: %x\n", section_headers_start);
     tiny_c_printf("Section headers length: %d\n", pe_data.section_headers_len);

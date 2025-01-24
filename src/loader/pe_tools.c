@@ -106,7 +106,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             sizeof(struct ImportDirectoryEntry) * MAX_ARRAY_LENGTH
         );
 
-    size_t idata_base = idata_header->base_address;
+    const size_t idata_base = idata_header->base_address;
     size_t import_dir_entries_len = 0;
     for (size_t i = 0; true; i++) {
         struct ImportDirectoryRawEntry *raw_dir_entry = &raw_dir_entries[i];
@@ -128,15 +128,22 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             loader_malloc_arena(sizeof(struct ImportEntry) * MAX_ARRAY_LENGTH);
         size_t import_entries_len = 0;
         uint64_t *import_lookup_entries =
-            (uint64_t *)(idata_buffer +
-                         (raw_dir_entry->characteristics - idata_base));
+            (uint64_t *)(idata_buffer + raw_dir_entry->characteristics -
+                         idata_base);
         uint64_t *import_address_entries =
             (uint64_t *)(idata_buffer +
-                         (raw_dir_entry->import_address_table_offset -
-                          idata_base));
+                         raw_dir_entry->import_address_table_offset -
+                         idata_base);
+        uint32_t *import_lookup_entries_32 = (uint32_t *)import_lookup_entries;
+        uint32_t *import_address_entries_32 =
+            (uint32_t *)(import_address_entries);
         for (size_t j = 0; true; j++) {
-            uint64_t import_lookup_entry = import_lookup_entries[j];
-            uint64_t import_address_entry = import_address_entries[j];
+            size_t import_lookup_entry = is_64_bit
+                ? import_lookup_entries[j]
+                : import_lookup_entries_32[j];
+            size_t import_address_entry = is_64_bit
+                ? import_address_entries[j]
+                : import_address_entries_32[j];
             if (j == MAX_ARRAY_LENGTH) {
                 BAIL("unsupported array size\n");
             }
