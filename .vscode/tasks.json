@@ -7,6 +7,11 @@
       "command": "make clean && CFLAGS='-DVERBOSE' make"
     },
     {
+      "label": "build_win",
+      "type": "shell",
+      "command": "make clean && CFLAGS='-DVERBOSE' make windows"
+    },
+    {
       "label": "build_unit_test",
       "type": "shell",
       "dependsOn": ["build"],

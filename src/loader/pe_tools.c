@@ -90,23 +90,37 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
 
     /* Import data section */
 
-    const struct WinSectionHeader *idata_header =
-        find_win_section_header(section_headers, section_headers_len, ".idata");
-    if (idata_header == NULL) {
-        BAIL(".idata section not found\n");
-    }
-
-    uint8_t *idata_buffer = loader_malloc_arena(idata_header->size_of_raw_data);
-    tinyc_lseek(fd, idata_header->pointer_to_raw_data, SEEK_SET);
-    tiny_c_read(fd, idata_buffer, idata_header->size_of_raw_data);
+    // @todo: import tables can be ANYWHERE LOL
+    struct ImageDataDirectory import_dir =
+        winpe_header->image_optional_header_32.data_directory[12];
     struct ImportDirectoryRawEntry *raw_dir_entries =
-        (struct ImportDirectoryRawEntry *)idata_buffer;
+        loader_malloc_arena(import_dir.size);
+    size_t raw_dir_entries_len =
+        import_dir.size / sizeof(struct ImportDirectoryRawEntry);
+    tinyc_lseek(fd, import_dir.virtual_address, SEEK_SET);
+    tiny_c_read(fd, raw_dir_entries, import_dir.size);
+
+    // const struct WinSectionHeader *idata_header =
+    //     find_win_section_header(section_headers, section_headers_len,
+    //     ".idata");
+    // if (idata_header == NULL) {
+    //     BAIL(".idata section not found\n");
+    // }
+
+    uint8_t *idata_buffer = NULL;
+    // uint8_t *idata_buffer =
+    // loader_malloc_arena(idata_header->size_of_raw_data); tinyc_lseek(fd,
+    // idata_header->pointer_to_raw_data, SEEK_SET); tiny_c_read(fd,
+    // idata_buffer, idata_header->size_of_raw_data); struct
+    // ImportDirectoryRawEntry *raw_dir_entries =
+    //     (struct ImportDirectoryRawEntry *)idata_buffer;
     struct ImportDirectoryEntry *import_dir_entries =
         (struct ImportDirectoryEntry *)loader_malloc_arena(
             sizeof(struct ImportDirectoryEntry) * MAX_ARRAY_LENGTH
         );
 
-    const size_t idata_base = idata_header->base_address;
+    // const size_t idata_base = idata_header->base_address;
+    const size_t idata_base = 0;
     size_t import_dir_entries_len = 0;
     for (size_t i = 0; true; i++) {
         struct ImportDirectoryRawEntry *raw_dir_entry = &raw_dir_entries[i];
