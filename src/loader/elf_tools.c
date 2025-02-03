@@ -203,7 +203,7 @@ static bool get_dynamic_data(
             struct GotEntry got_entry = {
                 .index = index,
                 .value = value,
-                .is_library_base_address = i == 1,
+                .is_library_virutal_base_address = i == 1,
                 .is_loader_callback = i == 2,
             };
             got_entries[i] = got_entry;
@@ -251,7 +251,7 @@ static bool get_dynamic_data(
             struct GotEntry got_entry = {
                 .index = index,
                 .value = value,
-                .is_library_base_address = i == 1,
+                .is_library_virutal_base_address = i == 1,
                 .is_loader_callback = i == 2,
             };
             got_plt_entries[i] = got_entry;

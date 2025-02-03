@@ -123,6 +123,7 @@ struct ImageOptionalHeader32 {
 #define WIN_OPTIONAL_HEADER_START                                              \
     sizeof(uint32_t) + sizeof(struct ImageFileHeader)
 
+#define DATA_DIR_IMPORT_DIR_INDEX 1
 #define DATA_DIR_IAT_INDEX 12
 
 struct WinPEHeader {
@@ -137,9 +138,10 @@ struct WinPEHeader {
 struct WinSectionHeader {
     uint8_t name[8];       // Section name (8 bytes)
     uint32_t virtual_size; // Total size of the section when loaded into memory
-    uint32_t base_address; // Address of the section relative to the image base
-    uint32_t size_of_raw_data;       // Size of the section in the file
-    uint32_t pointer_to_raw_data;    // File offset
+    uint32_t virtual_base_address;   // Address of the section relative to
+                                     // the image base
+    uint32_t file_size;              // Size of the section in the file
+    uint32_t file_offset;            // File offset
     uint32_t pointer_to_relocations; // File pointer to relocations (deprecated)
     uint32_t
         pointer_to_linenumbers;     // File pointer to line numbers (deprecated)
@@ -227,6 +229,7 @@ struct PeData {
     size_t entrypoint;
     struct WinSectionHeader *section_headers;
     size_t section_headers_len;
+    const char *import_section_name;
     struct ImportDirectoryEntry *import_dir_entries;
     size_t import_dir_entries_len;
     size_t import_address_table_offset;

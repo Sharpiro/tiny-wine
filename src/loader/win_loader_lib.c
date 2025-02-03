@@ -103,7 +103,7 @@ bool get_runtime_import_address_table(
                     );
                 }
                 runtime_import_value = runtime_obj_image_base +
-                    variable_section_header->base_address +
+                    variable_section_header->virtual_base_address +
                     (size_t)symbol->value;
             }
         }

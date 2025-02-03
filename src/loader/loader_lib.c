@@ -216,7 +216,7 @@ bool get_runtime_got(
         size_t lib_dynamic_offset = 0;
         if (elf_got_entry->is_loader_callback) {
             runtime_value = (size_t)dynamic_linker_callback_address;
-        } else if (elf_got_entry->is_library_base_address) {
+        } else if (elf_got_entry->is_library_virutal_base_address) {
             runtime_value = (size_t)got_lib_dyn_offset_table;
             lib_dynamic_offset = lib_dyn_offset;
         } else if (elf_got_entry->value == 0) {

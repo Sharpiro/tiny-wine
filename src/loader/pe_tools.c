@@ -53,6 +53,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         (struct WinPEHeader *)(pe_header_buffer + image_header_start);
     bool is_64_bit =
         winpe_header->image_optional_header.magic == PE32_PLUS_MAGIC;
+    size_t binary_word_size = is_64_bit ? 8 : 4;
     if (!is_64_bit && winpe_header->image_optional_header.magic != PE32_MAGIC) {
         BAIL("Invalid PE header\n");
     }
@@ -88,39 +89,41 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     tinyc_lseek(fd, (off_t)section_headers_start, SEEK_SET);
     tiny_c_read(fd, section_headers, section_headers_size);
 
-    /* Import data section */
+    /* Import Directory */
 
-    // @todo: import tables can be ANYWHERE LOL
-    struct ImageDataDirectory import_dir =
-        winpe_header->image_optional_header_32.data_directory[12];
+    struct ImageDataDirectory import_dir = is_64_bit
+        ? winpe_header->image_optional_header
+              .data_directory[DATA_DIR_IMPORT_DIR_INDEX]
+        : winpe_header->image_optional_header_32
+              .data_directory[DATA_DIR_IMPORT_DIR_INDEX];
+    struct WinSectionHeader *import_section = NULL;
+    for (ssize_t i = (ssize_t)section_headers_len - 1; i >= 0; i--) {
+        struct WinSectionHeader *curr_section = &section_headers[i];
+        if (import_dir.virtual_address >= curr_section->virtual_base_address) {
+            import_section = curr_section;
+            break;
+        }
+    }
+    if (import_section == NULL) {
+        BAIL("import section not found\n");
+    }
+
+    uint8_t *import_section_buffer =
+        loader_malloc_arena(import_section->file_size);
+
+    tinyc_lseek(fd, import_section->file_offset, SEEK_SET);
+    tiny_c_read(fd, import_section_buffer, import_section->file_size);
+
+    size_t import_dir_section_offset =
+        import_dir.virtual_address - import_section->virtual_base_address;
     struct ImportDirectoryRawEntry *raw_dir_entries =
-        loader_malloc_arena(import_dir.size);
-    size_t raw_dir_entries_len =
-        import_dir.size / sizeof(struct ImportDirectoryRawEntry);
-    tinyc_lseek(fd, import_dir.virtual_address, SEEK_SET);
-    tiny_c_read(fd, raw_dir_entries, import_dir.size);
-
-    // const struct WinSectionHeader *idata_header =
-    //     find_win_section_header(section_headers, section_headers_len,
-    //     ".idata");
-    // if (idata_header == NULL) {
-    //     BAIL(".idata section not found\n");
-    // }
-
-    uint8_t *idata_buffer = NULL;
-    // uint8_t *idata_buffer =
-    // loader_malloc_arena(idata_header->size_of_raw_data); tinyc_lseek(fd,
-    // idata_header->pointer_to_raw_data, SEEK_SET); tiny_c_read(fd,
-    // idata_buffer, idata_header->size_of_raw_data); struct
-    // ImportDirectoryRawEntry *raw_dir_entries =
-    //     (struct ImportDirectoryRawEntry *)idata_buffer;
+        (void *)(import_section_buffer + import_dir_section_offset);
     struct ImportDirectoryEntry *import_dir_entries =
         (struct ImportDirectoryEntry *)loader_malloc_arena(
             sizeof(struct ImportDirectoryEntry) * MAX_ARRAY_LENGTH
         );
 
-    // const size_t idata_base = idata_header->base_address;
-    const size_t idata_base = 0;
+    const size_t import_dir_base = import_section->virtual_base_address;
     size_t import_dir_entries_len = 0;
     for (size_t i = 0; true; i++) {
         struct ImportDirectoryRawEntry *raw_dir_entry = &raw_dir_entries[i];
@@ -135,19 +138,20 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
 
         import_dir_entries_len++;
 
-        size_t name_idata_offset = raw_dir_entry->name_offset - idata_base;
-        const char *lib_name = (char *)idata_buffer + name_idata_offset;
+        size_t name_idata_offset = raw_dir_entry->name_offset - import_dir_base;
+        const char *lib_name =
+            (char *)import_section_buffer + name_idata_offset;
 
         struct ImportEntry *import_entries =
             loader_malloc_arena(sizeof(struct ImportEntry) * MAX_ARRAY_LENGTH);
         size_t import_entries_len = 0;
         uint64_t *import_lookup_entries =
-            (uint64_t *)(idata_buffer + raw_dir_entry->characteristics -
-                         idata_base);
+            (uint64_t *)(import_section_buffer +
+                         raw_dir_entry->characteristics - import_dir_base);
         uint64_t *import_address_entries =
-            (uint64_t *)(idata_buffer +
+            (uint64_t *)(import_section_buffer +
                          raw_dir_entry->import_address_table_offset -
-                         idata_base);
+                         import_dir_base);
         uint32_t *import_lookup_entries_32 = (uint32_t *)import_lookup_entries;
         uint32_t *import_address_entries_32 =
             (uint32_t *)(import_address_entries);
@@ -161,21 +165,25 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             if (j == MAX_ARRAY_LENGTH) {
                 BAIL("unsupported array size\n");
             }
-            if (tiny_c_mem_is_empty(&import_lookup_entry, sizeof(uint64_t))) {
+            if (tiny_c_mem_is_empty(&import_lookup_entry, binary_word_size)) {
                 break;
-            }
-            if (import_lookup_entry & 0x8000000000000000) {
-                BAIL("unsupported import table lookup by ordinal\n");
             }
 
             import_entries_len++;
 
-            const int NAME_ENTRY_OFFSET = 2;
+            const char *import_name = NULL;
+            size_t ordinal_mask = is_64_bit ? 0x8000000000000000 : 0x80000000;
+            size_t lookup_value = import_lookup_entry & ordinal_mask - 1;
+            if (import_lookup_entry & ordinal_mask) {
+                import_name = "<ordinal>";
+            } else {
+                const int NAME_ENTRY_OFFSET = 2;
+                size_t import_name_entry_offset =
+                    lookup_value - import_dir_base;
+                import_name = (char *)import_section_buffer +
+                    import_name_entry_offset + NAME_ENTRY_OFFSET;
+            }
 
-            size_t import_name_entry_offset =
-                (import_lookup_entry & 0x7fffffff) - idata_base;
-            const char *import_name = (char *)idata_buffer +
-                import_name_entry_offset + NAME_ENTRY_OFFSET;
             import_entries[j] = (struct ImportEntry){
                 .name = import_name,
                 .address = import_address_entry,
@@ -190,12 +198,14 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         };
     }
 
+    /** Import Address Table (IAT) */
+
     size_t iat_len = import_address_table_dir->size == 0
         ? import_address_table_dir->size
-        : import_address_table_dir->size / sizeof(size_t) - 1;
+        : import_address_table_dir->size / binary_word_size - 1;
 
     size_t iat_file_offset =
-        import_address_table_dir->virtual_address - idata_base;
+        import_address_table_dir->virtual_address - import_dir_base;
     size_t import_address_table_offset =
         import_address_table_dir->virtual_address;
 
@@ -203,10 +213,13 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (iat_len > 0) {
         import_address_table =
             loader_malloc_arena(sizeof(struct ImportAddressEntry) * iat_len);
-        size_t *iat_base = (size_t *)(idata_buffer + iat_file_offset);
+        uint64_t *iat_base =
+            (uint64_t *)(import_section_buffer + iat_file_offset);
+        uint32_t *iat_base_32 =
+            (uint32_t *)(import_section_buffer + iat_file_offset);
         for (size_t i = 0; i < iat_len; i++) {
-            size_t key = import_address_table_offset + i * sizeof(size_t);
-            size_t value = *(iat_base + i);
+            size_t key = import_address_table_offset + i * binary_word_size;
+            size_t value = is_64_bit ? *(iat_base + i) : *(iat_base_32 + i);
             const char *lib_name = NULL;
             const struct ImportEntry *import_entry;
             const char *import_name = NULL;
@@ -235,10 +248,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     struct ExportEntry *export_entries = NULL;
     size_t export_entries_len = 0;
     if (edata_header != NULL) {
-        uint8_t *edata_buffer =
-            loader_malloc_arena(edata_header->size_of_raw_data);
-        tinyc_lseek(fd, edata_header->pointer_to_raw_data, SEEK_SET);
-        tiny_c_read(fd, edata_buffer, edata_header->size_of_raw_data);
+        uint8_t *edata_buffer = loader_malloc_arena(edata_header->file_size);
+        tinyc_lseek(fd, edata_header->file_offset, SEEK_SET);
+        tiny_c_read(fd, edata_buffer, edata_header->file_size);
         struct ExportDirectoryRawEntry *export_directory =
             (struct ExportDirectoryRawEntry *)edata_buffer;
         if (export_directory->address_table_len !=
@@ -246,7 +258,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             BAIL("Unsupported address table data\n");
         }
 
-        size_t edata_base = edata_header->base_address;
+        size_t edata_base = edata_header->virtual_base_address;
         uint32_t *address_offsets =
             (uint32_t *)(edata_buffer +
                          export_directory->export_address_table_offset -
@@ -322,6 +334,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .entrypoint = entrypoint,
         .section_headers = section_headers,
         .section_headers_len = section_headers_len,
+        .import_section_name = (const char *)import_section->name,
         .import_dir_entries = import_dir_entries,
         .import_dir_entries_len = import_dir_entries_len,
         .import_address_table_offset = import_address_table_offset,
@@ -359,11 +372,11 @@ bool get_memory_regions_info_win(
         size_t permissions = read | write | execute;
 
         memory_regions[i] = (struct MemoryRegion){
-            .start = address_offset + program_header->base_address,
-            .end =
-                address_offset + program_header->base_address + MAX_REGION_SIZE,
+            .start = address_offset + program_header->virtual_base_address,
+            .end = address_offset + program_header->virtual_base_address +
+                MAX_REGION_SIZE,
             .is_direct_file_map = false,
-            .file_offset = program_header->pointer_to_raw_data,
+            .file_offset = program_header->file_offset,
             .file_size = program_header->virtual_size,
             .permissions = permissions,
         };

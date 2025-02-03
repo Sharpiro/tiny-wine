@@ -214,15 +214,15 @@ static void get_memory_regions_win_test(void) {
         (struct WinSectionHeader){
             .name = ".text",
             .virtual_size = 0x48,
-            .base_address = 0x1000,
-            .pointer_to_raw_data = 0x400,
+            .virtual_base_address = 0x1000,
+            .file_offset = 0x400,
             .characteristics = 0x60000020,
         },
         (struct WinSectionHeader){
             .name = ".pdata",
             .virtual_size = 0x0c,
-            .base_address = 0x2000,
-            .pointer_to_raw_data = 0x600,
+            .virtual_base_address = 0x2000,
+            .file_offset = 0x600,
             .characteristics = 0x40000040,
         }
     };

@@ -541,8 +541,8 @@ static bool load_dlls(
             ".bss"
         );
         if (bss_header != NULL) {
-            uint8_t *bss_region =
-                (uint8_t *)(shared_lib_image_base + bss_header->base_address);
+            uint8_t *bss_region = (uint8_t *)(shared_lib_image_base +
+                                              bss_header->virtual_base_address);
             memset(bss_region, 0, bss_header->virtual_size);
         }
 
@@ -589,7 +589,7 @@ static bool load_dlls(
                 );
             runtime_iat_region_base = curr_global_runtime_iat_base;
             runtime_iat_base =
-                runtime_iat_region_base + idata_header->base_address;
+                runtime_iat_region_base + idata_header->virtual_base_address;
 
             runtime_iat_offset = curr_global_runtime_iat_offset;
             curr_global_runtime_iat_base += IAT_INCREMENT;
@@ -706,7 +706,7 @@ int main(int argc, char **argv) {
     );
     if (bss_header != NULL) {
         uint8_t *bss_region =
-            (uint8_t *)(image_base + bss_header->base_address);
+            (uint8_t *)(image_base + bss_header->virtual_base_address);
         memset(bss_region, 0, bss_header->virtual_size);
     }
 
@@ -736,7 +736,8 @@ int main(int argc, char **argv) {
             pe_exe.section_headers, pe_exe.section_headers_len, ".idata"
         );
         runtime_iat_region_base = curr_global_runtime_iat_base;
-        runtime_iat_base = runtime_iat_region_base + idata_header->base_address;
+        runtime_iat_base =
+            runtime_iat_region_base + idata_header->virtual_base_address;
 
         runtime_iat_offset = curr_global_runtime_iat_offset;
         curr_global_runtime_iat_base += IAT_INCREMENT;
