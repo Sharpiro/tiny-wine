@@ -53,30 +53,60 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         (struct WinPEHeader *)(pe_header_buffer + image_header_start);
     bool is_64_bit =
         winpe_header->image_optional_header.magic == PE32_PLUS_MAGIC;
-    size_t binary_word_size = is_64_bit ? 8 : 4;
-    if (!is_64_bit && winpe_header->image_optional_header.magic != PE32_MAGIC) {
+    size_t pe_word_size = is_64_bit ? 8 : 4;
+    struct ImageOptionalHeader image_optional_header;
+    if (is_64_bit) {
+        struct ImageOptionalHeader64 *optional_header =
+            &winpe_header->image_optional_header;
+        image_optional_header = (struct ImageOptionalHeader){
+            .magic = optional_header->magic,
+            .address_of_entry_point = optional_header->address_of_entry_point,
+            .base_of_code = optional_header->base_of_code,
+            .image_base = optional_header->image_base,
+            .data_directory_len = optional_header->data_directory_len,
+            .data_directory = {},
+            .image_optional_header_size = sizeof(*optional_header),
+        };
+        memcpy(
+            image_optional_header.data_directory,
+            optional_header->data_directory,
+            sizeof(struct ImageDataDirectory) *
+                optional_header->data_directory_len
+        );
+    } else {
+        struct ImageOptionalHeader32 *optional_header =
+            &winpe_header->image_optional_header_32;
+        image_optional_header = (struct ImageOptionalHeader){
+            .magic = optional_header->magic,
+            .address_of_entry_point = optional_header->address_of_entry_point,
+            .base_of_code = optional_header->base_of_code,
+            .image_base = optional_header->image_base,
+            .data_directory_len = optional_header->data_directory_len,
+            .data_directory = {},
+            .image_optional_header_size = sizeof(*optional_header),
+        };
+        memcpy(
+            image_optional_header.data_directory,
+            optional_header->data_directory,
+            sizeof(struct ImageDataDirectory) *
+                optional_header->data_directory_len
+        );
+    }
+    if (image_optional_header.magic != PE32_PLUS_MAGIC &&
+        image_optional_header.magic != PE32_MAGIC) {
         BAIL("Invalid PE header\n");
     }
 
-    size_t data_dir_len = is_64_bit
-        ? winpe_header->image_optional_header.data_directory_len
-        : winpe_header->image_optional_header_32.data_directory_len;
-    size_t image_base = is_64_bit
-        ? winpe_header->image_optional_header.image_base
-        : winpe_header->image_optional_header_32.image_base;
+    size_t image_base = image_optional_header.image_base;
     size_t entrypoint =
         image_base + winpe_header->image_optional_header.address_of_entry_point;
-    struct ImageDataDirectory *import_address_table_dir = is_64_bit
-        ? &winpe_header->image_optional_header
-               .data_directory[DATA_DIR_IAT_INDEX]
-        : &winpe_header->image_optional_header_32
-               .data_directory[DATA_DIR_IAT_INDEX];
+    struct ImageDataDirectory *import_address_table_dir =
+        &image_optional_header.data_directory[DATA_DIR_IAT_INDEX];
     size_t section_headers_start = (size_t)dos_header->e_lfanew +
         WIN_OPTIONAL_HEADER_START +
-        (is_64_bit ? sizeof(struct ImageOptionalHeader)
-                   : sizeof(struct ImageOptionalHeader32));
+        image_optional_header.image_optional_header_size;
 
-    if (data_dir_len != 16) {
+    if (image_optional_header.data_directory_len != 16) {
         BAIL("unsupported data directory size\n");
     }
 
@@ -91,15 +121,12 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
 
     /* Import Directory */
 
-    struct ImageDataDirectory import_dir = is_64_bit
-        ? winpe_header->image_optional_header
-              .data_directory[DATA_DIR_IMPORT_DIR_INDEX]
-        : winpe_header->image_optional_header_32
-              .data_directory[DATA_DIR_IMPORT_DIR_INDEX];
+    struct ImageDataDirectory *import_dir =
+        &image_optional_header.data_directory[DATA_DIR_IMPORT_DIR_INDEX];
     struct WinSectionHeader *import_section = NULL;
     for (ssize_t i = (ssize_t)section_headers_len - 1; i >= 0; i--) {
         struct WinSectionHeader *curr_section = &section_headers[i];
-        if (import_dir.virtual_address >= curr_section->virtual_base_address) {
+        if (import_dir->virtual_address >= curr_section->virtual_base_address) {
             import_section = curr_section;
             break;
         }
@@ -115,7 +142,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     tiny_c_read(fd, import_section_buffer, import_section->file_size);
 
     size_t import_dir_section_offset =
-        import_dir.virtual_address - import_section->virtual_base_address;
+        import_dir->virtual_address - import_section->virtual_base_address;
     struct ImportDirectoryRawEntry *raw_dir_entries =
         (void *)(import_section_buffer + import_dir_section_offset);
     struct ImportDirectoryEntry *import_dir_entries =
@@ -145,39 +172,41 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         struct ImportEntry *import_entries =
             loader_malloc_arena(sizeof(struct ImportEntry) * MAX_ARRAY_LENGTH);
         size_t import_entries_len = 0;
-        uint64_t *import_lookup_entries =
-            (uint64_t *)(import_section_buffer +
-                         raw_dir_entry->characteristics - import_dir_base);
-        uint64_t *import_address_entries =
-            (uint64_t *)(import_section_buffer +
-                         raw_dir_entry->import_address_table_offset -
-                         import_dir_base);
-        uint32_t *import_lookup_entries_32 = (uint32_t *)import_lookup_entries;
-        uint32_t *import_address_entries_32 =
-            (uint32_t *)(import_address_entries);
+        uint8_t *import_lookup_entries = import_section_buffer +
+            raw_dir_entry->characteristics - import_dir_base;
+        uint8_t *import_address_entries = import_section_buffer +
+            raw_dir_entry->import_address_table_offset - import_dir_base;
         for (size_t j = 0; true; j++) {
-            size_t import_lookup_entry = is_64_bit
-                ? import_lookup_entries[j]
-                : import_lookup_entries_32[j];
-            size_t import_address_entry = is_64_bit
-                ? import_address_entries[j]
-                : import_address_entries_32[j];
             if (j == MAX_ARRAY_LENGTH) {
                 BAIL("unsupported array size\n");
             }
-            if (tiny_c_mem_is_empty(&import_lookup_entry, binary_word_size)) {
+
+            size_t import_lookup_entry = 0;
+            size_t import_address_entry = 0;
+            memcpy(
+                &import_lookup_entry,
+                import_lookup_entries + j * pe_word_size,
+                pe_word_size
+            );
+            memcpy(
+                &import_address_entry,
+                import_address_entries + j * pe_word_size,
+                pe_word_size
+            );
+
+            if (tiny_c_mem_is_empty(&import_lookup_entry, pe_word_size)) {
                 break;
             }
 
             import_entries_len++;
 
             const char *import_name = NULL;
-            size_t ordinal_mask = is_64_bit ? 0x8000000000000000 : 0x80000000;
-            size_t lookup_value = import_lookup_entry & ordinal_mask - 1;
+            size_t ordinal_mask = (uint32_t)0x8 << (pe_word_size * 8 - 4);
             if (import_lookup_entry & ordinal_mask) {
                 import_name = "<ordinal>";
             } else {
                 const int NAME_ENTRY_OFFSET = 2;
+                size_t lookup_value = import_lookup_entry & ordinal_mask - 1;
                 size_t import_name_entry_offset =
                     lookup_value - import_dir_base;
                 import_name = (char *)import_section_buffer +
@@ -202,7 +231,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
 
     size_t iat_len = import_address_table_dir->size == 0
         ? import_address_table_dir->size
-        : import_address_table_dir->size / binary_word_size - 1;
+        : import_address_table_dir->size / pe_word_size - 1;
 
     size_t iat_file_offset =
         import_address_table_dir->virtual_address - import_dir_base;
@@ -213,13 +242,12 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (iat_len > 0) {
         import_address_table =
             loader_malloc_arena(sizeof(struct ImportAddressEntry) * iat_len);
-        uint64_t *iat_base =
-            (uint64_t *)(import_section_buffer + iat_file_offset);
-        uint32_t *iat_base_32 =
-            (uint32_t *)(import_section_buffer + iat_file_offset);
+        uint8_t *iat_base = (import_section_buffer + iat_file_offset);
         for (size_t i = 0; i < iat_len; i++) {
-            size_t key = import_address_table_offset + i * binary_word_size;
-            size_t value = is_64_bit ? *(iat_base + i) : *(iat_base_32 + i);
+            size_t key = import_address_table_offset + i * pe_word_size;
+            size_t value;
+            memcpy(&value, iat_base + i * pe_word_size, pe_word_size);
+
             const char *lib_name = NULL;
             const struct ImportEntry *import_entry;
             const char *import_name = NULL;

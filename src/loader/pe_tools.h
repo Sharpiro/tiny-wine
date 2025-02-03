@@ -51,7 +51,7 @@ struct ImageDataDirectory {
 #define PE32_MAGIC 0x010b
 #define PE32_PLUS_MAGIC 0x020b
 
-struct ImageOptionalHeader {
+struct ImageOptionalHeader64 {
     uint16_t magic;                      // Identifies PE32 or PE32+
     uint8_t major_linker_version;        // Linker version
     uint8_t minor_linker_version;        // Linker version
@@ -120,6 +120,16 @@ struct ImageOptionalHeader32 {
     struct ImageDataDirectory data_directory[16]; // Array of data directories
 };
 
+struct ImageOptionalHeader {
+    size_t magic;                  // Identifies PE32 or PE32+
+    size_t address_of_entry_point; // RVA of entry point
+    size_t base_of_code;           // RVA of code section
+    size_t image_base;             // Preferred load address
+    size_t data_directory_len;     // Number of data directory entries
+    struct ImageDataDirectory data_directory[16]; // Array of data directories
+    size_t image_optional_header_size;
+};
+
 #define WIN_OPTIONAL_HEADER_START                                              \
     sizeof(uint32_t) + sizeof(struct ImageFileHeader)
 
@@ -130,7 +140,7 @@ struct WinPEHeader {
     uint32_t signature;
     struct ImageFileHeader image_file_header;
     union {
-        struct ImageOptionalHeader image_optional_header;
+        struct ImageOptionalHeader64 image_optional_header;
         struct ImageOptionalHeader32 image_optional_header_32;
     };
 };
