@@ -148,31 +148,34 @@ __attribute__((naked)) static void swap_stack(void) {
 #define WORD_SIZE 8
 #define COPY_SIZE 9 * WORD_SIZE - WORD_SIZE
 
-    __asm__("pop r15\n"
+    __asm__(
+        /* Destination function address */
+        "pop r15\n"
 
-            /* Duplicate windows stack frame */
+        /* Duplicate windows stack frame */
 
-            "lea rax, [rsp + %[copy_size]]\n"
-            "lea rbx, [rsp]\n"
-            ".start:\n"
-            "cmp rax, rbx\n"
-            "jl .end\n"
-            "push [rax]\n"
-            "sub rax, %[word_size]\n"
-            "jmp .start\n"
-            ".end:\n"
+        "lea rax, [rsp + %[copy_size]]\n"
+        "lea rbx, [rsp]\n"
+        ".start:\n"
+        "cmp rax, rbx\n"
+        "jl .end\n"
+        "push [rax]\n"
+        "sub rax, %[word_size]\n"
+        "jmp .start\n"
+        ".end:\n"
 
-            /* Convert to linux stack frame */
+        /* Convert to linux stack frame */
 
-            "add rsp, 7 * %[word_size]\n"
-            "call r15\n"
+        "add rsp, 7 * %[word_size]\n"
+        "call r15\n"
 
-            /* Convert back to windows stack frame */
+        /* Convert back to windows stack frame */
 
-            "add rsp, 2 * %[word_size]\n"
-            "ret\n"
-            :
-            : [copy_size] "g"(COPY_SIZE), [word_size] "g"(WORD_SIZE));
+        "add rsp, 2 * %[word_size]\n"
+        "ret\n"
+        :
+        : [copy_size] "g"(COPY_SIZE), [word_size] "g"(WORD_SIZE)
+    );
 }
 
 static void dynamic_callback_windows(void) {
@@ -325,28 +328,28 @@ static void dynamic_callback_windows(void) {
     LOADER_LOG("Completed dynamic linking\n");
 
     if (is_lib_ntdll) {
-        __asm__(
-            "mov r14, %0\n"
-            "mov r15, %7\n"
-            "mov rdi, %1\n"
-            "mov rsi, %2\n"
-            "mov rdx, %3\n"
-            "mov rcx, %4\n"
-            "mov r8, %5\n"
-            "mov r9, %6\n"
-            "mov rsp, rbp\n"
-            "pop rbp\n"
-            "add rsp, 8\n"
-            "push r14\n"
-            "jmp r15\n" ::"r"(function_export.address),
-            "m"(p1),
-            "m"(p2),
-            "m"(p3),
-            "m"(p4),
-            "m"(p5),
-            "m"(p6),
-            "r"(swap_stack)
-        );
+        __asm__("mov r14, %0\n"
+                "mov r15, %7\n"
+                "mov rdi, %1\n"
+                "mov rsi, %2\n"
+                "mov rdx, %3\n"
+                "mov rcx, %4\n"
+                "mov r8, %5\n"
+                "mov r9, %6\n"
+                "mov rsp, rbp\n"
+                "pop rbp\n"
+                "add rsp, 8\n"
+                "push r14\n"
+                "jmp r15\n"
+                :
+                : "r"(function_export.address),
+                  "m"(p1),
+                  "m"(p2),
+                  "m"(p3),
+                  "m"(p4),
+                  "m"(p5),
+                  "m"(p6),
+                  "r"(swap_stack));
     } else {
         __asm__("mov r15, %0\n"
                 "mov rcx, %1\n"

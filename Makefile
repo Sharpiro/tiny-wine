@@ -16,23 +16,8 @@ WARNINGS = \
 	-Wno-format-pedantic
 
 all: \
-	libtinyc.a \
-	libtinyc.so \
-	libntdll.so \
-	libmsvcrt.so \
-	ntdll.dll \
-	msvcrt.dll \
-	loader \
-	winloader \
-	tools/readwin \
-	programs/linux/unit_test \
-	programs/linux/env \
-	programs/linux/string \
-	programs/linux/tinyfetch \
-	programs/linux/static_pie \
-	programs/linux/dynamic \
-	programs/windows/win_dynamic \
-	# programs/windows/win_dynamic_linux
+	linux \
+	windows
 
 linux: \
 	libtinyc.a \

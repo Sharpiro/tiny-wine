@@ -15,7 +15,7 @@
       "label": "build_unit_test",
       "type": "shell",
       "dependsOn": ["build"],
-      "command": "programs/linux/unit_test"
+      "command": "make programs/linux/unit_test"
     },
     {
       "label": "run",

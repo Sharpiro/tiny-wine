@@ -383,16 +383,14 @@ bool get_memory_regions_info_win(
     size_t address_offset,
     struct MemoryRegionsInfo *memory_regions_info
 ) {
-    const int MAX_REGION_SIZE = 0x1000;
-
     struct MemoryRegion *memory_regions =
         loader_malloc_arena(sizeof(struct MemoryRegion) * program_headers_len);
     for (size_t i = 0; i < program_headers_len; i++) {
         const struct WinSectionHeader *program_header = &program_headers[i];
-        if (program_header->virtual_size > MAX_REGION_SIZE) {
-            BAIL("unsupported region size %x\n", program_header->virtual_size);
-        }
-
+        const int REGION_ALIGN = 0x1000;
+        size_t virt_size = program_header->virtual_size;
+        size_t region_size =
+            (virt_size + REGION_ALIGN - 1) / REGION_ALIGN * REGION_ALIGN;
         size_t win_permissions = program_header->characteristics >> 28;
         size_t read = win_permissions & 4;
         size_t write = win_permissions & 8 ? 2 : 0;
@@ -402,7 +400,7 @@ bool get_memory_regions_info_win(
         memory_regions[i] = (struct MemoryRegion){
             .start = address_offset + program_header->virtual_base_address,
             .end = address_offset + program_header->virtual_base_address +
-                MAX_REGION_SIZE,
+                region_size,
             .is_direct_file_map = false,
             .file_offset = program_header->file_offset,
             .file_size = program_header->virtual_size,
