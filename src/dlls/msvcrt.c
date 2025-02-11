@@ -2,19 +2,27 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-// typedef __builtin_va_list __gnuc_va_list;
-// typedef __gnuc_va_list va_list;
-// #define va_start(ap, param) __builtin_va_start(ap, param)
-// #define va_end(ap) __builtin_va_end(ap)
-// #define va_arg(ap, type) __builtin_va_arg(ap, type)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
+#pragma clang diagnostic ignored "-Winvalid-noreturn"
+#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
+#pragma clang diagnostic ignored "-Wbuiltin-requires-header"
+
+/**
+ * Variables must be marked as exportable with -nostdlib.
+ * 'Some' functions require it as well.
+ * If you use it on one function in a file, you must use it on all.
+ */
+#if defined(_WIN32)
+#define EXPORTABLE __declspec(dllexport)
+#else
+#define EXPORTABLE
+#endif
 
 void DllMainCRTStartup(void) {
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
-
-size_t strlen(const char *data) {
+EXPORTABLE size_t strlen(const char *data) {
     if (data == NULL) {
         return 0;
     }
@@ -28,8 +36,6 @@ size_t strlen(const char *data) {
     }
     return len;
 }
-
-#pragma clang diagnostic pop
 
 static bool print_len(int32_t file_handle, const char *data, size_t length) {
     HANDLE win_handle;
@@ -67,13 +73,13 @@ static void print(int32_t file_handle, const char *data) {
     print_len(file_handle, data, str_len);
 }
 
-int32_t puts(const char *data) {
+EXPORTABLE int32_t puts(const char *data) {
     print(STDOUT, data);
     print(STDOUT, "\n");
     return 0;
 }
 
-double pow(double x, double y) {
+EXPORTABLE double pow(double x, double y) {
     double product = 1;
     for (size_t i = 0; i < (size_t)y; i++) {
         product *= x;
@@ -209,7 +215,7 @@ static void fprintf_internal(
     va_end(var_args);
 }
 
-int32_t printf(const char *format, ...) {
+EXPORTABLE int32_t printf(const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
     fprintf_internal(STDOUT, format, var_args);
@@ -217,14 +223,9 @@ int32_t printf(const char *format, ...) {
     return 0;
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winvalid-noreturn"
-
-void exit(int32_t exit_code) {
+EXPORTABLE void exit(int32_t exit_code) {
     NtTerminateProcess((HANDLE)-1, exit_code);
 }
-
-#pragma clang diagnostic pop
 
 size_t add_many_msvcrt(
     [[maybe_unused]] size_t one,
@@ -239,4 +240,100 @@ size_t add_many_msvcrt(
     size_t result =
         add_many_ntdll(one, two, three, four, five, six, seven, eight);
     return result;
+}
+
+EXPORTABLE void __C_specific_handler() {
+    printf("__C_specific_handler\n");
+}
+
+EXPORTABLE void __getmainargs() {
+    printf("__getmainargs\n");
+}
+
+EXPORTABLE void __initenv() {
+    printf("__initenv\n");
+}
+
+EXPORTABLE void __iob_func() {
+    printf("__iob_func\n");
+}
+
+EXPORTABLE void __lconv_init() {
+    printf("__lconv_init\n");
+}
+
+EXPORTABLE void __set_app_type() {
+    printf("__set_app_type\n");
+}
+
+EXPORTABLE void __setusermatherr() {
+    printf("__setusermatherr\n");
+}
+
+EXPORTABLE void _acmdln() {
+    printf("_acmdln\n");
+}
+
+EXPORTABLE void _amsg_exit() {
+    printf("_amsg_exit\n");
+}
+
+EXPORTABLE void _cexit() {
+    printf("_cexit\n");
+}
+
+EXPORTABLE void _commode() {
+    printf("_commode\n");
+}
+
+EXPORTABLE void _fmode() {
+    printf("_fmode\n");
+}
+
+EXPORTABLE void _initterm() {
+    printf("_initterm\n");
+}
+
+EXPORTABLE void _onexit() {
+    printf("_onexit\n");
+}
+
+EXPORTABLE void abort() {
+    printf("abort\n");
+}
+
+EXPORTABLE void calloc() {
+    printf("calloc\n");
+}
+
+EXPORTABLE void fprintf() {
+    printf("fprintf\n");
+}
+
+EXPORTABLE void free() {
+    printf("free\n");
+}
+
+EXPORTABLE void fwrite() {
+    printf("fwrite\n");
+}
+
+EXPORTABLE void malloc() {
+    printf("malloc\n");
+}
+
+EXPORTABLE void memcpy() {
+    printf("memcpy\n");
+}
+
+EXPORTABLE void signal() {
+    printf("signal\n");
+}
+
+EXPORTABLE void strncmp() {
+    printf("strncmp\n");
+}
+
+EXPORTABLE void vfprintf() {
+    printf("vfprintf\n");
 }

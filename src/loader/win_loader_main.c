@@ -396,7 +396,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         BAIL("failed getting memory regions\n");
     }
 
-    LOADER_LOG("Mapping library memory regions\n");
+    LOADER_LOG("Mapping shared library 'lib_ntdll.so'\n");
     if (!map_memory_regions(
             ntdll_file,
             memory_regions_info.regions,
@@ -521,8 +521,6 @@ static bool load_dlls(
             BAIL("failed getting memory regions\n");
         }
 
-        LOADER_LOG("Mapping library memory regions\n");
-
         if (!map_memory_regions_win(
                 shared_lib_file,
                 memory_regions_info.regions,
@@ -568,7 +566,7 @@ static bool load_dlls(
                 }
             }
             if (export_entry == NULL) {
-                BAIL("import '%s' not found", import_entry->name);
+                BAIL("import '%s' not found\n", import_entry->name);
             }
 
             struct WinRuntimeExport runtime_relocation = {
@@ -747,8 +745,6 @@ int main(int argc, char **argv) {
         curr_global_runtime_iat_offset += IAT_INCREMENT;
     }
 
-    log_memory_regions();
-
     runtime_exe = (struct WinRuntimeObject){
         .name = filename,
         .pe_data = pe_exe,
@@ -761,6 +757,7 @@ int main(int argc, char **argv) {
 
     /* Map Import Address Tables */
 
+    LOADER_LOG("Initializing IAT\n");
     if (!initialize_import_address_table(&runtime_exe)) {
         EXIT("initialize_import_address_table failed\n");
     }
@@ -771,6 +768,8 @@ int main(int argc, char **argv) {
             EXIT("initialize_import_address_table failed\n");
         }
     }
+
+    log_memory_regions();
 
     /* Jump to program */
 

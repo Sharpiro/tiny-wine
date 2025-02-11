@@ -36,13 +36,13 @@ windows: \
 	libmsvcrt.so \
 	ntdll.dll \
 	msvcrt.dll \
+	KERNEL32.dll \
 	winloader \
-	tools/readwin \
+	readwin \
 	windynamiclib.dll \
 	windynamiclibfull.dll \
-	programs/windows/win_dynamic \
-	programs/windows/win_dynamic_full \
-	# programs/windows/win_dynamic_linux
+	windynamic.exe \
+	windynamicfull.exe
 
 tinyc_start.o: src/tiny_c/tinyc_start.c
 	@$(CC) $(CFLAGS) \
@@ -88,6 +88,7 @@ tiny_c.o: src/tiny_c/tiny_c.c
 		-o tiny_c.o src/tiny_c/tiny_c.c
 
 libtinyc.a: tinyc_sys.o tiny_c.o
+	@echo "libtinyc.a"
 	@ar rcs libtinyc.a tinyc_sys.o tiny_c.o
 	@$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
 
@@ -136,6 +137,7 @@ libdynamic.so:
 	@$(OBJDUMP) -M intel -D libdynamic.so > libdynamic.so.dump
 
 libntdll.so:
+	@echo "libntdll.so"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -151,6 +153,7 @@ libntdll.so:
 	@$(OBJDUMP) -M intel -D libntdll.so > libntdll.so.dump
 
 libmsvcrt.so: libntdll.so
+	@echo "libmsvcrt.so"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -166,7 +169,8 @@ libmsvcrt.so: libntdll.so
 		src/dlls/msvcrt.c
 	@$(OBJDUMP) -M intel -D libmsvcrt.so > libmsvcrt.so.dump
 
-ntdll.dll:
+ntdll.dll: src/dlls/ntdll.c
+	@echo "ntdll.dll"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -182,7 +186,9 @@ ntdll.dll:
 		src/dlls/ntdll.c
 	@$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 
-msvcrt.dll: ntdll.dll
+msvcrt.dll: src/dlls/msvcrt.c \
+						ntdll.dll
+	@echo "msvcrt.dll"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -199,7 +205,26 @@ msvcrt.dll: ntdll.dll
 		ntdll.dll
 	@$(OBJDUMP) -M intel -D msvcrt.dll > msvcrt.dll.dump
 
-windynamiclib.dll:
+KERNEL32.dll: src/dlls/kernel32.c
+	@echo "KERNEL32.dll"
+	@$(CC) $(CFLAGS) \
+		-O0 \
+		$(WARNINGS) \
+		-fno-stack-protector \
+		--target=x86_64-w64-windows-gnu \
+		-g \
+		-DAMD64 \
+		-masm=intel \
+		-nostdlib \
+		-shared \
+		-fPIC \
+		-o KERNEL32.dll \
+		src/dlls/kernel32.c 
+	@$(OBJDUMP) -M intel -D KERNEL32.dll > KERNEL32.dll.dump
+
+windynamiclib.dll: \
+		src/programs/windows/win_dynamic/win_dynamic_lib.c
+	@echo "windynamiclib.dll"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -216,7 +241,9 @@ windynamiclib.dll:
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
 	@$(OBJDUMP) -M intel -D windynamiclib.dll > windynamiclib.dll.dump
 
-windynamiclibfull.dll:
+windynamiclibfull.dll: \
+		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
+	@echo "windynamiclibfull.dll"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -253,6 +280,7 @@ loader: tinyc_start.o libtinyc.a src/loader/loader_main.c
 	@$(OBJDUMP) -M intel -D loader > loader.dump
 
 winloader: tinyc_start.o libtinyc.a src/loader/win_loader_main.c
+	@echo "winloader"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
@@ -355,7 +383,12 @@ programs/linux/dynamic: libtinyc.so libdynamic.so
 		tinyc_start.o
 	@$(OBJDUMP) -M intel -D dynamic > dynamic.dump
 
-programs/windows/win_dynamic: msvcrt.dll ntdll.dll windynamiclib.dll
+windynamic.exe: \
+		msvcrt.dll \
+		ntdll.dll \
+		windynamiclib.dll \
+		src/programs/windows/win_dynamic/win_dynamic_main.c
+	@echo "windynamic.exe"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -373,7 +406,10 @@ programs/windows/win_dynamic: msvcrt.dll ntdll.dll windynamiclib.dll
 		src/programs/windows/win_dynamic/win_dynamic_main.c
 	@$(OBJDUMP) -M intel -D windynamic.exe > windynamic.exe.dump
 
-programs/windows/win_dynamic_full: windynamiclibfull.dll
+windynamicfull.exe: \
+		src/programs/windows/win_dynamic/win_dynamic_full_main.c \
+		windynamiclibfull.dll
+	@echo "win_dynamic_full.exe"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -406,7 +442,8 @@ programs/windows/win_dynamic_full: windynamiclibfull.dll
 # 		src/programs/windows/win_dynamic/win_dynamic_main.c
 # 	@$(OBJDUMP) -D windynamic_linux > windynamic_linux.dump
 
-tools/readwin: tools/readwin/readwin_main.c tinyc_start.o libtinyc.a
+readwin: tools/readwin/readwin_main.c tinyc_start.o libtinyc.a
+	@echo "readwin"
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \

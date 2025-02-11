@@ -1,7 +1,9 @@
 #include <stdint.h>
 
 /**
- * Variables must be marked as exportable with -nostdlib
+ * Variables must be marked as exportable with -nostdlib.
+ * 'Some' functions require it as well.
+ * If you use it on one function in a file, you must use it on all.
  */
 #if defined(_WIN32)
 #ifdef DLL
