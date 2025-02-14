@@ -8,7 +8,8 @@ A basic dynamic loader for Linux and Windows.
 
 ## Prerequisites
 
-- docker
+All examples use Docker for compatibility, but should work on Linux machines with the necessary packages.
+See [Dockerfile](./Dockerfile) for necessary packages.
 
 ```sh
 git clone https://github.com/Sharpiro/tiny-wine.git
@@ -49,6 +50,18 @@ docker run --rm -v $PWD:/root/tiny_wine tinywine ./winloader ./windynamic.exe
 
 ```sh
 docker run --rm -v $PWD:/root/tiny_wine tinywine ./test.sh
+```
+
+## Tools
+
+Miscellaneous tools that assist with debugging dynamic loaders.
+
+### Readwin
+
+Tool for reading the Windows PE format.
+
+```sh
+docker run --rm -v $PWD:/root/tiny_wine tinywine ./readwin ./windynamic.exe
 ```
 
 ## Contributing
