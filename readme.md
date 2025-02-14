@@ -1,14 +1,10 @@
 # Tiny Wine
 
-A Project to help understand how linkers and Wine work.
-
-Very basic support for jumping to other static Linux ELF programs.
+A basic dynamic loader for Linux and Windows.
 
 ## Limitations
 
-- Linux
-- No standard library
-- More...
+- No standard libraries
 
 ## Prerequisites
 
@@ -26,7 +22,7 @@ docker build -t tinywine $PWD
 docker run --rm -v $PWD:/root/tiny_wine tinywine make
 ```
 
-## Running
+## Running Linux loader
 
 ```sh
 docker run --rm -v $PWD:/root/tiny_wine tinywine ./loader ./tinyfetch
@@ -43,10 +39,16 @@ Uptime: Uptime: 32 days, 21 hours, 29 minutes
 Shell: /bin/bash
 ```
 
+## Running Windows loader
+
+```sh
+docker run --rm -v $PWD:/root/tiny_wine tinywine ./winloader ./windynamic.exe
+```
+
 ## Tests
 
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine ./test_loader.sh
+docker run --rm -v $PWD:/root/tiny_wine tinywine ./test.sh
 ```
 
 ## Contributing
