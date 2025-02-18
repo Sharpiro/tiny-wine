@@ -243,97 +243,99 @@ size_t add_many_msvcrt(
 }
 
 EXPORTABLE void __C_specific_handler() {
-    printf("__C_specific_handler\n");
+    // printf("__C_specific_handler\n");
 }
 
 EXPORTABLE void __getmainargs() {
-    printf("__getmainargs\n");
+    // printf("__getmainargs\n");
 }
 
 EXPORTABLE void __initenv() {
-    printf("__initenv\n");
+    // printf("__initenv\n");
 }
 
 EXPORTABLE void __iob_func() {
-    printf("__iob_func\n");
+    // printf("__iob_func\n");
 }
 
 EXPORTABLE void __lconv_init() {
-    printf("__lconv_init\n");
+    // printf("__lconv_init\n");
 }
 
 EXPORTABLE void __set_app_type() {
-    printf("__set_app_type\n");
+    // printf("__set_app_type\n");
 }
 
 EXPORTABLE void __setusermatherr() {
-    printf("__setusermatherr\n");
+    // printf("__setusermatherr\n");
 }
 
 EXPORTABLE void _acmdln() {
-    printf("_acmdln\n");
+    // printf("_acmdln\n");
 }
 
 EXPORTABLE void _amsg_exit() {
-    printf("_amsg_exit\n");
+    // printf("_amsg_exit\n");
 }
 
 EXPORTABLE void _cexit() {
-    printf("_cexit\n");
+    // printf("_cexit\n");
 }
 
 EXPORTABLE void _commode() {
-    printf("_commode\n");
+    // printf("_commode\n");
 }
 
 EXPORTABLE void _fmode() {
-    printf("_fmode\n");
+    // printf("_fmode\n");
 }
 
 EXPORTABLE void _initterm() {
-    printf("_initterm\n");
+    // printf("_initterm\n");
 }
 
 EXPORTABLE void _onexit() {
-    printf("_onexit\n");
+    // printf("_onexit\n");
 }
 
 EXPORTABLE void abort() {
-    printf("abort\n");
+    // printf("abort\n");
 }
 
 EXPORTABLE void calloc() {
-    printf("calloc\n");
+    // printf("calloc\n");
 }
 
 EXPORTABLE void fprintf() {
-    printf("fprintf\n");
+    // printf("fprintf\n");
 }
 
 EXPORTABLE void free() {
-    printf("free\n");
+    // printf("free\n");
 }
 
 EXPORTABLE void fwrite() {
-    printf("fwrite\n");
+    // printf("fwrite\n");
 }
 
-EXPORTABLE void malloc() {
-    printf("malloc\n");
+// @todo: real address
+EXPORTABLE void *malloc() {
+    // printf("malloc\n");
+    return (void *)0x1'4000'7000;
 }
 
 EXPORTABLE void memcpy() {
-    printf("memcpy\n");
+    // printf("memcpy\n");
 }
 
 EXPORTABLE void signal() {
-    printf("signal\n");
+    // printf("signal\n");
 }
 
 EXPORTABLE void strncmp() {
-    printf("strncmp\n");
+    // printf("strncmp\n");
 }
 
 EXPORTABLE void vfprintf() {
-    printf("vfprintf\n");
+    // printf("vfprintf\n");
 }

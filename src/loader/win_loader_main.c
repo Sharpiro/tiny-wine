@@ -52,7 +52,7 @@ static void run_asm(
             :
             : [stack_start] "r"(stack_start));
 
-    __asm__("mov rbp, 0\n"
+    __asm__("mov rbp, 0x00\n"
             "jmp %[program_entry]\n"
             :
             : [program_entry] "r"(program_entry)
@@ -698,7 +698,7 @@ int main(int argc, char **argv) {
             .is_direct_file_map = false,
             .file_offset = 0x00,
             .file_size = WINDOWS_HEADER_SIZE,
-            .permissions = 0b100,
+            .permissions = 4 | 0 | 0,
         }
     );
     if (!get_memory_regions_info_win(
@@ -789,6 +789,9 @@ int main(int argc, char **argv) {
 
     /* Init Thread Local Storage */
 
+    // @todo: .bss 'initialized'
+    *((size_t *)0x140007030) = 1;
+    // @todo: tls init needs to write something somewhere
     size_t tls_stack_temp = 0;
     __asm__("mov rdi, 0x1001\n"
             "mov rsi, %[tls_stack_temp]\n"

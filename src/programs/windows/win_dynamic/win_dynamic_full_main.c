@@ -1,5 +1,9 @@
+#include "../../../dlls/msvcrt.h"
 #include "./win_dynamic_lib.h"
 
 int main() {
-    return 42;
+    printf("oh boy\n");
+    exit(42);
+    // @todo: return doesn't work
+    // return 42;
 }
