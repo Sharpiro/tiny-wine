@@ -380,7 +380,10 @@ static bool initialize_dynamic_data(
             .runtime_symbols = runtime_lib_symbols,
         };
         (*shared_libraries)[i] = shared_library;
-        dynamic_lib_offset = memory_regions_info.end;
+        dynamic_lib_offset = memory_regions_info.regions_len == 0
+            ? 0
+            : memory_regions_info.regions[memory_regions_info.regions_len - 1]
+                  .end;
     }
 
     /** Get runtime symbols */

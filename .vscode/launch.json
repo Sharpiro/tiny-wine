@@ -84,7 +84,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/readwin",
-      "args": [],
+      "args": ["./windynamicfull.exe"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
@@ -103,7 +103,7 @@
         },
         { "text": "set output-radix 16" }
       ],
-      "preLaunchTask": "build"
+      "preLaunchTask": "build_win"
     },
     {
       "name": "Launch winloader",

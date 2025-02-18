@@ -23,8 +23,6 @@ bool get_memory_regions_info_arm(
         loader_malloc_arena(sizeof(struct MemoryRegion) * program_headers_len);
 
     size_t j = 0;
-    size_t regions_info_start = 0;
-    size_t regions_info_end = 0;
     for (size_t i = 0; i < program_headers_len; i++) {
         const PROGRAM_HEADER *program_header = &program_headers[i];
         if (program_header->p_type != PT_LOAD) {
@@ -58,10 +56,6 @@ bool get_memory_regions_info_arm(
 
         start = start + address_offset;
         end = end + address_offset;
-        regions_info_end = end;
-        if (regions_info_start == 0) {
-            regions_info_start = start;
-        }
 
         memory_regions[j++] = (struct MemoryRegion){
             .start = start,
@@ -73,8 +67,6 @@ bool get_memory_regions_info_arm(
     }
 
     *memory_regions_info = (struct MemoryRegionsInfo){
-        .start = regions_info_start,
-        .end = regions_info_end,
         .regions = memory_regions,
         .regions_len = j,
     };
@@ -97,8 +89,6 @@ bool get_memory_regions_info_x86(
     struct MemoryRegion *memory_regions =
         loader_malloc_arena(sizeof(struct MemoryRegion) * program_headers_len);
 
-    size_t regions_start = 0;
-    size_t regions_end = 0;
     size_t j = 0;
     for (size_t i = 0; i < program_headers_len; i++) {
         const PROGRAM_HEADER *program_header = &program_headers[i];
@@ -133,10 +123,6 @@ bool get_memory_regions_info_x86(
 
         start += address_offset;
         end += address_offset;
-        regions_end = end;
-        if (j == 0) {
-            regions_start = start;
-        }
 
         memory_regions[j++] = (struct MemoryRegion){
             .start = start,
@@ -148,8 +134,6 @@ bool get_memory_regions_info_x86(
     }
 
     *memory_regions_info = (struct MemoryRegionsInfo){
-        .start = regions_start,
-        .end = regions_end,
         .regions = memory_regions,
         .regions_len = j,
     };

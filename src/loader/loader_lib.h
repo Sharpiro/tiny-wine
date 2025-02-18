@@ -74,7 +74,7 @@ CREATE_LIST_STRUCT(WinRuntimeExport)
 typedef struct WinRuntimeObject {
     const char *name;
     struct PeData pe_data;
-    struct MemoryRegionsInfo memory_regions_info;
+    MemoryRegionList memory_regions;
     WinRuntimeExportList function_exports;
     size_t runtime_iat_object_base;
     size_t runtime_iat_section_base;

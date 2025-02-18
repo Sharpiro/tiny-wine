@@ -257,7 +257,7 @@ bool get_memory_regions_info_win(
     const struct WinSectionHeader *program_headers,
     size_t program_headers_len,
     size_t address_offset,
-    struct MemoryRegionsInfo *memory_regions_info
+    MemoryRegionList *memory_regions
 );
 
 const struct WinSectionHeader *find_win_section_header(

@@ -508,23 +508,22 @@ static bool load_dlls(
             BAIL("failed getting data for shared lib '%s'\n", shared_lib_name);
         }
 
-        // @todo: provide offset by loader?
         size_t shared_lib_image_base =
             shared_lib_pe.winpe_header->image_optional_header.image_base;
-        struct MemoryRegionsInfo memory_regions_info;
+        MemoryRegionList memory_regions = (MemoryRegionList){
+            .allocator = loader_malloc_arena,
+        };
         if (!get_memory_regions_info_win(
                 shared_lib_pe.section_headers,
                 shared_lib_pe.section_headers_len,
                 shared_lib_image_base,
-                &memory_regions_info
+                &memory_regions
             )) {
             BAIL("failed getting memory regions\n");
         }
 
         if (!map_memory_regions_win(
-                shared_lib_file,
-                memory_regions_info.regions,
-                memory_regions_info.regions_len
+                shared_lib_file, memory_regions.data, memory_regions.length
             )) {
             BAIL("loader lib map memory regions failed\n");
         }
@@ -600,7 +599,7 @@ static bool load_dlls(
         struct WinRuntimeObject shared_lib = {
             .name = dir_entry->lib_name,
             .pe_data = shared_lib_pe,
-            .memory_regions_info = memory_regions_info,
+            .memory_regions = memory_regions,
             .function_exports = runtime_exports,
             .runtime_iat_object_base = runtime_iat_region_base,
             .runtime_iat_section_base = runtime_iat_base,
@@ -684,18 +683,35 @@ int main(int argc, char **argv) {
     }
 
     size_t image_base = pe_exe.winpe_header->image_optional_header.image_base;
-    struct MemoryRegionsInfo memory_regions_info;
+
+    MemoryRegionList memory_regions = (MemoryRegionList){
+        .allocator = loader_malloc_arena,
+    };
+    const size_t WINDOWS_HEADER_SIZE =
+        sizeof(struct ImageDosHeader) + sizeof(struct WinPEHeader);
+
+    MemoryRegionList_add(
+        &memory_regions,
+        (struct MemoryRegion){
+            .start = image_base,
+            .end = image_base + 0x1000,
+            .is_direct_file_map = false,
+            .file_offset = 0x00,
+            .file_size = WINDOWS_HEADER_SIZE,
+            .permissions = 0b100,
+        }
+    );
     if (!get_memory_regions_info_win(
             pe_exe.section_headers,
             pe_exe.section_headers_len,
             image_base,
-            &memory_regions_info
+            &memory_regions
         )) {
         EXIT("failed getting memory regions\n");
     }
 
     if (!map_memory_regions_win(
-            fd, memory_regions_info.regions, memory_regions_info.regions_len
+            fd, memory_regions.data, memory_regions.length
         )) {
         EXIT("map_memory_regions_win failed\n");
     }
@@ -748,7 +764,7 @@ int main(int argc, char **argv) {
     runtime_exe = (struct WinRuntimeObject){
         .name = filename,
         .pe_data = pe_exe,
-        .memory_regions_info = memory_regions_info,
+        .memory_regions = memory_regions,
         .function_exports = {},
         .runtime_iat_object_base = runtime_iat_region_base,
         .runtime_iat_section_base = runtime_iat_base,
@@ -770,6 +786,17 @@ int main(int argc, char **argv) {
     }
 
     log_memory_regions();
+
+    /* Init Thread Local Storage */
+
+    size_t tls_stack_temp = 0;
+    __asm__("mov rdi, 0x1001\n"
+            "mov rsi, %[tls_stack_temp]\n"
+            "mov rax, 0x9e\n"
+            "syscall\n"
+            :
+            : [tls_stack_temp] "r"(&tls_stack_temp)
+            :);
 
     /* Jump to program */
 

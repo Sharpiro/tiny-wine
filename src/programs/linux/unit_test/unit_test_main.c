@@ -42,8 +42,6 @@ static void get_memory_regions_basic_test(void) {
     );
 
     tw_assert(result);
-    tw_assert(memory_regions_info.start == 0x10000);
-    tw_assert(memory_regions_info.end == 0x13000);
     tw_assert(memory_regions_info.regions_len == 2);
     tw_assert(memory_regions_info.regions[0].start == 0x10000);
     tw_assert(memory_regions_info.regions[0].end == 0x12000);
@@ -84,8 +82,6 @@ static void get_memory_regions_offset_test(void) {
     );
 
     tw_assert(result);
-    tw_assert(memory_regions_info.start == 0x10000);
-    tw_assert(memory_regions_info.end == 0x13000);
     tw_assert(memory_regions_info.regions_len == 2);
     tw_assert(memory_regions_info.regions[0].start == 0x10000);
     tw_assert(memory_regions_info.regions[0].end == 0x11000);
@@ -124,8 +120,6 @@ static void get_memory_regions_big_align_test(void) {
     );
 
     tw_assert(result);
-    tw_assert(memory_regions_info.start == 0x10000);
-    tw_assert(memory_regions_info.end == 0x30000);
     tw_assert(memory_regions_info.regions_len == 2);
     tw_assert(memory_regions_info.regions[0].start == 0x10000);
     tw_assert(memory_regions_info.regions[0].end == 0x20000);
@@ -184,8 +178,6 @@ static void get_memory_regions_x86_test(void) {
     );
 
     tw_assert(result);
-    tw_assert(memory_regions_info.start == 0x400000);
-    tw_assert(memory_regions_info.end == 0x405000);
     tw_assert(memory_regions_info.regions_len == 4);
     tw_assert(memory_regions_info.regions[0].start == 0x400000);
     tw_assert(memory_regions_info.regions[0].end == 0x401000);
@@ -227,30 +219,30 @@ static void get_memory_regions_win_test(void) {
         }
     };
 
-    struct MemoryRegionsInfo memory_regions_info;
+    MemoryRegionList memory_regions = (MemoryRegionList){
+        .allocator = loader_malloc_arena,
+    };
     bool result = get_memory_regions_info_win(
         program_headers,
         sizeof(program_headers) / sizeof(struct WinSectionHeader),
         0x140000000,
-        &memory_regions_info
+        &memory_regions
     );
 
     tw_assert(result);
-    tw_assert(memory_regions_info.start == 0);
-    tw_assert(memory_regions_info.end == 0);
-    tw_assert(memory_regions_info.regions_len == 2);
-    tw_assert(memory_regions_info.regions[0].start == 0x140001000);
-    tw_assert(memory_regions_info.regions[0].end == 0x140002000);
-    tw_assert(memory_regions_info.regions[0].is_direct_file_map == false);
-    tw_assert(memory_regions_info.regions[0].file_offset == 0x400);
-    tw_assert(memory_regions_info.regions[0].file_size == 0x48);
-    tw_assert(memory_regions_info.regions[0].permissions == 5);
-    tw_assert(memory_regions_info.regions[1].start == 0x140002000);
-    tw_assert(memory_regions_info.regions[1].end == 0x140003000);
-    tw_assert(memory_regions_info.regions[1].is_direct_file_map == false);
-    tw_assert(memory_regions_info.regions[1].file_offset == 0x600);
-    tw_assert(memory_regions_info.regions[1].file_size == 0x0c);
-    tw_assert(memory_regions_info.regions[1].permissions == 4);
+    tw_assert(memory_regions.length == 2);
+    tw_assert(memory_regions.data[0].start == 0x140001000);
+    tw_assert(memory_regions.data[0].end == 0x140002000);
+    tw_assert(memory_regions.data[0].is_direct_file_map == false);
+    tw_assert(memory_regions.data[0].file_offset == 0x400);
+    tw_assert(memory_regions.data[0].file_size == 0x48);
+    tw_assert(memory_regions.data[0].permissions == 5);
+    tw_assert(memory_regions.data[1].start == 0x140002000);
+    tw_assert(memory_regions.data[1].end == 0x140003000);
+    tw_assert(memory_regions.data[1].is_direct_file_map == false);
+    tw_assert(memory_regions.data[1].file_offset == 0x600);
+    tw_assert(memory_regions.data[1].file_size == 0x0c);
+    tw_assert(memory_regions.data[1].permissions == 4);
 }
 
 static void loader_malloc_arena_align_test(void) {

@@ -381,10 +381,8 @@ bool get_memory_regions_info_win(
     const struct WinSectionHeader *program_headers,
     size_t program_headers_len,
     size_t address_offset,
-    struct MemoryRegionsInfo *memory_regions_info
+    MemoryRegionList *memory_regions
 ) {
-    struct MemoryRegion *memory_regions =
-        loader_malloc_arena(sizeof(struct MemoryRegion) * program_headers_len);
     for (size_t i = 0; i < program_headers_len; i++) {
         const struct WinSectionHeader *program_header = &program_headers[i];
         const int REGION_ALIGN = 0x1000;
@@ -397,23 +395,20 @@ bool get_memory_regions_info_win(
         size_t execute = win_permissions & 2 ? 1 : 0;
         size_t permissions = read | write | execute;
 
-        memory_regions[i] = (struct MemoryRegion){
-            .start = address_offset + program_header->virtual_base_address,
-            .end = address_offset + program_header->virtual_base_address +
-                region_size,
-            .is_direct_file_map = false,
-            .file_offset = program_header->file_offset,
-            .file_size = program_header->virtual_size,
-            .permissions = permissions,
-        };
+        MemoryRegionList_add(
+            memory_regions,
+            (struct MemoryRegion){
+                .start = address_offset + program_header->virtual_base_address,
+                .end = address_offset + program_header->virtual_base_address +
+                    region_size,
+                .is_direct_file_map = false,
+                .file_offset = program_header->file_offset,
+                .file_size = program_header->virtual_size,
+                .permissions = permissions,
+            }
+        );
     }
 
-    *memory_regions_info = (struct MemoryRegionsInfo){
-        .start = 0,
-        .end = 0,
-        .regions = memory_regions,
-        .regions_len = program_headers_len,
-    };
     return true;
 }
 
