@@ -132,14 +132,23 @@ int main(int argc, char **argv) {
     tiny_c_printf("\nSymbols (%d):\n", pe_data.symbols_len);
     for (size_t i = 0; i < pe_data.symbols_len; i++) {
         struct WinSymbol *symbol = &pe_data.symbols[i];
+        size_t section_start = 0;
+        size_t symbol_section_index = symbol->section_number - 1;
+        if (symbol_section_index < pe_data.section_headers_len) {
+            struct WinSectionHeader *section_header =
+                &pe_data.section_headers[symbol->section_number - 1];
+            section_start = section_header->virtual_base_address;
+        }
         if (verbose) {
             char *symbol_type = symbol->type == 0x20 ? "FUNCTION" : "-";
             char *symbol_class = symbol->storage_class == 0x02 ? "EXTERNAL"
                 : symbol->storage_class == 0x03                ? "STATIC"
                                                                : "-";
+
             tiny_c_printf(
-                "%d: %x: %s, %s %s\n",
+                "%d: %x: %x %s, %s %s\n",
                 symbol->raw_index,
+                section_start,
                 symbol->value,
                 symbol->name,
                 symbol_type,
@@ -169,7 +178,11 @@ int main(int argc, char **argv) {
         }
 
         tiny_c_printf(
-            "%d: %x: %s\n", symbol->raw_index, symbol->value, symbol->name
+            "%d: %x: %x %s\n",
+            symbol->raw_index,
+            section_start,
+            symbol->value,
+            symbol->name
         );
     }
 }
