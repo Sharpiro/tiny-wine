@@ -1,4 +1,5 @@
 #include "tinyc_sys.h"
+#include <asm/prctl.h>
 #include <sys/syscall.h>
 
 #ifdef AMD64
@@ -82,5 +83,14 @@ size_t tinyc_sys_uname(struct utsname *uname) {
         .param_one = (size_t)uname,
     };
     size_t result = tiny_c_syscall(SYS_uname, &args);
+    return result;
+}
+
+size_t tinyc_sys_arch_prctl(size_t code, size_t address) {
+    struct SysArgs args = {
+        .param_one = code,
+        .param_two = address,
+    };
+    size_t result = tiny_c_syscall(SYS_arch_prctl, &args);
     return result;
 }

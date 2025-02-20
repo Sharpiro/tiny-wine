@@ -1,9 +1,11 @@
 #include "../tiny_c/tiny_c.h"
+#include "../tiny_c/tinyc_sys.h"
 #include "./pe_tools.h"
 #include "elf_tools.h"
 #include "loader_lib.h"
 #include "memory_map.h"
 #include "win_loader_lib.h"
+#include <asm/prctl.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -790,16 +792,14 @@ int main(int argc, char **argv) {
     /* Init Thread Local Storage */
 
     // @todo: .bss 'initialized'
-    *((size_t *)0x140007030) = 1;
-    // @todo: tls init needs to write something somewhere
-    size_t tls_stack_temp = 0;
-    __asm__("mov rdi, 0x1001\n"
-            "mov rsi, %[tls_stack_temp]\n"
-            "mov rax, 0x9e\n"
-            "syscall\n"
-            :
-            : [tls_stack_temp] "r"(&tls_stack_temp)
-            :);
+    // size_t *temp_ptr = (size_t *)0x140007030;
+    // *temp_ptr = 0x140007031;
+    // *temp_ptr = 0x00;
+    *((size_t *)0x140007030) = 0x140007030;
+    // size_t temp_stack = 0;
+    // tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)&argc);
+    tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)0x140007000);
+    // tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)&temp_stack);
 
     /* Jump to program */
 

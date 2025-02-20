@@ -2,6 +2,13 @@
 
 set -e
 
+echo "cleaning"
+make clean
+echo "building linux targets"
+make linux
+echo "building windows targets"
+make windows
+
 loop_count=${1:-1}
 for ((i = 0; i < loop_count; i++)); do 
     if [[ loop_count -gt 1 ]]; then
