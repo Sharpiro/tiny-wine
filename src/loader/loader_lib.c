@@ -70,7 +70,7 @@ bool find_runtime_relocation(
     return false;
 }
 
-bool get_runtime_symbol(
+bool find_runtime_symbol(
     const char *name,
     const struct RuntimeSymbol *runtime_symbols,
     size_t runtime_symbols_len,
@@ -181,7 +181,7 @@ bool get_function_relocations(
     return true;
 }
 
-bool get_runtime_symbols(
+bool find_win_symbols(
     const struct DynamicData *dyn_data,
     size_t lib_dyn_offset,
     RuntimeSymbolList *runtime_symbols

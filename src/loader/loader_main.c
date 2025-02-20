@@ -111,7 +111,7 @@ void dynamic_callback_linux(void) {
     LOADER_LOG("got_entry: %x: %x\n", got_entry, *got_entry);
 
     const struct RuntimeSymbol *runtime_symbol;
-    if (!get_runtime_symbol(
+    if (!find_runtime_symbol(
             runtime_relocation->name,
             runtime_symbols.data,
             runtime_symbols.length,
@@ -360,7 +360,7 @@ static bool initialize_dynamic_data(
         RuntimeSymbolList runtime_lib_symbols = (RuntimeSymbolList){
             .allocator = loader_malloc_arena,
         };
-        if (!get_runtime_symbols(
+        if (!find_win_symbols(
                 shared_lib_elf.dynamic_data,
                 dynamic_lib_offset,
                 &runtime_lib_symbols
@@ -455,7 +455,7 @@ static bool initialize_dynamic_data(
     for (size_t i = 0; i < runtime_var_relocations_len; i++) {
         struct RuntimeRelocation *run_var_reloc = &runtime_var_relocations[i];
         const struct RuntimeSymbol *runtime_symbol;
-        if (!get_runtime_symbol(
+        if (!find_runtime_symbol(
                 run_var_reloc->name,
                 runtime_symbols.data,
                 runtime_symbols.length,
@@ -562,7 +562,7 @@ static bool initialize_dynamic_data(
         }
 
         const struct RuntimeSymbol *runtime_symbol;
-        if (!get_runtime_symbol(
+        if (!find_runtime_symbol(
                 var_relocation->name,
                 runtime_symbols.data,
                 runtime_symbols.length,
@@ -674,7 +674,7 @@ int main(int32_t argc, char **argv) {
             EXIT("get_function_relocations failed\n");
         }
 
-        if (!get_runtime_symbols(
+        if (!find_win_symbols(
                 inferior_elf.dynamic_data, 0, &exe_runtime_symbols
             )) {
             EXIT("failed getting symbols\n");

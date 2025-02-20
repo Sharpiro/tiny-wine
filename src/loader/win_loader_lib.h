@@ -15,7 +15,7 @@ const struct WinRuntimeObject *find_runtime_object(
     const WinRuntimeObjectList *runtime_objects, const char *name
 );
 
-const struct WinSymbol *find_runtime_symbol(
+const struct WinSymbol *find_win_symbol(
     const struct WinSymbol *symbols, size_t symbols_len, const char *name
 );
 

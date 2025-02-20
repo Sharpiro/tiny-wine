@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
         size_t symbol_section_index = symbol->section_number - 1;
         if (symbol_section_index < pe_data.section_headers_len) {
             struct WinSectionHeader *section_header =
-                &pe_data.section_headers[symbol->section_number - 1];
+                &pe_data.section_headers[symbol_section_index];
             section_start = section_header->virtual_base_address;
         }
         if (verbose) {

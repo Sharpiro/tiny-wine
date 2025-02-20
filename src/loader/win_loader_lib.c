@@ -24,7 +24,7 @@ const struct WinRuntimeObject *find_runtime_object(
     return NULL;
 }
 
-const struct WinSymbol *find_runtime_symbol(
+const struct WinSymbol *find_win_symbol(
     const struct WinSymbol *symbols, size_t symbols_len, const char *name
 ) {
     for (size_t i = 0; i < symbols_len; i++) {
@@ -75,7 +75,7 @@ bool get_runtime_import_address_table(
         if (runtime_obj != NULL) {
             runtime_obj_image_base = runtime_obj->pe_data.winpe_header
                                          ->image_optional_header.image_base;
-            symbol = find_runtime_symbol(
+            symbol = find_win_symbol(
                 runtime_obj->pe_data.symbols,
                 runtime_obj->pe_data.symbols_len,
                 current_import->import_name
@@ -93,9 +93,8 @@ bool get_runtime_import_address_table(
             section_offset = symbol->value;
 
             if (is_variable) {
-                size_t one_based_index = symbol->section_number - 1;
                 struct WinSectionHeader *variable_section_header =
-                    &section_headers[one_based_index];
+                    &section_headers[symbol->section_number - 1];
                 if (symbol->value < 0) {
                     BAIL(
                         "unexpected negative symbol value for %s\n",

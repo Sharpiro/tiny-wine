@@ -104,7 +104,7 @@ typedef struct RuntimeImportAddressEntry {
 
 CREATE_LIST_STRUCT(RuntimeImportAddressEntry)
 
-bool get_runtime_symbol(
+bool find_runtime_symbol(
     const char *name,
     const struct RuntimeSymbol *runtime_symbols,
     size_t runtime_symbols_len,
@@ -134,7 +134,7 @@ bool get_function_relocations(
     size_t *runtime_func_relocations_len
 );
 
-bool get_runtime_symbols(
+bool find_win_symbols(
     const struct DynamicData *dyn_data,
     size_t dyn_offset,
     RuntimeSymbolList *runtime_symbols

@@ -101,7 +101,7 @@ static void dynamic_callback_linux(void) {
     LOADER_LOG("got_entry: %x: %x\n", got_entry, *got_entry);
 
     const struct RuntimeSymbol *runtime_symbol;
-    if (!get_runtime_symbol(
+    if (!find_runtime_symbol(
             runtime_relocation->name,
             lib_ntdll->runtime_symbols.data,
             lib_ntdll->runtime_symbols.length,
@@ -448,7 +448,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     RuntimeSymbolList runtime_symbols = {
         .allocator = loader_malloc_arena,
     };
-    if (!get_runtime_symbols(
+    if (!find_win_symbols(
             ntdll_elf.dynamic_data, dynamic_lib_offset, &runtime_symbols
         )) {
         BAIL("failed getting symbols\n");
@@ -816,16 +816,34 @@ int main(int argc, char **argv) {
         EXIT("TLS memory regions failed\n");
     }
 
-#if DOCKER
-    // @todo: <.refptr.__imp__acmdln>
-    size_t *refptr__imp__acmdln = (size_t *)0x140004380;
-    size_t *refptr__imp__acmdln2 = (size_t *)*refptr__imp__acmdln;
-    *refptr__imp__acmdln2 = (size_t)tls_buffer;
-#else
-    // @todo: .bss 'initialized'
-    size_t *temp_init_ptr = (size_t *)0x140007030;
-    *temp_init_ptr = 0x01;
-#endif
+    const struct WinSymbol *initialized_symbol =
+        find_win_symbol(pe_exe.symbols, pe_exe.symbols_len, "initialized");
+    if (initialized_symbol) {
+        LOADER_LOG("Setting 'initialized' for TLS\n");
+        struct WinSectionHeader *section_header =
+            &pe_exe.section_headers[initialized_symbol->section_number - 1];
+        size_t section_offset = section_header->virtual_base_address +
+            (size_t)initialized_symbol->value;
+        size_t symbol_address = image_base + section_offset;
+        size_t *temp_init_ptr = (size_t *)symbol_address;
+        *temp_init_ptr = 0x01;
+    }
+    const struct WinSymbol *refptr__imp__acmdln_symbol = find_win_symbol(
+        pe_exe.symbols, pe_exe.symbols_len, ".refptr.__imp__acmdln"
+    );
+    if (refptr__imp__acmdln_symbol) {
+        LOADER_LOG("Setting 'refptr__imp__acmdln_symbol' for TLS\n");
+        struct WinSectionHeader *section_header =
+            &pe_exe.section_headers
+                 [refptr__imp__acmdln_symbol->section_number - 1];
+        size_t section_offset = section_header->virtual_base_address +
+            (size_t)refptr__imp__acmdln_symbol->value;
+        size_t symbol_address = image_base + section_offset;
+        size_t *refptr__imp__acmdln = (size_t *)symbol_address;
+        size_t *refptr__imp__acmdln2 = (size_t *)*refptr__imp__acmdln;
+        *refptr__imp__acmdln2 = (size_t)tls_buffer;
+    }
+
     *(tls_buffer + 6) = (size_t)tls_buffer;
     tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)tls_buffer);
 

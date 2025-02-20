@@ -261,7 +261,7 @@ static void get_runtime_function_local_lib_test(void) {
     };
 
     const struct RuntimeSymbol *runtime_symbol;
-    bool result = get_runtime_symbol(
+    bool result = find_runtime_symbol(
         "tiny_c_pow",
         runtime_symbols,
         sizeof(runtime_symbols) / sizeof(struct RuntimeSymbol),
@@ -286,7 +286,7 @@ static void get_runtime_function_shared_lib_test(void) {
     };
 
     const struct RuntimeSymbol *runtime_symbol;
-    bool result = get_runtime_symbol(
+    bool result = find_runtime_symbol(
         "tiny_c_pow",
         runtime_symbols,
         sizeof(runtime_symbols) / sizeof(struct RuntimeSymbol),
