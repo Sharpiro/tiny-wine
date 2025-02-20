@@ -1,6 +1,0 @@
-#pragma once
-
-#define PROGRAM_SPACE_SIZE 0x200000
-#define PROGRAM_ADDRESS_START 0x400000
-#define LOG_SIGSYS 0
-#define PRCTL 0

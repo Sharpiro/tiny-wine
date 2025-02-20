@@ -24,3 +24,7 @@ off_t tinyc_sys_lseek(uint32_t fd, off_t offset, uint32_t whence);
 size_t tinyc_sys_uname(struct utsname *uname);
 
 size_t tinyc_sys_arch_prctl(size_t code, size_t address);
+
+size_t tinyc_sys_prctl(
+    size_t option, size_t arg2, size_t arg3, size_t arg4, size_t arg5
+);

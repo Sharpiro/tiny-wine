@@ -1,7 +1,5 @@
 #define _GNU_SOURCE
 
-#include "prctl.h"
-#include "tiny_wine.h"
 #include <elf.h>
 #include <link.h>
 #include <signal.h>
@@ -17,6 +15,8 @@
 #include <syscall.h>
 #include <ucontext.h>
 #include <unistd.h>
+
+#define LOG_SIGSYS 0
 
 static int dl_iterate_phdr_callback(
     struct dl_phdr_info *info, size_t size, void *data
@@ -78,7 +78,7 @@ static int dl_iterate_phdr_callback(struct dl_phdr_info *info, size_t, void *) {
 }
 
 static void handle_sig_sys(int, siginfo_t *info, void *ucontext_void) {
-    uint64_t sys_call_no = info->_sifields._sigsys._syscall;
+    uint64_t sys_call_no = (uint64_t)info->_sifields._sigsys._syscall;
     char *code_display = NULL;
     if (sys_call_no < SYS_CALL_TABLE_SIZE) {
         code_display = (char *)SYS_CALL_NAMES[sys_call_no];

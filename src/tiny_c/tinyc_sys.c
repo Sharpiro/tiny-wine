@@ -94,3 +94,17 @@ size_t tinyc_sys_arch_prctl(size_t code, size_t address) {
     size_t result = tiny_c_syscall(SYS_arch_prctl, &args);
     return result;
 }
+
+size_t tinyc_sys_prctl(
+    size_t option, size_t arg2, size_t arg3, size_t arg4, size_t arg5
+) {
+    struct SysArgs args = {
+        .param_one = option,
+        .param_two = arg2,
+        .param_three = arg3,
+        .param_four = arg4,
+        .param_five = arg5,
+    };
+    size_t result = tiny_c_syscall(SYS_prctl, &args);
+    return result;
+}

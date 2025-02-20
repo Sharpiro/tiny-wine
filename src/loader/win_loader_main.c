@@ -7,6 +7,7 @@
 #include "win_loader_lib.h"
 #include <asm/prctl.h>
 #include <fcntl.h>
+#include <linux/prctl.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -845,7 +846,19 @@ int main(int argc, char **argv) {
     }
 
     *(tls_buffer + 6) = (size_t)tls_buffer;
-    tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)tls_buffer);
+    if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)tls_buffer) != 0) {
+        EXIT("tinyc_sys_arch_prctl failed\n");
+    }
+    // @todo: set region name
+    // if (tinyc_sys_prctl(
+    //         PR_SET_VMA,
+    //         PR_SET_VMA_ANON_NAME,
+    //         (size_t)tls_buffer,
+    //         0x1000,
+    //         (size_t)"MyCustomRegion"
+    //     ) != 0) {
+    //     EXIT("tinyc_sys_prctl failed\n");
+    // }
 
     /* Jump to program */
 
