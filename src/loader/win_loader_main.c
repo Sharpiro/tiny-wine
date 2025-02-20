@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 
 // @todo: hard-coding this may cause random program failures due to ASLR etc.
@@ -111,6 +112,9 @@ static void dynamic_callback_linux(void) {
     }
 
     *got_entry = runtime_symbol->value;
+    // @todo: This log has so many parameters that it could affect 'rbx'
+    //        which needs to be preserved during dynamic linking.
+    //        See windows dynamic callback
     LOADER_LOG(
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
@@ -181,6 +185,8 @@ __attribute__((naked)) static void swap_stack(void) {
 }
 
 static void dynamic_callback_windows(void) {
+    size_t *rbx;
+    __asm__("mov %0, rbx" : "=r"(rbx));
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
     size_t p1;
@@ -338,6 +344,7 @@ static void dynamic_callback_windows(void) {
                 "mov rcx, %4\n"
                 "mov r8, %5\n"
                 "mov r9, %6\n"
+                "mov rbx, %8\n"
                 "mov rsp, rbp\n"
                 "pop rbp\n"
                 "add rsp, 8\n"
@@ -351,22 +358,30 @@ static void dynamic_callback_windows(void) {
                   "m"(p4),
                   "m"(p5),
                   "m"(p6),
-                  "r"(swap_stack));
+                  "r"(swap_stack),
+                  "m"(rbx)
+                :);
     } else {
         __asm__("mov r15, %0\n"
                 "mov rcx, %1\n"
                 "mov rdx, %2\n"
                 "mov r8, %3\n"
                 "mov r9, %4\n"
+                "mov rbx, %5\n"
                 "mov rsp, rbp\n"
                 "pop rbp\n"
                 "add rsp, 8\n"
-                "jmp r15\n" ::"r"(function_export.address),
-                "r"(p1),
-                "r"(p2),
-                "r"(p3),
-                "r"(p4)
-                : "r15", "rcx", "rdx", "r8", "r9");
+                "jmp r15\n"
+                :
+                : "r"(function_export.address),
+                  "r"(p1),
+                  "r"(p2),
+                  "r"(p3),
+                  "r"(p4),
+                  "m"(rbx)
+                : "r15", "rcx", "rdx", "r8", "r9"
+
+        );
     }
 }
 
@@ -712,6 +727,7 @@ int main(int argc, char **argv) {
         EXIT("failed getting memory regions\n");
     }
 
+    LOADER_LOG("Mapping executable memory\n");
     if (!map_memory_regions_win(
             fd, memory_regions.data, memory_regions.length
         )) {
@@ -775,13 +791,14 @@ int main(int argc, char **argv) {
 
     /* Map Import Address Tables */
 
-    LOADER_LOG("Initializing IAT\n");
+    LOADER_LOG("Initializing executable IAT\n");
     if (!initialize_import_address_table(&runtime_exe)) {
         EXIT("initialize_import_address_table failed\n");
     }
     for (size_t i = 0; i < shared_libraries.length; i++) {
         const struct WinRuntimeObject *shared_library =
             &shared_libraries.data[i];
+        LOADER_LOG("Initializing '%s' IAT\n", shared_library->name);
         if (!initialize_import_address_table(shared_library)) {
             EXIT("initialize_import_address_table failed\n");
         }
@@ -791,15 +808,26 @@ int main(int argc, char **argv) {
 
     /* Init Thread Local Storage */
 
+    //  @todo: way too many mapping functions
+    size_t *tls_buffer = tiny_c_mmapx86(
+        0, 0x1000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
+    );
+    if (tls_buffer == NULL) {
+        EXIT("TLS memory regions failed\n");
+    }
+
+#if DOCKER
+    // @todo: <.refptr.__imp__acmdln>
+    size_t *refptr__imp__acmdln = (size_t *)0x140004380;
+    size_t *refptr__imp__acmdln2 = (size_t *)*refptr__imp__acmdln;
+    *refptr__imp__acmdln2 = (size_t)tls_buffer;
+#else
     // @todo: .bss 'initialized'
-    // size_t *temp_ptr = (size_t *)0x140007030;
-    // *temp_ptr = 0x140007031;
-    // *temp_ptr = 0x00;
-    *((size_t *)0x140007030) = 0x140007030;
-    // size_t temp_stack = 0;
-    // tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)&argc);
-    tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)0x140007000);
-    // tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)&temp_stack);
+    size_t *temp_init_ptr = (size_t *)0x140007030;
+    *temp_init_ptr = 0x01;
+#endif
+    *(tls_buffer + 6) = (size_t)tls_buffer;
+    tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)tls_buffer);
 
     /* Jump to program */
 

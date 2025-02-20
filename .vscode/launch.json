@@ -110,7 +110,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/winloader",
-      "args": [],
+      "args": ["./windynamicfull.exe"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [{ "name": "CFLAGS", "value": "-DVERBOSE" }],
