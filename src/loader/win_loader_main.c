@@ -813,6 +813,16 @@ int main(int argc, char **argv) {
     size_t *tls_buffer = tiny_c_mmapx86(
         0, 0x1000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
     );
+    // @note: only works in Linux 4.15 and 'CONFIG_ANON_VMA_NAME' must be set
+    //        rg CONFIG_ANON_VMA_NAME /boot/config-`uname -r`
+    // @todo: doesn't work in docker, maybe just rm
+    // tinyc_sys_prctl(
+    //     PR_SET_VMA,
+    //     PR_SET_VMA_ANON_NAME,
+    //     (size_t)tls_buffer,
+    //     0x1000,
+    //     (size_t)"MyCustomRegion"
+    // );
     if (tls_buffer == NULL) {
         EXIT("TLS memory regions failed\n");
     }
@@ -849,16 +859,6 @@ int main(int argc, char **argv) {
     if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)tls_buffer) != 0) {
         EXIT("tinyc_sys_arch_prctl failed\n");
     }
-    // @todo: set region name
-    // if (tinyc_sys_prctl(
-    //         PR_SET_VMA,
-    //         PR_SET_VMA_ANON_NAME,
-    //         (size_t)tls_buffer,
-    //         0x1000,
-    //         (size_t)"MyCustomRegion"
-    //     ) != 0) {
-    //     EXIT("tinyc_sys_prctl failed\n");
-    // }
 
     /* Jump to program */
 
