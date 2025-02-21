@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #define SYS_write 0x01
+#define SYS_brk 0x0c
 #define SYS_exit 0x3c
 
 struct SysArgs {
@@ -38,3 +39,5 @@ size_t add_many_ntdll(
     [[maybe_unused]] size_t seven,
     [[maybe_unused]] size_t eight
 );
+
+size_t sys_brk(size_t brk);

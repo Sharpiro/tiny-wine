@@ -317,13 +317,21 @@ static void aeabi_uidivmod_test(
 #endif
 
 int main(void) {
+    LOADER_LOG("get_memory_regions_basic_test\n");
     get_memory_regions_basic_test();
+    LOADER_LOG("get_memory_regions_offset_test\n");
     get_memory_regions_offset_test();
+    LOADER_LOG("get_memory_regions_big_align_test\n");
     get_memory_regions_big_align_test();
+    LOADER_LOG("get_memory_regions_x86_test\n");
     get_memory_regions_x86_test();
+    LOADER_LOG("get_memory_regions_win_test\n");
     get_memory_regions_win_test();
+    LOADER_LOG("loader_malloc_arena_align_test\n");
     loader_malloc_arena_align_test();
+    LOADER_LOG("get_runtime_function_local_lib_test\n");
     get_runtime_function_local_lib_test();
+    LOADER_LOG("get_runtime_function_shared_lib_test\n");
     get_runtime_function_shared_lib_test();
 
 #ifdef ARM32

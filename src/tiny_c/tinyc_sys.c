@@ -27,9 +27,7 @@ size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
 #ifdef ARM32
 
 #define MMAP SYS_mmap2
-// #define MMAP 0xc0
 
-// @todo: don't know how to clobber 7 registers
 size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
 

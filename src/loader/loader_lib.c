@@ -12,7 +12,7 @@ static size_t loader_heap_index = 0;
 
 void *loader_malloc_arena(size_t n) {
     if (loader_buffer == NULL) {
-        loader_buffer = tiny_c_mmapx86(
+        loader_buffer = tiny_c_mmap(
             0,
             LOADER_BUFFER_LEN,
             PROT_READ | PROT_WRITE,

@@ -190,7 +190,6 @@ static void run_asm(
             :);
 }
 
-// @todo: $fp is now broken and pointing to $sp in arm32?
 void dynamic_linker_callback(void) {
     __asm__("mov r10, r0\n");
     size_t r0 = GET_REGISTER("r10");
@@ -590,7 +589,8 @@ int main(int32_t argc, char **argv) {
     char *filename = argv[1];
     LOADER_LOG("Starting loader, %s, %d\n", filename, argc);
 
-    // @todo: need to sync this with clib
+    /* Init heap */
+
     size_t brk_start = tinyc_sys_brk(0);
     LOADER_LOG("BRK:, %x\n", brk_start);
     size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);

@@ -63,7 +63,12 @@ static void run_asm(
             : "rax");
 }
 
+/*
+ * Dynamic callback from Linux to Linux
+ */
 static void dynamic_callback_linux(void) {
+    size_t *rbx;
+    __asm__("mov %0, rbx" : "=r"(rbx));
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
     size_t *p1;
@@ -82,7 +87,7 @@ static void dynamic_callback_linux(void) {
     size_t p8 = *(rbp + 5);
 
     LOADER_LOG(
-        "--- Starting Linux -> Linux linking at %x\n", dynamic_callback_linux
+        "--- Starting Linux dyn callback -> at %x\n", dynamic_callback_linux
     );
 
     size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
@@ -116,19 +121,20 @@ static void dynamic_callback_linux(void) {
     // @todo: This log has so many parameters that it could affect 'rbx'
     //        which needs to be preserved during dynamic linking.
     //        See windows dynamic callback
-    LOADER_LOG(
-        "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
-        runtime_symbol->value,
-        runtime_relocation->name,
-        p1,
-        p2,
-        p3,
-        p4,
-        p5,
-        p6,
-        p7,
-        p8
-    );
+    // LOADER_LOG(
+    //     "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
+    //     runtime_symbol->value,
+    //     runtime_relocation->name,
+    //     p1,
+    //     p2,
+    //     p3,
+    //     p4,
+    //     p5,
+    //     p6,
+    //     p7,
+    //     p8
+    // );
+    LOADER_LOG("%x: %s()\n", runtime_symbol->value, runtime_relocation->name);
     LOADER_LOG("--- Completed dynamic linking\n");
 
     __asm__("mov r15, %0\n"
@@ -138,6 +144,7 @@ static void dynamic_callback_linux(void) {
             "mov rcx, %4\n"
             "mov r8, %5\n"
             "mov r9, %6\n"
+            "mov rbx, %7\n"
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 16\n"
@@ -147,10 +154,15 @@ static void dynamic_callback_linux(void) {
             "r"(p3),
             "r"(p4),
             "r"(p5),
-            "r"(p6)
+            "r"(p6),
+            "m"(rbx)
             : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
 }
 
+/*
+ * Converts from Windows stack frame to Linux, calls Linux function, then
+ * converts stack frame back to Linux
+ */
 __attribute__((naked)) static void swap_stack(void) {
 #define WORD_SIZE 8
 #define COPY_SIZE 9 * WORD_SIZE - WORD_SIZE
@@ -185,6 +197,10 @@ __attribute__((naked)) static void swap_stack(void) {
     );
 }
 
+/*
+ * Dynamic callback from Windows to Windows, or from Windows to Linux
+ * libntdll.so
+ */
 static void dynamic_callback_windows(void) {
     size_t *rbx;
     __asm__("mov %0, rbx" : "=r"(rbx));
@@ -210,7 +226,8 @@ static void dynamic_callback_windows(void) {
     size_t func_iat_value_temp = dyn_trampoline_start - IAT_BASE_START;
 
     LOADER_LOG(
-        "--- Starting Windows -> ??? linking at %x\n", dynamic_callback_windows
+        "--- Starting Windows dyn callbac -> ??? at %x\n",
+        dynamic_callback_windows
     );
 
     /** Find entry in Import Address Table */
@@ -303,6 +320,7 @@ static void dynamic_callback_windows(void) {
     bool is_lib_ntdll;
     if (tiny_c_strcmp(lib_name, "ntdll.dll") == 0) {
         is_lib_ntdll = true;
+        LOADER_LOG("Rerouting to libntdll.so\n");
         for (size_t i = 0; i < lib_ntdll->runtime_symbols.length; i++) {
             RuntimeSymbol *curr_symbol = &lib_ntdll->runtime_symbols.data[i];
             if (tiny_c_strcmp(curr_symbol->name, import_entry->name) == 0) {
@@ -337,49 +355,49 @@ static void dynamic_callback_windows(void) {
     LOADER_LOG("Completed dynamic linking\n");
 
     if (is_lib_ntdll) {
-        __asm__("mov r14, %0\n"
-                "mov r15, %7\n"
-                "mov rdi, %1\n"
-                "mov rsi, %2\n"
-                "mov rdx, %3\n"
-                "mov rcx, %4\n"
-                "mov r8, %5\n"
-                "mov r9, %6\n"
-                "mov rbx, %8\n"
+        __asm__("mov r14, %[function_export_address]\n"
+                "mov r15, %[swap_stack]\n"
+                "mov rdi, %[p1]\n"
+                "mov rsi, %[p2]\n"
+                "mov rdx, %[p3]\n"
+                "mov rcx, %[p4]\n"
+                "mov r8, %[p5]\n"
+                "mov r9, %[p6]\n"
+                "mov rbx, %[rbx]\n"
                 "mov rsp, rbp\n"
                 "pop rbp\n"
                 "add rsp, 8\n"
                 "push r14\n"
                 "jmp r15\n"
                 :
-                : "r"(function_export.address),
-                  "m"(p1),
-                  "m"(p2),
-                  "m"(p3),
-                  "m"(p4),
-                  "m"(p5),
-                  "m"(p6),
-                  "r"(swap_stack),
-                  "m"(rbx)
+                : [function_export_address] "r"(function_export.address),
+                  [p1] "m"(p1),
+                  [p2] "m"(p2),
+                  [p3] "m"(p3),
+                  [p4] "m"(p4),
+                  [p5] "m"(p5),
+                  [p6] "m"(p6),
+                  [swap_stack] "r"(swap_stack),
+                  [rbx] "m"(rbx)
                 :);
     } else {
-        __asm__("mov r15, %0\n"
-                "mov rcx, %1\n"
-                "mov rdx, %2\n"
-                "mov r8, %3\n"
-                "mov r9, %4\n"
-                "mov rbx, %5\n"
+        __asm__("mov r15, %[function_export_address]\n"
+                "mov rcx, %[p1]\n"
+                "mov rdx, %[p2]\n"
+                "mov r8, %[p3]\n"
+                "mov r9, %[p4]\n"
+                "mov rbx, %[rbx]\n"
                 "mov rsp, rbp\n"
                 "pop rbp\n"
                 "add rsp, 8\n"
                 "jmp r15\n"
                 :
-                : "r"(function_export.address),
-                  "r"(p1),
-                  "r"(p2),
-                  "r"(p3),
-                  "r"(p4),
-                  "m"(rbx)
+                : [function_export_address] "r"(function_export.address),
+                  [p1] "r"(p1),
+                  [p2] "r"(p2),
+                  [p3] "r"(p3),
+                  [p4] "r"(p4),
+                  [rbx] "m"(rbx)
                 : "r15", "rcx", "rdx", "r8", "r9"
 
         );
@@ -675,6 +693,20 @@ int main(int argc, char **argv) {
     char *filename = argv[1];
     LOADER_LOG("Starting winloader, %s, %d\n", filename, argc);
 
+    /* Init heap */
+
+    // @todo: init heap
+
+    // size_t brk_start = tinyc_sys_brk(0);
+    // LOADER_LOG("BRK:, %x\n", brk_start);
+    // size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
+    // LOADER_LOG("BRK:, %x\n", brk_end);
+    // if (brk_end <= brk_start) {
+    //     EXIT("program BRK setup failed");
+    // }
+
+    log_memory_regions();
+
     int32_t pid = tiny_c_get_pid();
     LOADER_LOG("pid: %d\n", pid);
 
@@ -807,23 +839,12 @@ int main(int argc, char **argv) {
 
     log_memory_regions();
 
-    /* Init Thread Local Storage */
+    /* Bypass Thread Local Storage */
 
-    //  @todo: way too many mapping functions
-    size_t *tls_buffer = tiny_c_mmapx86(
+    size_t *tls_buffer = tiny_c_mmap(
         0, 0x1000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
     );
-    // @note: only works in Linux 4.15 and 'CONFIG_ANON_VMA_NAME' must be set
-    //        rg CONFIG_ANON_VMA_NAME /boot/config-`uname -r`
-    // @todo: doesn't work in docker, maybe just rm
-    // tinyc_sys_prctl(
-    //     PR_SET_VMA,
-    //     PR_SET_VMA_ANON_NAME,
-    //     (size_t)tls_buffer,
-    //     0x1000,
-    //     (size_t)"MyCustomRegion"
-    // );
-    if (tls_buffer == NULL) {
+    if (tls_buffer == MAP_FAILED) {
         EXIT("TLS memory regions failed\n");
     }
 
@@ -855,7 +876,7 @@ int main(int argc, char **argv) {
         *refptr__imp__acmdln2 = (size_t)tls_buffer;
     }
 
-    *(tls_buffer + 6) = (size_t)tls_buffer;
+    tls_buffer[0x30 / sizeof(uint64_t)] = (size_t)tls_buffer;
     if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)tls_buffer) != 0) {
         EXIT("tinyc_sys_arch_prctl failed\n");
     }

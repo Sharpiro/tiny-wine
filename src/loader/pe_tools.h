@@ -60,7 +60,7 @@ struct ImageOptionalHeader64 {
     uint32_t size_of_uninitialized_data; // Size of uninitialized data
     uint32_t address_of_entry_point;     // RVA of entry point
     uint32_t base_of_code;               // RVA of code section
-    // @todo: 32/64 diff starts here
+    // @note: 32/64 diff starts here
     uint64_t image_base;                     // Preferred load address
     uint32_t section_alignment;              // Alignment of sections in memory
     uint32_t file_alignment;                 // Alignment of sections in file
@@ -94,7 +94,7 @@ struct ImageOptionalHeader32 {
     uint32_t size_of_uninitialized_data; // Size of uninitialized data
     uint32_t address_of_entry_point;     // RVA of entry point
     uint32_t base_of_code;               // RVA of code section
-    // @todo: 32/64 diff starts here
+    // @note: 32/64 diff starts here
     uint32_t base_of_data;
     uint32_t image_base;                     // Preferred load address
     uint32_t section_alignment;              // Alignment of sections in memory
@@ -201,7 +201,6 @@ struct ExportEntry {
     char *name;
 };
 
-// @todo: alignment problems on some platforms?
 struct RawWinSymbol {
     char name[8];
     int32_t value;

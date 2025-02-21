@@ -27,6 +27,7 @@ lib_var_data: 0x42
 lib_var_data: 0x43
 lib_var_data: 0x44
 *get_lib_var_data(): 0x44
+add_many_msvcrt: 36
 EOF
 `
 assert [ "`./winloader ./windynamic.exe`" == "$expected" ]

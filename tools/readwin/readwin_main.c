@@ -5,7 +5,7 @@
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        EXIT("file required\n");
+        EXIT("Usage: readwin <file> [-s]\n");
     }
 
     char *filename = argv[1];
@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
         EXIT("file not found\n");
     }
 
-    const bool verbose = argc >= 3 && tiny_c_strcmp(argv[2], "-v") == 0;
+    const bool show_symbols = argc >= 3 && tiny_c_strcmp(argv[2], "-s") == 0;
 
     struct PeData pe_data;
     if (!get_pe_data(fd, &pe_data)) {
@@ -129,17 +129,17 @@ int main(int argc, char **argv) {
 
     /* Symbols */
 
-    tiny_c_printf("\nSymbols (%d):\n", pe_data.symbols_len);
-    for (size_t i = 0; i < pe_data.symbols_len; i++) {
-        struct WinSymbol *symbol = &pe_data.symbols[i];
-        size_t section_start = 0;
-        size_t symbol_section_index = symbol->section_number - 1;
-        if (symbol_section_index < pe_data.section_headers_len) {
-            struct WinSectionHeader *section_header =
-                &pe_data.section_headers[symbol_section_index];
-            section_start = section_header->virtual_base_address;
-        }
-        if (verbose) {
+    if (show_symbols) {
+        tiny_c_printf("\nSymbols (%d):\n", pe_data.symbols_len);
+        for (size_t i = 0; i < pe_data.symbols_len; i++) {
+            struct WinSymbol *symbol = &pe_data.symbols[i];
+            size_t section_start = 0;
+            size_t symbol_section_index = symbol->section_number - 1;
+            if (symbol_section_index < pe_data.section_headers_len) {
+                struct WinSectionHeader *section_header =
+                    &pe_data.section_headers[symbol_section_index];
+                section_start = section_header->virtual_base_address;
+            }
             char *symbol_type = symbol->type == 0x20 ? "FUNCTION" : "-";
             char *symbol_class = symbol->storage_class == 0x02 ? "EXTERNAL"
                 : symbol->storage_class == 0x03                ? "STATIC"
@@ -154,35 +154,6 @@ int main(int argc, char **argv) {
                 symbol_type,
                 symbol_class
             );
-            continue;
         }
-        if (symbol->type != SYMBOL_TYPE_FUNCTION) {
-            if (symbol->type != 0) {
-                tiny_c_printf(
-                    "WARNING: ignoring unknown symbol type '%s', %x\n",
-                    symbol->name,
-                    symbol->type
-                );
-            }
-            continue;
-        }
-        if (symbol->storage_class != SYMBOL_CLASS_EXTERNAL) {
-            if (symbol->storage_class != SYMBOL_CLASS_STATIC) {
-                tiny_c_printf(
-                    "WARNING: ignoring unknown symbol class '%s', %x\n",
-                    symbol->name,
-                    symbol->type
-                );
-            }
-            continue;
-        }
-
-        tiny_c_printf(
-            "%d: %x: %x %s\n",
-            symbol->raw_index,
-            section_start,
-            symbol->value,
-            symbol->name
-        );
     }
 }

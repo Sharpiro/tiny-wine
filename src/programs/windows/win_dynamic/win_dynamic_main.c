@@ -35,6 +35,11 @@ int start_inferior() {
     printf("lib_var_data: %x\n", lib_var_data);
     printf("*get_lib_var_data(): %x\n", *get_lib_var_data());
 
+    printf(
+        "add_many_msvcrt: %d\n",
+        (int32_t)add_many_msvcrt(1, 2, 3, 4, 5, 6, 7, 8)
+    );
+
     return 0;
 }
 

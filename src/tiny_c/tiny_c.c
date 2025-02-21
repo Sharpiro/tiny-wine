@@ -272,6 +272,7 @@ void *tiny_c_mmap(
     int32_t fd,
     size_t offset
 ) {
+#ifdef ARM32
     struct SysArgs args = {
         .param_one = address,
         .param_two = length,
@@ -280,25 +281,7 @@ void *tiny_c_mmap(
         .param_five = (size_t)fd,
         .param_six = offset / 0x1000,
     };
-    size_t result = tiny_c_syscall(MMAP, &args);
-    int32_t err = (int32_t)result;
-    if (err < 1) {
-        tinyc_errno = -err;
-        return MAP_FAILED;
-    }
-
-    return (void *)result;
-}
-
-// @todo: x64 convention disrespect could be a register clobber bug
-void *tiny_c_mmapx86(
-    size_t address,
-    size_t length,
-    size_t prot,
-    size_t flags,
-    int32_t fd,
-    size_t offset
-) {
+#elif defined AMD64
     struct SysArgs args = {
         .param_one = address,
         .param_two = length,
@@ -307,9 +290,16 @@ void *tiny_c_mmapx86(
         .param_five = (size_t)fd,
         .param_six = offset,
     };
-    void *result = (void *)tiny_c_syscall(MMAP, &args);
+#endif
 
-    return result;
+    size_t result = tiny_c_syscall(MMAP, &args);
+    ssize_t err = (ssize_t)result;
+    if (err < 1) {
+        tinyc_errno = (int32_t)-err;
+        return MAP_FAILED;
+    }
+
+    return (void *)result;
 }
 
 size_t tiny_c_munmap(size_t address, size_t length) {

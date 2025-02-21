@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-// @todo: do not want 2 of these
 bool get_memory_regions_info_arm(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
@@ -162,7 +161,7 @@ bool map_memory_regions(
             memory_region->is_direct_file_map ? 0 : MAP_ANONYMOUS;
         size_t file_offset =
             memory_region->is_direct_file_map ? memory_region->file_offset : 0;
-        uint8_t *addr = tiny_c_mmapx86(
+        uint8_t *addr = tiny_c_mmap(
             memory_region->start,
             memory_region_len,
             map_protection,

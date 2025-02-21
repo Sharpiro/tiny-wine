@@ -53,7 +53,7 @@ NTSTATUS NtWriteFile(
     [[maybe_unused]] PVOID apc_routine,
     [[maybe_unused]] PVOID apc_context,
     [[maybe_unused]] PIO_STATUS_BLOCK io_status_block,
-    [[maybe_unused]] PVOID buffer,
+    PVOID buffer,
     ULONG length,
     [[maybe_unused]] PLARGE_INTEGER byte_offset,
     [[maybe_unused]] PULONG key
@@ -103,4 +103,11 @@ size_t add_many_ntdll(
     size_t result =
         add_many_ntdll_internal(one, two, three, four, five, six, seven, eight);
     return result;
+}
+
+size_t sys_brk(size_t brk) {
+    struct SysArgs args = {
+        .param_one = brk,
+    };
+    return syscall(SYS_brk, &args);
 }

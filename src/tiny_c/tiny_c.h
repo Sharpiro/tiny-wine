@@ -33,14 +33,6 @@ void *tiny_c_mmap(
     int32_t fd,
     size_t offset
 );
-void *tiny_c_mmapx86(
-    size_t address,
-    size_t length,
-    size_t prot,
-    size_t flags,
-    int32_t fd,
-    size_t offset
-);
 
 size_t tiny_c_munmap(size_t address, size_t length);
 

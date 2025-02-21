@@ -19,6 +19,8 @@
 #define EXPORTABLE
 #endif
 
+static size_t malloc_address = 0;
+
 void DllMainCRTStartup(void) {
 }
 
@@ -227,7 +229,7 @@ EXPORTABLE void exit(int32_t exit_code) {
     NtTerminateProcess((HANDLE)-1, exit_code);
 }
 
-size_t add_many_msvcrt(
+EXPORTABLE size_t add_many_msvcrt(
     [[maybe_unused]] size_t one,
     [[maybe_unused]] size_t two,
     [[maybe_unused]] size_t three,
@@ -243,99 +245,92 @@ size_t add_many_msvcrt(
 }
 
 EXPORTABLE void __C_specific_handler() {
-    // printf("__C_specific_handler\n");
 }
 
 EXPORTABLE void __getmainargs() {
-    // printf("__getmainargs\n");
 }
 
 EXPORTABLE void __initenv() {
-    // printf("__initenv\n");
 }
 
 EXPORTABLE void __iob_func() {
-    // printf("__iob_func\n");
 }
 
 EXPORTABLE void __lconv_init() {
-    // printf("__lconv_init\n");
 }
 
 EXPORTABLE void __set_app_type() {
-    // printf("__set_app_type\n");
 }
 
 EXPORTABLE void __setusermatherr() {
-    // printf("__setusermatherr\n");
 }
 
 EXPORTABLE void _acmdln() {
-    // printf("_acmdln\n");
 }
 
 EXPORTABLE void _amsg_exit() {
-    // printf("_amsg_exit\n");
 }
 
 EXPORTABLE void _cexit() {
-    // printf("_cexit\n");
 }
 
 EXPORTABLE void _commode() {
-    // printf("_commode\n");
 }
 
 EXPORTABLE void _fmode() {
-    // printf("_fmode\n");
 }
 
 EXPORTABLE void _initterm() {
-    // printf("_initterm\n");
 }
 
 EXPORTABLE void _onexit() {
-    // printf("_onexit\n");
 }
 
 EXPORTABLE void abort() {
-    // printf("abort\n");
 }
 
 EXPORTABLE void calloc() {
-    // printf("calloc\n");
 }
 
 EXPORTABLE void fprintf() {
-    // printf("fprintf\n");
 }
 
 EXPORTABLE void free() {
-    // printf("free\n");
 }
 
 EXPORTABLE void fwrite() {
-    // printf("fwrite\n");
 }
 
 // @todo: real address
-EXPORTABLE void *malloc() {
-    // printf("malloc\n");
-    return (void *)0x1'4000'7000;
+// @todo: segfault bug
+EXPORTABLE void *malloc(size_t size) {
+    // printf("DEBUG malloc: fake\n");
+    if (malloc_address) {
+        return (void *)malloc_address;
+    }
+
+    // size_t brk_start = sys_brk(0);
+    // sys_brk(0, 0);
+    // size_t brk_end = sys_brk(brk_start + 0x1000);
+    // if (brk_end <= brk_start) {
+    //     // return NULL;
+    //     malloc_address = 0x1'4000'7000;
+    //     return (void *)malloc_address;
+    // }
+
+    // malloc_address = brk_start;
+    malloc_address = 0x1'4000'7000;
+    return (void *)malloc_address;
 }
 
 EXPORTABLE void memcpy() {
-    // printf("memcpy\n");
 }
 
 EXPORTABLE void signal() {
-    // printf("signal\n");
 }
 
 EXPORTABLE void strncmp() {
-    // printf("strncmp\n");
 }
 
 EXPORTABLE void vfprintf() {
-    // printf("vfprintf\n");
 }
