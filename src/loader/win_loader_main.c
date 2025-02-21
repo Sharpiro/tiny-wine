@@ -174,9 +174,9 @@ __attribute__((naked)) static void swap_stack(void) {
         /* Duplicate windows stack frame */
 
         "lea rax, [rsp + %[copy_size]]\n"
-        "lea rbx, [rsp]\n"
+        "lea r14, [rsp]\n"
         ".start:\n"
-        "cmp rax, rbx\n"
+        "cmp rax, r14\n"
         "jl .end\n"
         "push [rax]\n"
         "sub rax, %[word_size]\n"
