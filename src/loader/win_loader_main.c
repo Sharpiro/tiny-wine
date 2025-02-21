@@ -118,23 +118,19 @@ static void dynamic_callback_linux(void) {
     }
 
     *got_entry = runtime_symbol->value;
-    // @todo: This log has so many parameters that it could affect 'rbx'
-    //        which needs to be preserved during dynamic linking.
-    //        See windows dynamic callback
-    // LOADER_LOG(
-    //     "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
-    //     runtime_symbol->value,
-    //     runtime_relocation->name,
-    //     p1,
-    //     p2,
-    //     p3,
-    //     p4,
-    //     p5,
-    //     p6,
-    //     p7,
-    //     p8
-    // );
-    LOADER_LOG("%x: %s()\n", runtime_symbol->value, runtime_relocation->name);
+    LOADER_LOG(
+        "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
+        runtime_symbol->value,
+        runtime_relocation->name,
+        p1,
+        p2,
+        p3,
+        p4,
+        p5,
+        p6,
+        p7,
+        p8
+    );
     LOADER_LOG("--- Completed dynamic linking\n");
 
     __asm__("mov r15, %0\n"
@@ -354,6 +350,10 @@ static void dynamic_callback_windows(void) {
 
     LOADER_LOG("Completed dynamic linking\n");
 
+    // @todo: Unclear how to not clobber certain registers when converting
+    //        Windows to Linux and back since ABIs have different caller/callee
+    //        registers.
+    //        Works but will likely fail in advanced use cases
     if (is_lib_ntdll) {
         __asm__("mov r14, %[function_export_address]\n"
                 "mov r15, %[swap_stack]\n"
@@ -393,14 +393,12 @@ static void dynamic_callback_windows(void) {
                 "jmp r15\n"
                 :
                 : [function_export_address] "r"(function_export.address),
-                  [p1] "r"(p1),
-                  [p2] "r"(p2),
-                  [p3] "r"(p3),
-                  [p4] "r"(p4),
+                  [p1] "m"(p1),
+                  [p2] "m"(p2),
+                  [p3] "m"(p3),
+                  [p4] "m"(p4),
                   [rbx] "m"(rbx)
-                : "r15", "rcx", "rdx", "r8", "r9"
-
-        );
+                :);
     }
 }
 
@@ -695,15 +693,13 @@ int main(int argc, char **argv) {
 
     /* Init heap */
 
-    // @todo: init heap
-
-    // size_t brk_start = tinyc_sys_brk(0);
-    // LOADER_LOG("BRK:, %x\n", brk_start);
-    // size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
-    // LOADER_LOG("BRK:, %x\n", brk_end);
-    // if (brk_end <= brk_start) {
-    //     EXIT("program BRK setup failed");
-    // }
+    size_t brk_start = tinyc_sys_brk(0);
+    LOADER_LOG("BRK:, %x\n", brk_start);
+    size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
+    LOADER_LOG("BRK:, %x\n", brk_end);
+    if (brk_end <= brk_start) {
+        EXIT("program BRK setup failed");
+    }
 
     log_memory_regions();
 

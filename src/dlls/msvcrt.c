@@ -301,25 +301,19 @@ EXPORTABLE void free() {
 EXPORTABLE void fwrite() {
 }
 
-// @todo: real address
-// @todo: segfault bug
-EXPORTABLE void *malloc(size_t size) {
-    // printf("DEBUG malloc: fake\n");
+// @todo: fake malloc, doesn't sync w/ loader's state
+EXPORTABLE void *malloc([[maybe_unused]] size_t size) {
     if (malloc_address) {
         return (void *)malloc_address;
     }
 
-    // size_t brk_start = sys_brk(0);
-    // sys_brk(0, 0);
-    // size_t brk_end = sys_brk(brk_start + 0x1000);
-    // if (brk_end <= brk_start) {
-    //     // return NULL;
-    //     malloc_address = 0x1'4000'7000;
-    //     return (void *)malloc_address;
-    // }
+    size_t brk_start = sys_brk(0);
+    size_t brk_end = sys_brk(brk_start + 0x1000);
+    if (brk_end <= brk_start) {
+        return NULL;
+    }
 
-    // malloc_address = brk_start;
-    malloc_address = 0x1'4000'7000;
+    malloc_address = brk_start;
     return (void *)malloc_address;
 }
 
