@@ -35,10 +35,25 @@ int start_inferior() {
     printf("lib_var_data: %x\n", lib_var_data);
     printf("*get_lib_var_data(): %x\n", *get_lib_var_data());
 
+    /* Many parameters and volatile registers */
+
+    __asm__(
+        /**/
+        "mov rdi, 0x42\n"
+        "mov rsi, 0x43\n"
+    );
     printf(
         "add_many_msvcrt: %d\n",
         (int32_t)add_many_msvcrt(1, 2, 3, 4, 5, 6, 7, 8)
     );
+    size_t rdi, rsi;
+    __asm__(
+        /**/
+        "mov %0, rdi\n"
+        "mov %1, rsi\n"
+        : "=r"(rdi), "=r"(rsi)
+    );
+    printf("add_many_msvcrt rdi, rsi: %x, %x\n", (uint32_t)rdi, (uint32_t)rsi);
 
     return 0;
 }

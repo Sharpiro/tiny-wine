@@ -17,6 +17,8 @@
 
 #define IAT_INCREMENT 0x10000
 
+size_t rdi = 0;
+size_t rsi = 0;
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
@@ -66,22 +68,30 @@ static void run_asm(
 static void dynamic_callback_linux(void) {
     size_t *rbx;
     __asm__("mov %0, rbx" : "=r"(rbx));
+    size_t *r12;
+    __asm__("mov %0, r12" : "=r"(r12));
+    size_t *r13;
+    __asm__("mov %0, r13" : "=r"(r13));
+    size_t *r14;
+    __asm__("mov %0, r14" : "=r"(r14));
+    size_t *r15;
+    __asm__("mov %0, r15" : "=r"(r15));
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
-    size_t *p1;
-    __asm__("mov %0, rdi" : "=r"(p1));
-    size_t *p2;
-    __asm__("mov %0, rsi" : "=r"(p2));
-    size_t *p3;
-    __asm__("mov %0, rdx" : "=r"(p3));
-    size_t *p4;
-    __asm__("mov %0, rcx" : "=r"(p4));
-    size_t *p5;
-    __asm__("mov %0, r8" : "=r"(p5));
-    size_t *p6;
-    __asm__("mov %0, r9" : "=r"(p6));
-    size_t p7 = *(rbp + 4);
-    size_t p8 = *(rbp + 5);
+    size_t *p1_linux_rdi;
+    __asm__("mov %0, rdi" : "=r"(p1_linux_rdi));
+    size_t *p2_linux_rsi;
+    __asm__("mov %0, rsi" : "=r"(p2_linux_rsi));
+    size_t *p3_linux_rdx;
+    __asm__("mov %0, rdx" : "=r"(p3_linux_rdx));
+    size_t *p4_linux_rcx;
+    __asm__("mov %0, rcx" : "=r"(p4_linux_rcx));
+    size_t *p5_linux_r8;
+    __asm__("mov %0, r8" : "=r"(p5_linux_r8));
+    size_t *p6_linux_r9;
+    __asm__("mov %0, r9" : "=r"(p6_linux_r9));
+    size_t p7_stack1 = *(rbp + 4);
+    size_t p8_stack2 = *(rbp + 5);
 
     LOADER_LOG(
         "--- Starting Linux dyn callback -> at %x\n", dynamic_callback_linux
@@ -119,74 +129,49 @@ static void dynamic_callback_linux(void) {
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
-        p1,
-        p2,
-        p3,
-        p4,
-        p5,
-        p6,
-        p7,
-        p8
+        p1_linux_rdi,
+        p2_linux_rsi,
+        p3_linux_rdx,
+        p4_linux_rcx,
+        p5_linux_r8,
+        p6_linux_r9,
+        p7_stack1,
+        p8_stack2
     );
     LOADER_LOG("--- Completed dynamic linking\n");
 
-    __asm__("mov r15, %0\n"
-            "mov rdi, %1\n"
-            "mov rsi, %2\n"
-            "mov rdx, %3\n"
-            "mov rcx, %4\n"
-            "mov r8, %5\n"
-            "mov r9, %6\n"
-            "mov rbx, %7\n"
-            "mov rsp, rbp\n"
-            "pop rbp\n"
-            "add rsp, 16\n"
-            "jmp r15\n" ::"r"(runtime_symbol->value),
-            "r"(p1),
-            "r"(p2),
-            "r"(p3),
-            "r"(p4),
-            "r"(p5),
-            "r"(p6),
-            "m"(rbx)
-            : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
-}
-
-/*
- * Converts from Windows stack frame to Linux, calls Linux function, then
- * converts stack frame back to Linux
- */
-__attribute__((naked)) static void swap_stack(void) {
-#define WORD_SIZE 8
-#define COPY_SIZE 9 * WORD_SIZE - WORD_SIZE
-
     __asm__(
-        /* Destination function address */
-        "pop r15\n"
+        /* */
+        ".dynamic_callback_linux:\n"
+        "mov rdi, %[p1_linux_rdi]\n"
+        "mov rsi, %[p2_linux_rsi]\n"
+        "mov rdx, %[p3_linux_rdx]\n"
+        "mov rcx, %[p4_linux_rcx]\n"
+        "mov r8, %[p5_linux_r8]\n"
+        "mov r9, %[p6_linux_r9]\n"
+        "mov r12, %[r12]\n"
+        "mov r13, %[r13]\n"
+        "mov r14, %[r14]\n"
+        "mov r15, %[r15]\n"
 
-        /* Duplicate windows stack frame */
-
-        "lea rax, [rsp + %[copy_size]]\n"
-        "lea r14, [rsp]\n"
-        ".start:\n"
-        "cmp rax, r14\n"
-        "jl .end\n"
-        "push [rax]\n"
-        "sub rax, %[word_size]\n"
-        "jmp .start\n"
-        ".end:\n"
-
-        /* Convert to linux stack frame */
-
-        "add rsp, 7 * %[word_size]\n"
-        "call r15\n"
-
-        /* Convert back to windows stack frame */
-
-        "add rsp, 2 * %[word_size]\n"
-        "ret\n"
+        "mov rbx, %[rbx]\n"
+        "mov rsp, rbp\n"
+        "pop rbp\n"
+        "add rsp, 16\n"
+        "jmp %[function_address]\n"
         :
-        : [copy_size] "g"(COPY_SIZE), [word_size] "g"(WORD_SIZE)
+        : [function_address] "m"(runtime_symbol->value),
+          [p1_linux_rdi] "m"(p1_linux_rdi),
+          [p2_linux_rsi] "m"(p2_linux_rsi),
+          [p3_linux_rdx] "m"(p3_linux_rdx),
+          [p4_linux_rcx] "m"(p4_linux_rcx),
+          [p5_linux_r8] "m"(p5_linux_r8),
+          [p6_linux_r9] "m"(p6_linux_r9),
+          [rbx] "m"(rbx),
+          [r12] "m"(r12),
+          [r13] "m"(r13),
+          [r14] "m"(r14),
+          [r15] "m"(r15)
     );
 }
 
@@ -197,20 +182,32 @@ __attribute__((naked)) static void swap_stack(void) {
 static void dynamic_callback_windows(void) {
     size_t *rbx;
     __asm__("mov %0, rbx" : "=r"(rbx));
+    // rdi;
+    __asm__("mov %0, rdi" : "=r"(rdi));
+    // rsi;
+    __asm__("mov %0, rsi" : "=r"(rsi));
+    size_t *r12;
+    __asm__("mov %0, r12" : "=r"(r12));
+    size_t *r13;
+    __asm__("mov %0, r13" : "=r"(r13));
+    size_t *r14;
+    __asm__("mov %0, r14" : "=r"(r14));
+    size_t *r15;
+    __asm__("mov %0, r15" : "=r"(r15));
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
-    size_t p1;
-    __asm__("mov %0, rcx" : "=r"(p1));
-    size_t p2;
-    __asm__("mov %0, rdx" : "=r"(p2));
-    size_t p3;
-    __asm__("mov %0, r8" : "=r"(p3));
-    size_t p4;
-    __asm__("mov %0, r9" : "=r"(p4));
-    size_t p5 = rbp[7];
-    size_t p6 = rbp[8];
-    size_t p7 = rbp[9];
-    size_t p8 = rbp[10];
+    size_t p1_win_rcx;
+    __asm__("mov %0, rcx" : "=r"(p1_win_rcx));
+    size_t p2_win_rdx;
+    __asm__("mov %0, rdx" : "=r"(p2_win_rdx));
+    size_t p3_win_r8;
+    __asm__("mov %0, r8" : "=r"(p3_win_r8));
+    size_t p4_win_r9;
+    __asm__("mov %0, r9" : "=r"(p4_win_r9));
+    size_t p5_stack1 = rbp[7];
+    size_t p6_stack2 = rbp[8];
+    size_t p7_stack3 = rbp[9];
+    size_t p8_stack4 = rbp[10];
 
     size_t dyn_trampoline_end = *(rbp + 1);
     size_t dyn_trampoline_start =
@@ -298,14 +295,14 @@ static void dynamic_callback_windows(void) {
         "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         lib_name,
         import_entry->name,
-        p1,
-        p2,
-        p3,
-        p4,
-        p5,
-        p6,
-        p7,
-        p8
+        p1_win_rcx,
+        p2_win_rdx,
+        p3_win_r8,
+        p4_win_r9,
+        p5_stack1,
+        p6_stack2,
+        p7_stack3,
+        p8_stack4
     );
 
     /** Find function using library and function name */
@@ -353,50 +350,101 @@ static void dynamic_callback_windows(void) {
     //        registers.
     //        Works but will likely fail in advanced use cases
     if (is_lib_ntdll) {
-        __asm__("mov r14, %[function_export_address]\n"
-                "mov r15, %[swap_stack]\n"
-                "mov rdi, %[p1]\n"
-                "mov rsi, %[p2]\n"
-                "mov rdx, %[p3]\n"
-                "mov rcx, %[p4]\n"
-                "mov r8, %[p5]\n"
-                "mov r9, %[p6]\n"
-                "mov rbx, %[rbx]\n"
-                "mov rsp, rbp\n"
-                "pop rbp\n"
-                "add rsp, 8\n"
-                "push r14\n"
-                "jmp r15\n"
-                :
-                : [function_export_address] "r"(function_export.address),
-                  [p1] "m"(p1),
-                  [p2] "m"(p2),
-                  [p3] "m"(p3),
-                  [p4] "m"(p4),
-                  [p5] "m"(p5),
-                  [p6] "m"(p6),
-                  [swap_stack] "r"(swap_stack),
-                  [rbx] "m"(rbx)
-                :);
+        /* Converts from Windows state to Linux state, and back */
+        __asm__(
+            /* Setup registers */
+
+            ".dynamic_callback_windows_swap:\n"
+            "mov rdi, %[p1_win_rcx]\n"
+            "mov rsi, %[p2_win_rdx]\n"
+            "mov rdx, %[p3_win_r8]\n"
+            "mov rcx, %[p4_win_r9]\n"
+            "mov r8, %[p5_stack1]\n"
+            "mov r9, %[p6_stack1]\n"
+            "mov r12, %[r12]\n"
+            "mov r13, %[r13]\n"
+            "mov r14, %[r14]\n"
+            "mov r15, %[r15]\n"
+            "mov rbx, %[rbx]\n"
+            "mov rsp, rbp\n"
+            "pop rbp\n"
+            "add rsp, 8\n"
+
+            /* Duplicate windows stack frame */
+
+            "lea r11, [rsp + 64]\n"
+            "lea r10, [rsp]\n"
+            ".dynamic_callback_windows_loop_start:\n"
+            "cmp r11, r10\n"
+            "jl .dynamic_callback_windows_loop_end\n"
+            "push [r11]\n"
+            "sub r11, 8\n"
+            "jmp .dynamic_callback_windows_loop_start\n"
+            ".dynamic_callback_windows_loop_end:\n"
+
+            /* Convert to linux stack frame */
+
+            "add rsp, 7 * 8\n"
+            "call %[function_address]\n"
+
+            /* Restore original windows state */
+
+            // @todo
+            "mov rdi, %[rdi]\n"
+            "mov rsi, %[rsi]\n"
+
+            "add rsp, 2 * 8\n"
+            "ret\n"
+            :
+            : [function_address] "m"(function_export.address),
+              [p1_win_rcx] "m"(p1_win_rcx),
+              [p2_win_rdx] "m"(p2_win_rdx),
+              [p3_win_r8] "m"(p3_win_r8),
+              [p4_win_r9] "m"(p4_win_r9),
+              [p5_stack1] "m"(p5_stack1),
+              [p6_stack1] "m"(p6_stack2),
+              [r12] "m"(r12),
+              [r13] "m"(r13),
+              [r14] "m"(r14),
+              [r15] "m"(r15),
+              [rbx] "m"(rbx),
+              [rdi] "m"(rdi),
+              [rsi] "m"(rsi)
+            :
+        );
     } else {
-        __asm__("mov r15, %[function_export_address]\n"
-                "mov rcx, %[p1]\n"
-                "mov rdx, %[p2]\n"
-                "mov r8, %[p3]\n"
-                "mov r9, %[p4]\n"
-                "mov rbx, %[rbx]\n"
-                "mov rsp, rbp\n"
-                "pop rbp\n"
-                "add rsp, 8\n"
-                "jmp r15\n"
-                :
-                : [function_export_address] "r"(function_export.address),
-                  [p1] "m"(p1),
-                  [p2] "m"(p2),
-                  [p3] "m"(p3),
-                  [p4] "m"(p4),
-                  [rbx] "m"(rbx)
-                :);
+        __asm__(
+            /* */
+            "mov rcx, %[p1]\n"
+            "mov rdx, %[p2]\n"
+            "mov r8, %[p3]\n"
+            "mov r9, %[p4]\n"
+            "mov r12, %[r12]\n"
+            "mov r13, %[r13]\n"
+            "mov r14, %[r14]\n"
+            "mov r15, %[r15]\n"
+            "mov rbx, %[rbx]\n"
+            "mov rdi, %[rdi]\n"
+            "mov rsi, %[rsi]\n"
+            "mov rsp, rbp\n"
+            "pop rbp\n"
+            "add rsp, 8\n"
+            "jmp %[function_address]\n"
+            :
+            : [function_address] "m"(function_export.address),
+              [p1] "m"(p1_win_rcx),
+              [p2] "m"(p2_win_rdx),
+              [p3] "m"(p3_win_r8),
+              [p4] "m"(p4_win_r9),
+              [r12] "m"(r12),
+              [r13] "m"(r13),
+              [r14] "m"(r14),
+              [r15] "m"(r15),
+              [rbx] "m"(rbx),
+              [rdi] "m"(rdi),
+              [rsi] "m"(rsi)
+            :
+        );
     }
 }
 

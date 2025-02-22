@@ -28,9 +28,12 @@ lib_var_data: 0x43
 lib_var_data: 0x44
 *get_lib_var_data(): 0x44
 add_many_msvcrt: 36
+add_many_msvcrt rdi, rsi: 0x42, 0x43
 EOF
 `
-assert [ "`./winloader ./windynamic.exe`" == "$expected" ]
+result=`./winloader ./windynamic.exe`
+assert [ $? == 0 ]
+assert [ "$result" == "$expected" ]
 
 # Dynamic stdlib test
 

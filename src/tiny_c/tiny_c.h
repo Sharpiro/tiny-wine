@@ -68,7 +68,6 @@ off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence);
 
 #ifdef ARM32
 
-// @todo: doesn't work with r0
 #define GET_REGISTER(reg)                                                      \
     ({                                                                         \
         size_t result = 0;                                                     \

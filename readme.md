@@ -5,6 +5,7 @@ A basic dynamic loader for Linux and Windows.
 ## Limitations
 
 - No standard libraries
+- No recursive dependencies
 
 ## Prerequisites
 

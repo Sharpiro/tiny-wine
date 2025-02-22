@@ -51,7 +51,6 @@ typedef struct RuntimeSymbol {
 
 CREATE_LIST_STRUCT(RuntimeSymbol)
 
-// @todo: make this generic?
 typedef struct RuntimeObject {
     const char *name;
     size_t dynamic_offset;
