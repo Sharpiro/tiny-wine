@@ -15,16 +15,13 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-// @todo: hard-coding this may cause random program failures due to ASLR etc.
-// @todo: need smarter way of setting up IAT regions that don't conflict b/w
-//        exes & libs
-#define IAT_BASE_START 0x7d7e0000
 #define IAT_INCREMENT 0x10000
 
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
-size_t curr_global_runtime_iat_base = IAT_BASE_START;
+size_t initial_global_runtime_iat_base = 0;
+size_t curr_global_runtime_iat_base = 0;
 size_t curr_global_runtime_iat_offset = 0;
 size_t got_lib_dyn_offset_table[100] = {};
 
@@ -219,7 +216,8 @@ static void dynamic_callback_windows(void) {
     size_t dyn_trampoline_start =
         dyn_trampoline_end - DYNAMIC_CALLBACK_TRAMPOLINE_SIZE;
     size_t iat_runtime_base = dyn_trampoline_start / 0x1000 * 0x1000;
-    size_t func_iat_value_temp = dyn_trampoline_start - IAT_BASE_START;
+    size_t func_iat_value_temp =
+        dyn_trampoline_start - initial_global_runtime_iat_base;
 
     LOADER_LOG(
         "--- Starting Windows dyn callbac -> ??? at %x\n",
@@ -781,16 +779,16 @@ int main(int argc, char **argv) {
         EXIT("initialize_lib_ntdll failed\n");
     }
 
-    /* Load dlls */
-
-    shared_libraries = (WinRuntimeObjectList){
-        .allocator = loader_malloc_arena,
-    };
-    if (!load_dlls(&pe_exe, &shared_libraries)) {
-        EXIT("initialize_dynamic_data failed\n");
-    }
-
     /* Get IAT offsets */
+
+    const size_t IAT_LEN = 0x20000;
+    initial_global_runtime_iat_base = (size_t)tiny_c_mmap(
+        0, IAT_LEN, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
+    );
+    curr_global_runtime_iat_base = initial_global_runtime_iat_base;
+    if (initial_global_runtime_iat_base == (size_t)MAP_FAILED) {
+        EXIT("initial_global_runtime_iat_base memory regions failed\n");
+    }
 
     size_t runtime_iat_region_base = 0;
     size_t runtime_iat_base = 0;
@@ -808,6 +806,15 @@ int main(int argc, char **argv) {
         curr_global_runtime_iat_offset += IAT_INCREMENT;
     }
 
+    /* Load dlls */
+
+    shared_libraries = (WinRuntimeObjectList){
+        .allocator = loader_malloc_arena,
+    };
+    if (!load_dlls(&pe_exe, &shared_libraries)) {
+        EXIT("initialize_dynamic_data failed\n");
+    }
+
     runtime_exe = (struct WinRuntimeObject){
         .name = filename,
         .pe_data = pe_exe,
@@ -819,6 +826,10 @@ int main(int argc, char **argv) {
     };
 
     /* Map Import Address Tables */
+
+    if (tiny_c_munmap(initial_global_runtime_iat_base, IAT_LEN)) {
+        EXIT("munmap initial_global_runtime_iat_base failed\n");
+    }
 
     LOADER_LOG("Initializing executable IAT\n");
     if (!initialize_import_address_table(&runtime_exe)) {
