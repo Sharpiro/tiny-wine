@@ -11,7 +11,8 @@ assert() {
 # Dynamic Test
 
 expected=`cat <<EOF
-16 + 16 = 32
+pow: 16
+pow rdi, rsi: 0x42, 0x43
 exe_global_var_bss: 0x0
 exe_global_var_bss: 0x1
 exe_global_var_data: 0x42
@@ -28,9 +29,9 @@ lib_var_data: 0x43
 lib_var_data: 0x44
 *get_lib_var_data(): 0x44
 add_many_msvcrt: 36
+add_many_msvcrt rdi, rsi: 0x42, 0x43
 EOF
 `
-# add_many_msvcrt rdi, rsi: 0x42, 0x43
 
 result=`./winloader ./windynamic.exe`
 assert [ $? == 0 ]

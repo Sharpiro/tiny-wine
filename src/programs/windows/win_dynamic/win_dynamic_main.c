@@ -5,9 +5,23 @@ int32_t exe_global_var_bss = 0x00;
 int32_t exe_global_var_data = 0x42;
 
 int start_inferior() {
-    int32_t num1 = (int32_t)pow(2, 4);
-    int32_t num2 = (int32_t)pow(2, 4);
-    printf("%d + %d = %d\n", num1, num2, num1 + num2);
+    /* Windows to Windows call and volatile registers */
+
+    __asm__(
+        /**/
+        "mov rdi, 0x42\n"
+        "mov rsi, 0x43\n"
+    );
+    int32_t pow_reuslt = (int32_t)pow(2, 4);
+    size_t rdi, rsi;
+    __asm__(
+        /**/
+        "mov %0, rdi\n"
+        "mov %1, rsi\n"
+        : "=r"(rdi), "=r"(rsi)
+    );
+    printf("pow: %d\n", pow_reuslt);
+    printf("pow rdi, rsi: %x, %x\n", (uint32_t)rdi, (uint32_t)rsi);
 
     printf("exe_global_var_bss: %x\n", exe_global_var_bss);
     exe_global_var_bss = 1;
@@ -35,26 +49,22 @@ int start_inferior() {
     printf("lib_var_data: %x\n", lib_var_data);
     printf("*get_lib_var_data(): %x\n", *get_lib_var_data());
 
-    /* Many parameters and volatile registers */
+    /* Windows to Linux call and volatile registers */
 
-    // __asm__(
-    //     /**/
-    //     "mov rdi, 0x42\n"
-    //     "mov rsi, 0x43\n"
-    // );
-    printf(
-        "add_many_msvcrt: %d\n",
-        (int32_t)add_many_msvcrt(1, 2, 3, 4, 5, 6, 7, 8)
+    __asm__(
+        /**/
+        "mov rdi, 0x42\n"
+        "mov rsi, 0x43\n"
     );
-    // size_t rdi, rsi;
-    // __asm__(
-    //     /**/
-    //     "mov %0, rdi\n"
-    //     "mov %1, rsi\n"
-    //     : "=r"(rdi), "=r"(rsi)
-    // );
-    // printf("add_many_msvcrt rdi, rsi: %x, %x\n", (uint32_t)rdi,
-    // (uint32_t)rsi);
+    int32_t add_many_result = (int32_t)add_many_msvcrt(1, 2, 3, 4, 5, 6, 7, 8);
+    __asm__(
+        /**/
+        "mov %0, rdi\n"
+        "mov %1, rsi\n"
+        : "=r"(rdi), "=r"(rsi)
+    );
+    printf("add_many_msvcrt: %d\n", add_many_result);
+    printf("add_many_msvcrt rdi, rsi: %x, %x\n", (uint32_t)rdi, (uint32_t)rsi);
 
     return 0;
 }

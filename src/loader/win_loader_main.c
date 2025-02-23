@@ -17,8 +17,8 @@
 
 #define IAT_INCREMENT 0x10000
 
-// size_t rdi = 0;
-// size_t rsi = 0;
+size_t rdi = 0;
+size_t rsi = 0;
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
@@ -138,6 +138,7 @@ static void dynamic_callback_linux(void) {
         p7_stack1,
         p8_stack2
     );
+    LOADER_LOG("rbx: %x, rdi: %x, rsi: %x\n", rbx, rdi, rsi);
     LOADER_LOG("--- Completed dynamic linking\n");
 
     __asm__(
@@ -182,9 +183,7 @@ static void dynamic_callback_linux(void) {
 static void dynamic_callback_windows(void) {
     size_t *rbx;
     __asm__("mov %0, rbx" : "=r"(rbx));
-    size_t rdi;
     __asm__("mov %0, rdi" : "=r"(rdi));
-    size_t rsi;
     __asm__("mov %0, rsi" : "=r"(rsi));
     size_t *r12;
     __asm__("mov %0, r12" : "=r"(r12));
@@ -217,7 +216,7 @@ static void dynamic_callback_windows(void) {
         dyn_trampoline_start - initial_global_runtime_iat_base;
 
     LOADER_LOG(
-        "--- Starting Windows dyn callbac -> ??? at %x\n",
+        "--- Starting Windows dyn callback -> ??? at %x\n",
         dynamic_callback_windows
     );
 
@@ -304,6 +303,7 @@ static void dynamic_callback_windows(void) {
         p7_stack3,
         p8_stack4
     );
+    LOADER_LOG("rbx: %x, rdi: %x, rsi: %x\n", rbx, rdi, rsi);
 
     /** Find function using library and function name */
 
@@ -345,10 +345,6 @@ static void dynamic_callback_windows(void) {
 
     LOADER_LOG("Completed dynamic linking\n");
 
-    // @todo: Unclear how to not clobber certain registers when converting
-    //        Windows to Linux and back since ABIs have different caller/callee
-    //        registers.
-    //        Works but will likely fail in advanced use cases
     if (is_lib_ntdll) {
         /* Converts from Windows state to Linux state, and back */
         __asm__(
@@ -389,9 +385,8 @@ static void dynamic_callback_windows(void) {
 
             /* Restore original windows state */
 
-            // @todo
-            // "mov rdi, %[rdi]\n"
-            // "mov rsi, %[rsi]\n"
+            "mov rdi, [%[rdi_pointer]]\n"
+            "mov rsi, [%[rsi_pointer]]\n"
 
             "add rsp, 2 * 8\n"
             "ret\n"
@@ -408,13 +403,14 @@ static void dynamic_callback_windows(void) {
               [r14] "m"(r14),
               [r15] "m"(r15),
               [rbx] "m"(rbx),
-              [rdi] "m"(rdi),
-              [rsi] "m"(rsi)
+              [rdi_pointer] "g"(&rdi),
+              [rsi_pointer] "g"(&rsi)
             :
         );
     } else {
         __asm__(
             /* */
+            ".dynamic_callback_windows:\n"
             "mov rcx, %[p1]\n"
             "mov rdx, %[p2]\n"
             "mov r8, %[p3]\n"
@@ -424,15 +420,15 @@ static void dynamic_callback_windows(void) {
             "mov r14, %[r14]\n"
             "mov r15, %[r15]\n"
             "mov rbx, %[rbx]\n"
-            "mov rdi, %[rdi]\n"
-            "mov rsi, %[rsi]\n"
+            "mov rdi, [%[rdi_pointer]]\n"
+            "mov rsi, [%[rsi_pointer]]\n"
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 8\n"
             "jmp %[function_address]\n"
             :
             : [function_address] "m"(function_export.address),
-              [p1] "m"(p1_win_rcx),
+              [p1] "r"(p1_win_rcx),
               [p2] "m"(p2_win_rdx),
               [p3] "m"(p3_win_r8),
               [p4] "m"(p4_win_r9),
@@ -441,8 +437,8 @@ static void dynamic_callback_windows(void) {
               [r14] "m"(r14),
               [r15] "m"(r15),
               [rbx] "m"(rbx),
-              [rdi] "m"(rdi),
-              [rsi] "m"(rsi)
+              [rdi_pointer] "g"(&rdi),
+              [rsi_pointer] "g"(&rsi)
             :
         );
     }
