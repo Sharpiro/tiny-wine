@@ -17,8 +17,8 @@
 
 #define IAT_INCREMENT 0x10000
 
-size_t rdi = 0;
-size_t rsi = 0;
+// size_t rdi = 0;
+// size_t rsi = 0;
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
@@ -182,9 +182,9 @@ static void dynamic_callback_linux(void) {
 static void dynamic_callback_windows(void) {
     size_t *rbx;
     __asm__("mov %0, rbx" : "=r"(rbx));
-    // rdi;
+    size_t rdi;
     __asm__("mov %0, rdi" : "=r"(rdi));
-    // rsi;
+    size_t rsi;
     __asm__("mov %0, rsi" : "=r"(rsi));
     size_t *r12;
     __asm__("mov %0, r12" : "=r"(r12));
@@ -390,8 +390,8 @@ static void dynamic_callback_windows(void) {
             /* Restore original windows state */
 
             // @todo
-            "mov rdi, %[rdi]\n"
-            "mov rsi, %[rsi]\n"
+            // "mov rdi, %[rdi]\n"
+            // "mov rsi, %[rsi]\n"
 
             "add rsp, 2 * 8\n"
             "ret\n"
