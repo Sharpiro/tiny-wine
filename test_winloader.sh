@@ -41,6 +41,7 @@ assert [ "$result" == "$expected" ]
 
 expected=`cat <<EOF
 look how far we've come
+malloc: 0xffffffff
 EOF
 `
 result=`./winloader ./windynamicfull.exe`

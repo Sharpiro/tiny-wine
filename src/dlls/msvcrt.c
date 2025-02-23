@@ -1,6 +1,8 @@
 #include "msvcrt.h"
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
@@ -19,7 +21,10 @@
 #define EXPORTABLE
 #endif
 
-static size_t malloc_address = 0;
+static size_t heap_start = 0;
+static size_t heap_end = 0;
+static size_t heap_index = 0;
+static int32_t errno = 0;
 
 void DllMainCRTStartup(void) {
 }
@@ -217,16 +222,17 @@ static void fprintf_internal(
     va_end(var_args);
 }
 
+EXPORTABLE void exit(int32_t exit_code) {
+    NtTerminateProcess((HANDLE)-1, exit_code);
+}
+
 EXPORTABLE int32_t printf(const char *format, ...) {
+    // exit(5);
     va_list var_args;
     va_start(var_args, format);
     fprintf_internal(STDOUT, format, var_args);
     va_end(var_args);
     return 0;
-}
-
-EXPORTABLE void exit(int32_t exit_code) {
-    NtTerminateProcess((HANDLE)-1, exit_code);
 }
 
 EXPORTABLE size_t add_many_msvcrt(
@@ -293,38 +299,110 @@ EXPORTABLE void calloc() {
 }
 
 EXPORTABLE void fprintf() {
+    exit(4);
 }
 
 EXPORTABLE void free() {
 }
 
 EXPORTABLE void fwrite() {
+    exit(3);
 }
 
-// @todo: fake malloc, doesn't sync w/ loader's state
-EXPORTABLE void *malloc([[maybe_unused]] size_t size) {
-    if (malloc_address) {
-        return (void *)malloc_address;
+// @note: fake malloc that leaks memory
+EXPORTABLE void *malloc(size_t n) {
+    const size_t PAGE_SIZE = 0x1000;
+
+    if (heap_start == 0) {
+        heap_start = sys_brk(0);
+        heap_end = heap_start;
+        heap_index = heap_start;
+    }
+    if (heap_index + n > heap_end) {
+        size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
+        heap_end = sys_brk(heap_end + extend_size);
     }
 
-    size_t brk_start = sys_brk(0);
-    size_t brk_end = sys_brk(brk_start + 0x1000);
-    if (brk_end <= brk_start) {
+    if (heap_end <= heap_start) {
         return NULL;
     }
 
-    malloc_address = brk_start;
-    return (void *)malloc_address;
+    void *address = (void *)heap_index;
+    heap_index += n;
+
+    return address;
 }
 
-EXPORTABLE void memcpy() {
+EXPORTABLE void *memcpy(
+    void *restrict dest, const void *restrict src, size_t n
+) {
+    for (size_t i = 0; i < n; i++) {
+        ((uint8_t *)dest)[i] = ((uint8_t *)src)[i];
+    }
+
+    return dest;
 }
 
 EXPORTABLE void signal() {
+    exit(109);
 }
 
 EXPORTABLE void strncmp() {
+    exit(108);
 }
 
 EXPORTABLE void vfprintf() {
+    exit(2);
+}
+
+EXPORTABLE void ___lc_codepage_func() {
+    exit(107);
+}
+
+EXPORTABLE void ___mb_cur_max_func() {
+    exit(106);
+}
+
+EXPORTABLE int32_t *_errno() {
+    return &errno;
+}
+
+EXPORTABLE void _lock([[maybe_unused]] int32_t locknum) {
+    // exit(101);
+}
+
+EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
+    // exit(102);
+}
+
+// EXPORTABLE void fputc() {
+// @todo: stderr
+EXPORTABLE int fputc(int c, ssize_t stream) {
+    // exit(stream);
+    // if (stream != -11) {
+    //     exit(11);
+    // }
+    char c_char = (char)c;
+    // print_len((int32_t)stream, &c_char, 1);
+    print_len(1, &c_char, 1);
+    return (int)(unsigned char)c_char;
+}
+
+EXPORTABLE void localeconv() {
+    exit(103);
+}
+
+EXPORTABLE void *memset(void *s_buffer, int c_value, size_t n_count) {
+    for (size_t i = 0; i < n_count; i++) {
+        ((uint8_t *)s_buffer)[i] = (uint8_t)c_value;
+    }
+    return s_buffer;
+}
+
+EXPORTABLE void strerror() {
+    exit(104);
+}
+
+EXPORTABLE void wcslen() {
+    exit(105);
 }

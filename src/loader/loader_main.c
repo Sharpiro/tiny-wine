@@ -604,12 +604,6 @@ int main(int32_t argc, char **argv) {
     int32_t pid = tiny_c_get_pid();
     LOADER_LOG("pid: %d\n", pid);
 
-    // @todo: old gcc maps this by default for some reason
-    const size_t ADDRESS = 0x10000;
-    if (tiny_c_munmap(ADDRESS, 0x1000)) {
-        EXIT("munmap of self failed\n");
-    }
-
     int32_t fd = tiny_c_open(filename, O_RDONLY);
     if (fd < 0) {
         EXIT("file error, %d, %s\n", tinyc_errno, tinyc_strerror(tinyc_errno));

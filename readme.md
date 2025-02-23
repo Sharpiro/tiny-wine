@@ -4,8 +4,10 @@ A basic dynamic loader for Linux and Windows.
 
 ## Limitations
 
-- No standard libraries
+- Only works for toy programs created with specific Clang versions
 - No recursive dependencies
+- `malloc` leaks memory
+- `printf` only supports basic formatters
 
 ## Prerequisites
 

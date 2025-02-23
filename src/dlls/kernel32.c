@@ -35,3 +35,12 @@ void VirtualProtect() {
 
 void VirtualQuery() {
 }
+
+void IsDBCSLeadByteEx() {
+}
+
+void MultiByteToWideChar() {
+}
+
+void WideCharToMultiByte() {
+}
