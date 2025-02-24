@@ -298,14 +298,21 @@ EXPORTABLE void abort() {
 EXPORTABLE void calloc() {
 }
 
-EXPORTABLE void fprintf() {
+EXPORTABLE int fprintf(
+    uint8_t *__restrict __stream, const char *__restrict __format, ...
+) {
     exit(4);
 }
 
 EXPORTABLE void free() {
 }
 
-EXPORTABLE void fwrite() {
+EXPORTABLE size_t fwrite(
+    const void *__restrict __ptr,
+    size_t __size,
+    size_t __n,
+    uint8_t *__restrict __s
+) {
     exit(3);
 }
 
@@ -351,7 +358,11 @@ EXPORTABLE void strncmp() {
     exit(108);
 }
 
-EXPORTABLE void vfprintf() {
+EXPORTABLE int vfprintf(
+    uint8_t *__restrict __s,
+    const char *__restrict __format,
+    __gnuc_va_list __arg
+) {
     exit(2);
 }
 
@@ -377,8 +388,21 @@ EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
 
 // EXPORTABLE void fputc() {
 // @todo: stderr
-EXPORTABLE int fputc(int c, ssize_t stream) {
-    // exit(stream);
+// EXPORTABLE int fputc(int c, ssize_t stream) {
+EXPORTABLE int fputc(int c, uint64_t *file) {
+    // 0x70
+    // fileno
+    // uint64_t x = file[0x08]; // 1, 0
+    // uint32_t x = file[0x0d];
+    for (size_t i = 0; i < 0x160; i++) {
+        // print_number_decimal(1, file[i]);
+        // print_len(1, "\n", 1);
+        uint64_t val = file[i];
+        if (val > 0 && val < 5) {
+            printf("%d: %x\n", i, val);
+        }
+    }
+    exit(42);
     // if (stream != -11) {
     //     exit(11);
     // }
