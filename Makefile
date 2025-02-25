@@ -407,9 +407,13 @@ windynamic.exe: \
 	@$(OBJDUMP) -M intel -D windynamic.exe > windynamic.exe.dump
 
 windynamicfull.exe: \
+		winloader \
+		libntdll.so \
+		msvcrt.dll \
+		KERNEL32.dll \
 		src/programs/windows/win_dynamic/win_dynamic_full_main.c \
 		windynamiclibfull.dll
-	@echo "win_dynamic_full.exe"
+	@echo "windynamicfull.exe"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -442,7 +446,13 @@ windynamicfull.exe: \
 # 		src/programs/windows/win_dynamic/win_dynamic_main.c
 # 	@$(OBJDUMP) -D windynamic_linux > windynamic_linux.dump
 
-readwin: tools/readwin/readwin_main.c tinyc_start.o libtinyc.a
+readwin: \
+		tools/readwin/readwin_main.c \
+		src/loader/loader_lib.c \
+		src/loader/pe_tools.c \
+		src/loader/memory_map.c \
+		tinyc_start.o \
+		libtinyc.a
 	@echo "readwin"
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \

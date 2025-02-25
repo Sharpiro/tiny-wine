@@ -119,7 +119,11 @@ int main(int argc, char **argv) {
 
     /* Exports */
 
-    tiny_c_printf("\nExports (%d):\n", pe_data.export_entries_len);
+    tiny_c_printf(
+        "\nExports (%s) (%d):\n",
+        pe_data.export_section_name,
+        pe_data.export_entries_len
+    );
     for (size_t i = 0; i < pe_data.export_entries_len; i++) {
         struct ExportEntry *export_entry = &pe_data.export_entries[i];
         tiny_c_printf(

@@ -133,6 +133,7 @@ struct ImageOptionalHeader {
 #define WIN_OPTIONAL_HEADER_START                                              \
     sizeof(uint32_t) + sizeof(struct ImageFileHeader)
 
+#define DATA_DIR_EXPORT_DIR_INDEX 0
 #define DATA_DIR_IMPORT_DIR_INDEX 1
 #define DATA_DIR_IAT_INDEX 12
 
@@ -229,7 +230,6 @@ struct ImportAddressEntry {
     size_t value;
     const char *lib_name;
     const char *import_name;
-    // bool is_variable;
 };
 
 struct PeData {
@@ -244,6 +244,7 @@ struct PeData {
     size_t import_address_table_offset;
     struct ImportAddressEntry *import_address_table;
     size_t import_address_table_len;
+    const char *export_section_name;
     struct ExportEntry *export_entries;
     size_t export_entries_len;
     struct WinSymbol *symbols;
