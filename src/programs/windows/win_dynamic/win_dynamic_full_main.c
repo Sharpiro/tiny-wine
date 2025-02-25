@@ -15,9 +15,16 @@ int main() {
     // const int OFFSET = offsetof(FILE, _fileno);
     // FILE *x = stdout;
     // printf("look how far we've come\n");
+
+    fputc('Z', stdin);
+    fputc('Z', stdin);
+    fputc('Z', stdout);
+    fputc('Z', stdout);
+    fputc('Z', stderr);
+    fputc('Z', stderr);
     // fileno()
     // _fileno("")
-    fprintf(stderr, "look how far we've come\n");
+    // fprintf(stderr, "look how far we've come\n");
 
     // uint32_t *buffer = malloc(0x1000);
     // buffer[0] = 0xffffffff;

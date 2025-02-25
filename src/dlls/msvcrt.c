@@ -259,7 +259,26 @@ EXPORTABLE void __getmainargs() {
 EXPORTABLE void __initenv() {
 }
 
-EXPORTABLE void __iob_func() {
+typedef struct WinFileInternal {
+    uint32_t a;
+    uint32_t b;
+    uint32_t x;
+    uint32_t c;
+    uint32_t fileno32;
+    uint32_t e;
+    uint32_t fileno64;
+} WinFileInternal;
+
+WinFileInternal TEMP[] = {
+    {.fileno32 = 0, .fileno64 = 0},
+    {.fileno32 = 2, .fileno64 = 2}, //@todo: stderr
+    {.fileno32 = 1, .fileno64 = 1},
+    {.fileno32 = 3, .fileno64 = 3}, //@todo: stderr
+    {.fileno32 = 4, .fileno64 = 4}, //@todo: stderr
+};
+
+EXPORTABLE void *__iob_func(void) {
+    return (void *)TEMP;
 }
 
 EXPORTABLE void __lconv_init() {
@@ -389,26 +408,30 @@ EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
 // EXPORTABLE void fputc() {
 // @todo: stderr
 // EXPORTABLE int fputc(int c, ssize_t stream) {
-EXPORTABLE int fputc(int c, uint64_t *file) {
+int x = 0;
+EXPORTABLE int fputc(int c, WinFileInternal *file) {
     // 0x70
     // fileno
     // uint64_t x = file[0x08]; // 1, 0
     // uint32_t x = file[0x0d];
-    for (size_t i = 0; i < 0x160; i++) {
-        // print_number_decimal(1, file[i]);
-        // print_len(1, "\n", 1);
-        uint64_t val = file[i];
-        if (val > 0 && val < 5) {
-            printf("%d: %x\n", i, val);
-        }
-    }
-    exit(42);
+    // printf("%x: %d\n", file, file[16]);
+    // exit(file->fileno64);
+    // for (size_t i = 0; i < 0x160; i++) {
+    //     // print_number_decimal(1, file[i]);
+    //     // print_len(1, "\n", 1);
+    //     uint64_t val = file[i];
+    //     if (val > 0 && val < 5) {
+    //         printf("%d: %x\n", i, val);
+    //     }
+    // }
     // if (stream != -11) {
     //     exit(11);
     // }
     char c_char = (char)c;
     // print_len((int32_t)stream, &c_char, 1);
-    print_len(1, &c_char, 1);
+    // print_len(1, &c_char, 1);
+    print_number_decimal(1, file->fileno64);
+    print_len(1, "\n", 1);
     return (int)(unsigned char)c_char;
 }
 
