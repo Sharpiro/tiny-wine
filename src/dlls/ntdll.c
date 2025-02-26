@@ -58,13 +58,16 @@ NTSTATUS NtWriteFile(
     [[maybe_unused]] PLARGE_INTEGER byte_offset,
     [[maybe_unused]] PULONG key
 ) {
-    const int32_t LINUX_FILE_HANDLE = 1;
-
-    if ((int64_t)file_handle != -11) {
+    int32_t linux_file_handle;
+    if ((int64_t)file_handle == -11) {
+        linux_file_handle = 1;
+    } else if ((int64_t)file_handle == -12) {
+        linux_file_handle = 2;
+    } else {
         return -1;
     }
 
-    int32_t result = (int32_t)sys_write(LINUX_FILE_HANDLE, buffer, length);
+    int32_t result = (int32_t)sys_write(linux_file_handle, buffer, length);
     return result;
 }
 

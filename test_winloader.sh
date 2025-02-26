@@ -12,24 +12,24 @@ assert() {
 
 expected=`cat <<EOF
 pow: 16
-pow rdi, rsi: 0x42, 0x43
-exe_global_var_bss: 0x0
-exe_global_var_bss: 0x1
-exe_global_var_data: 0x42
-exe_global_var_data: 0x24
+pow rdi, rsi: 42, 43
+exe_global_var_bss: 0
+exe_global_var_bss: 1
+exe_global_var_data: 42
+exe_global_var_data: 24
 
-*get_lib_var_bss(): 0x0
-lib_var_bss: 0x0
-lib_var_bss: 0x1
-lib_var_bss: 0x44
-*get_lib_var_bss(): 0x44
-*get_lib_var_data(): 0x42
-lib_var_data: 0x42
-lib_var_data: 0x43
-lib_var_data: 0x44
-*get_lib_var_data(): 0x44
+*get_lib_var_bss(): 0
+lib_var_bss: 0
+lib_var_bss: 1
+lib_var_bss: 44
+*get_lib_var_bss(): 44
+*get_lib_var_data(): 42
+lib_var_data: 42
+lib_var_data: 43
+lib_var_data: 44
+*get_lib_var_data(): 44
 add_many_msvcrt: 36
-add_many_msvcrt rdi, rsi: 0x42, 0x43
+add_many_msvcrt rdi, rsi: 42, 43
 EOF
 `
 
@@ -41,7 +41,8 @@ assert [ "$result" == "$expected" ]
 
 expected=`cat <<EOF
 look how far we've come
-malloc: 0xffffffff
+malloc: ffffffff
+stdin: 0, stdout: 1, stderr: 2
 EOF
 `
 result=`./winloader ./windynamicfull.exe`

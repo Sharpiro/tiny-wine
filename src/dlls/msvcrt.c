@@ -54,17 +54,19 @@ static bool print_len(int32_t file_handle, const char *data, size_t length) {
         return false;
     }
 
-    NtWriteFile(
-        win_handle,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        (PVOID)data,
-        (ULONG)length,
-        NULL,
-        NULL
-    );
+    if (NtWriteFile(
+            win_handle,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            (PVOID)data,
+            (ULONG)length,
+            NULL,
+            NULL
+        ) == -1) {
+        return false;
+    }
 
     return true;
 }
@@ -100,11 +102,9 @@ static void print_number_hex(int32_t file_handle, size_t num) {
     const char *NUMBER_CHARS = "0123456789abcdef";
 
     char num_buffer[32] = {0};
-    num_buffer[0] = '0';
-    num_buffer[1] = 'x';
 
     size_t current_base = (size_t)pow(0x10, MAX_DIGITS - 1);
-    size_t buffer_index = 2;
+    size_t buffer_index = 0;
     bool num_start = false;
     for (size_t i = 0; i < MAX_DIGITS; i++) {
         size_t digit = num / current_base;
@@ -227,7 +227,6 @@ EXPORTABLE void exit(int32_t exit_code) {
 }
 
 EXPORTABLE int32_t printf(const char *format, ...) {
-    // exit(5);
     va_list var_args;
     va_start(var_args, format);
     fprintf_internal(STDOUT, format, var_args);
@@ -259,27 +258,24 @@ EXPORTABLE void __getmainargs() {
 EXPORTABLE void __initenv() {
 }
 
-typedef struct WinFileInternal {
-    uint32_t a;
-    uint32_t b;
-    uint32_t x;
-    uint32_t c;
-    uint32_t fileno32;
-    uint32_t e;
-    uint32_t fileno64;
-} WinFileInternal;
+#if UINTPTR_MAX == 0xFFFFFFFFFFFFFFFF
 
-WinFileInternal TEMP[] = {
-    {.fileno32 = 0, .fileno64 = 0},
-    {.fileno32 = 2, .fileno64 = 2}, //@todo: stderr
-    {.fileno32 = 1, .fileno64 = 1},
-    {.fileno32 = 3, .fileno64 = 3}, //@todo: stderr
-    {.fileno32 = 4, .fileno64 = 4}, //@todo: stderr
+_WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
+    {.fileno_lazy_maybe = 0, .fileno = 0},
+    {.fileno_lazy_maybe = 1, .fileno = 1},
+    {.fileno_lazy_maybe = 2, .fileno = 2},
 };
 
 EXPORTABLE void *__iob_func(void) {
-    return (void *)TEMP;
+    return WIN_FILE_INTERNAL_LIST;
 }
+
+EXPORTABLE int32_t _fileno(FILE *file) {
+    _WinFileInternal *internal_file = (_WinFileInternal *)file;
+    return internal_file->fileno_lazy_maybe;
+}
+
+#endif
 
 EXPORTABLE void __lconv_init() {
 }
@@ -317,20 +313,27 @@ EXPORTABLE void abort() {
 EXPORTABLE void calloc() {
 }
 
-EXPORTABLE int fprintf(
-    uint8_t *__restrict __stream, const char *__restrict __format, ...
+EXPORTABLE int32_t fprintf(
+    [[maybe_unused]] FILE *__restrict stream,
+    [[maybe_unused]] const char *__restrict format,
+    ...
 ) {
-    exit(4);
+    int32_t file_no = _fileno(stream);
+    va_list var_args;
+    va_start(var_args, format);
+    fprintf_internal(file_no, format, var_args);
+    va_end(var_args);
+    return 0;
 }
 
 EXPORTABLE void free() {
 }
 
 EXPORTABLE size_t fwrite(
-    const void *__restrict __ptr,
-    size_t __size,
-    size_t __n,
-    uint8_t *__restrict __s
+    [[maybe_unused]] const void *__restrict __ptr,
+    [[maybe_unused]] size_t __size,
+    [[maybe_unused]] size_t __n,
+    [[maybe_unused]] uint8_t *__restrict __s
 ) {
     exit(3);
 }
@@ -377,10 +380,10 @@ EXPORTABLE void strncmp() {
     exit(108);
 }
 
-EXPORTABLE int vfprintf(
-    uint8_t *__restrict __s,
-    const char *__restrict __format,
-    __gnuc_va_list __arg
+EXPORTABLE int32_t vfprintf(
+    [[maybe_unused]] uint8_t *__restrict __s,
+    [[maybe_unused]] const char *__restrict __format,
+    [[maybe_unused]] __gnuc_va_list __arg
 ) {
     exit(2);
 }
@@ -398,48 +401,26 @@ EXPORTABLE int32_t *_errno() {
 }
 
 EXPORTABLE void _lock([[maybe_unused]] int32_t locknum) {
-    // exit(101);
 }
 
 EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
-    // exit(102);
 }
 
-// EXPORTABLE void fputc() {
-// @todo: stderr
-// EXPORTABLE int fputc(int c, ssize_t stream) {
-int x = 0;
-EXPORTABLE int fputc(int c, WinFileInternal *file) {
-    // 0x70
-    // fileno
-    // uint64_t x = file[0x08]; // 1, 0
-    // uint32_t x = file[0x0d];
-    // printf("%x: %d\n", file, file[16]);
-    // exit(file->fileno64);
-    // for (size_t i = 0; i < 0x160; i++) {
-    //     // print_number_decimal(1, file[i]);
-    //     // print_len(1, "\n", 1);
-    //     uint64_t val = file[i];
-    //     if (val > 0 && val < 5) {
-    //         printf("%d: %x\n", i, val);
-    //     }
-    // }
-    // if (stream != -11) {
-    //     exit(11);
-    // }
+EXPORTABLE int32_t fputc(int32_t c, FILE *file) {
     char c_char = (char)c;
-    // print_len((int32_t)stream, &c_char, 1);
-    // print_len(1, &c_char, 1);
-    print_number_decimal(1, file->fileno64);
-    print_len(1, "\n", 1);
-    return (int)(unsigned char)c_char;
+    int32_t file_no = _fileno(file);
+    if (!print_len(file_no, &c_char, 1)) {
+        return -1;
+    }
+
+    return c;
 }
 
 EXPORTABLE void localeconv() {
     exit(103);
 }
 
-EXPORTABLE void *memset(void *s_buffer, int c_value, size_t n_count) {
+EXPORTABLE void *memset(void *s_buffer, int32_t c_value, size_t n_count) {
     for (size_t i = 0; i < n_count; i++) {
         ((uint8_t *)s_buffer)[i] = (uint8_t)c_value;
     }
