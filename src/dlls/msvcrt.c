@@ -26,6 +26,12 @@ static size_t heap_end = 0;
 static size_t heap_index = 0;
 static int32_t errno = 0;
 
+static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
+    {.fileno_lazy_maybe = 0, .fileno = 0},
+    {.fileno_lazy_maybe = 1, .fileno = 1},
+    {.fileno_lazy_maybe = 2, .fileno = 2},
+};
+
 void DllMainCRTStartup(void) {
 }
 
@@ -260,18 +266,12 @@ EXPORTABLE void __initenv() {
 
 #if UINTPTR_MAX == 0xFFFFFFFFFFFFFFFF
 
-_WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
-    {.fileno_lazy_maybe = 0, .fileno = 0},
-    {.fileno_lazy_maybe = 1, .fileno = 1},
-    {.fileno_lazy_maybe = 2, .fileno = 2},
-};
-
 EXPORTABLE void *__iob_func(void) {
     return WIN_FILE_INTERNAL_LIST;
 }
 
-EXPORTABLE int32_t _fileno(FILE *file) {
-    _WinFileInternal *internal_file = (_WinFileInternal *)file;
+EXPORTABLE int32_t _fileno(FILE *stream) {
+    _WinFileInternal *internal_file = (_WinFileInternal *)stream;
     return internal_file->fileno_lazy_maybe;
 }
 
@@ -406,9 +406,9 @@ EXPORTABLE void _lock([[maybe_unused]] int32_t locknum) {
 EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
 }
 
-EXPORTABLE int32_t fputc(int32_t c, FILE *file) {
+EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
     char c_char = (char)c;
-    int32_t file_no = _fileno(file);
+    int32_t file_no = _fileno(stream);
     if (!print_len(file_no, &c_char, 1)) {
         return -1;
     }
