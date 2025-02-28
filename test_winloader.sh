@@ -42,6 +42,13 @@ expected=`cat <<EOF
 look how far we've come
 malloc: ffffffff
 stdin: 0, stdout: 1, stderr: 2
+exe_global_var_bss: 0
+exe_global_var_bss: 1
+exe_global_var_data: 42
+exe_global_var_data: 24
+lib_var_bss: 0
+lib_var_bss: 1
+lib_var_bss: 44
 EOF
 `
 result=`./winloader ./windynamicfull.exe`

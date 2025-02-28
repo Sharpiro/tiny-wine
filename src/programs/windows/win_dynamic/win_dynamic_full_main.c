@@ -7,6 +7,8 @@
 int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
+// void SetUnhandledExceptionFilter();
+
 int main() {
     printf("look how far we've come\n");
 
@@ -21,22 +23,26 @@ int main() {
         fileno(stderr)
     );
 
-    // /** .bss and .data init */
+    /** .bss and .data init */
 
-    // printf("exe_global_var_bss: %d\n", exe_global_var_bss);
-    // exe_global_var_bss = 1;
-    // printf("exe_global_var_bss: %d\n", exe_global_var_bss);
+    printf("exe_global_var_bss: %d\n", exe_global_var_bss);
+    exe_global_var_bss = 1;
+    printf("exe_global_var_bss: %d\n", exe_global_var_bss);
 
-    // printf("exe_global_var_data: %d\n", exe_global_var_data);
-    // exe_global_var_data = 24;
-    // printf("exe_global_var_data: %d\n", exe_global_var_data);
+    printf("exe_global_var_data: %d\n", exe_global_var_data);
+    exe_global_var_data = 24;
+    printf("exe_global_var_data: %d\n", exe_global_var_data);
+
+    // int x = *((size_t *)0);
+    // SetUnhandledExceptionFilter();
 
     // printf("*get_lib_var_bss(): %x\n", *get_lib_var_bss());
-    // printf("lib_var_bss: %x\n", lib_var_bss);
-    // lib_var_bss += 1;
-    // printf("lib_var_bss: %x\n", lib_var_bss);
-    // lib_var_bss = 0x44;
-    // printf("lib_var_bss: %x\n", lib_var_bss);
+    printf("lib_var_bss: %x\n", lib_var_bss);
+    // printf("bruh\n");
+    lib_var_bss += 1;
+    printf("lib_var_bss: %x\n", lib_var_bss);
+    lib_var_bss = 44;
+    printf("lib_var_bss: %d\n", lib_var_bss);
     // printf("*get_lib_var_bss(): %x\n", *get_lib_var_bss());
 
     // printf("*get_lib_var_data(): %x\n", *get_lib_var_data());

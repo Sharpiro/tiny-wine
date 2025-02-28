@@ -703,17 +703,18 @@ static bool initialize_import_address_table(
             &shared_libraries,
             &runtime_import_table,
             shared_lib->pe_data.winpe_header->image_optional_header.image_base,
-            shared_lib->runtime_iat_object_base,
-            shared_lib->pe_data.section_headers
+            shared_lib->runtime_iat_object_base
         )) {
-        EXIT("get_runtime_import_address_table failed\n");
+        BAIL("get_runtime_import_address_table failed\n");
     }
 
-    map_import_address_table(
-        &runtime_import_table,
-        (size_t)dynamic_callback_windows,
-        shared_lib->runtime_iat_section_base
-    );
+    if (!map_import_address_table(
+            &runtime_import_table,
+            (size_t)dynamic_callback_windows,
+            shared_lib->runtime_iat_section_base
+        )) {
+        BAIL("map_import_address_table failed\n");
+    }
 
     return true;
 }
@@ -742,8 +743,6 @@ int main(int argc, char **argv) {
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");
     }
-
-    log_memory_regions();
 
     int32_t pid = tiny_c_get_pid();
     LOADER_LOG("pid: %d\n", pid);

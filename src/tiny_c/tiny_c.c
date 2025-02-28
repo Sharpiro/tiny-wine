@@ -274,6 +274,10 @@ void *tiny_c_mmap(
     int32_t fd,
     size_t offset
 ) {
+    // @todo: debug or option
+    // if (address) {
+    //     flags |= MAP_FIXED_NOREPLACE;
+    // }
 #ifdef ARM32
     struct SysArgs args = {
         .param_one = address,
@@ -389,8 +393,12 @@ const char *tinyc_strerror(int32_t err_number) {
     switch (err_number) {
     case ENOENT:
         return "No such file or directory";
+    case EAGAIN:
+        return "Resource temporarily unavailable";
     case EACCES:
         return "Permission denied";
+    case EEXIST:
+        return "File exists";
     case EINVAL:
         return "Invalid argument";
     case ERANGE:

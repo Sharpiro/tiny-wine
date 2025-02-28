@@ -25,8 +25,7 @@ bool get_runtime_import_address_table(
     const WinRuntimeObjectList *shared_libraries,
     RuntimeImportAddressEntryList *runtime_import_table,
     size_t image_base,
-    size_t runtime_iat_base,
-    struct WinSectionHeader *section_headers
+    size_t runtime_iat_base
 );
 
 bool map_import_address_table(

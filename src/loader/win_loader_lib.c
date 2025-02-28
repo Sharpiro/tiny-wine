@@ -42,8 +42,7 @@ bool get_runtime_import_address_table(
     const WinRuntimeObjectList *shared_libraries,
     RuntimeImportAddressEntryList *runtime_import_table,
     size_t iat_image_base,
-    size_t runtime_iat_base,
-    struct WinSectionHeader *section_headers
+    size_t runtime_iat_base
 ) {
     for (size_t i = 0; i < import_address_table_len; i++) {
         const struct ImportAddressEntry *current_import =
@@ -60,6 +59,13 @@ bool get_runtime_import_address_table(
             RuntimeImportAddressEntryList_add(
                 runtime_import_table, runtime_import
             );
+            // @todo: maybe unnecessary
+            // LOADER_LOG(
+            //     "IAT entry: %x:%x, %s\n",
+            //     runtime_import.key,
+            //     runtime_import.value,
+            //     runtime_import.import_name
+            // );
             continue;
         }
 
@@ -94,7 +100,8 @@ bool get_runtime_import_address_table(
 
             if (is_variable) {
                 struct WinSectionHeader *variable_section_header =
-                    &section_headers[symbol->section_index];
+                    &runtime_obj->pe_data
+                         .section_headers[symbol->section_index];
                 if (symbol->value < 0) {
                     BAIL(
                         "unexpected negative symbol value for %s\n",

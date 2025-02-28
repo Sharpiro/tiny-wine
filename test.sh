@@ -1,7 +1,5 @@
 #! /bin/bash
 
-set -e
-
 echo "cleaning"
 make clean
 echo "building linux targets"
@@ -15,7 +13,15 @@ for ((i = 0; i < loop_count; i++)); do
         echo "Testing round $((i + 1))"
     fi
     ./test_loader.sh > /dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Linux loader testing round $((i + 1)) failed"
+        exit
+    fi
     ./test_winloader.sh > /dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Windows loader testing round $((i + 1)) failed"
+        exit
+    fi
 done
 
 echo "All tests passed"
