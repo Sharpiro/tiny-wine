@@ -11,6 +11,8 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
+// @todo: naming convention tiny_c_xyz vs tinyc_xyz
+
 int32_t tinyc_errno = 0;
 size_t tinyc_heap_start = 0;
 size_t tinyc_heap_end = 0;

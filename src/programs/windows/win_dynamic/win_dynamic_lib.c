@@ -2,8 +2,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-int32_t lib_var_bss = 0x00;
+// @todo: use w/ both windynamic and windynamicfull?
 
+int32_t lib_var_bss = 0x00;
 int32_t lib_var_data = 0x42;
 
 /**

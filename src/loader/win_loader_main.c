@@ -904,7 +904,7 @@ int main(int argc, char **argv) {
     if (initialized_symbol) {
         LOADER_LOG("Setting 'initialized' for TLS\n");
         struct WinSectionHeader *section_header =
-            &pe_exe.section_headers[initialized_symbol->section_number - 1];
+            &pe_exe.section_headers[initialized_symbol->section_index];
         size_t section_offset = section_header->virtual_base_address +
             (size_t)initialized_symbol->value;
         size_t symbol_address = image_base + section_offset;
@@ -917,8 +917,7 @@ int main(int argc, char **argv) {
     if (refptr__imp__acmdln_symbol) {
         LOADER_LOG("Setting 'refptr__imp__acmdln_symbol' for TLS\n");
         struct WinSectionHeader *section_header =
-            &pe_exe.section_headers
-                 [refptr__imp__acmdln_symbol->section_number - 1];
+            &pe_exe.section_headers[refptr__imp__acmdln_symbol->section_index];
         size_t section_offset = section_header->virtual_base_address +
             (size_t)refptr__imp__acmdln_symbol->value;
         size_t symbol_address = image_base + section_offset;

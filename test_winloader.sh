@@ -17,7 +17,6 @@ exe_global_var_bss: 0
 exe_global_var_bss: 1
 exe_global_var_data: 42
 exe_global_var_data: 24
-
 *get_lib_var_bss(): 0
 lib_var_bss: 0
 lib_var_bss: 1

@@ -386,7 +386,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             symbols[symbols_len++] = (struct WinSymbol){
                 .name = name,
                 .value = raw_symbol->value,
-                .section_number = raw_symbol->section_number,
+                .section_index = raw_symbol->section_number - 1,
                 .type = raw_symbol->type,
                 .storage_class = raw_symbol->storage_class,
                 .auxillary_symbols_len = raw_symbol->auxillary_symbols_len,

@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
+    if (argc < 2 || tiny_c_memcmp(argv[1], "--", 2) == 0) {
         EXIT("Usage: readwin <file> [-s]\n");
     }
 
@@ -83,17 +83,17 @@ int main(int argc, char **argv) {
 
     /* Imports */
 
+    const char *import_section_name =
+        pe_data.import_section_name ? pe_data.import_section_name : "N/A";
     tiny_c_printf(
-        "\nImports (%s) (%d):\n",
-        pe_data.import_section_name,
-        pe_data.import_dir_entries_len
+        "\nImports (%d) (%s):\n",
+        pe_data.import_dir_entries_len,
+        import_section_name
     );
     for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
         struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
         tiny_c_printf(
-            "%s Imports (%d):\n",
-            dir_entry->lib_name,
-            dir_entry->import_entries_len
+            "%s (%d):\n", dir_entry->lib_name, dir_entry->import_entries_len
         );
         for (size_t j = 0; j < dir_entry->import_entries_len; j++) {
             struct ImportEntry *import_entry = &dir_entry->import_entries[j];
@@ -119,10 +119,12 @@ int main(int argc, char **argv) {
 
     /* Exports */
 
+    const char *export_section_name =
+        pe_data.export_section_name ? pe_data.export_section_name : "N/A";
     tiny_c_printf(
-        "\nExports (%s) (%d):\n",
-        pe_data.export_section_name,
-        pe_data.export_entries_len
+        "\nExports (%d) (%s):\n",
+        pe_data.export_entries_len,
+        export_section_name
     );
     for (size_t i = 0; i < pe_data.export_entries_len; i++) {
         struct ExportEntry *export_entry = &pe_data.export_entries[i];
@@ -133,15 +135,14 @@ int main(int argc, char **argv) {
 
     /* Symbols */
 
+    tiny_c_printf("\nSymbols (%d):\n", pe_data.symbols_len);
     if (show_symbols) {
-        tiny_c_printf("\nSymbols (%d):\n", pe_data.symbols_len);
         for (size_t i = 0; i < pe_data.symbols_len; i++) {
             struct WinSymbol *symbol = &pe_data.symbols[i];
             size_t section_start = 0;
-            size_t symbol_section_index = symbol->section_number - 1;
-            if (symbol_section_index < pe_data.section_headers_len) {
+            if (symbol->section_index < pe_data.section_headers_len) {
                 struct WinSectionHeader *section_header =
-                    &pe_data.section_headers[symbol_section_index];
+                    &pe_data.section_headers[symbol->section_index];
                 section_start = section_header->virtual_base_address;
             }
             char *symbol_type = symbol->type == 0x20 ? "FUNCTION" : "-";

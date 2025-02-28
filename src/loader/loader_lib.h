@@ -97,7 +97,7 @@ typedef struct RuntimeImportAddressEntry {
     const char *lib_name;
     const char *import_name;
     bool is_variable;
-    size_t symbol_section;
+    size_t symbol_section_index;
     ssize_t section_offset;
 } RuntimeImportAddressEntry;
 

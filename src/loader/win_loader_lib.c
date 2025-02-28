@@ -84,17 +84,17 @@ bool get_runtime_import_address_table(
 
         size_t runtime_import_value = runtime_iat_base + current_import->value;
         bool is_variable = false;
-        size_t symbol_section = 0;
+        size_t symbol_section_index = 0;
         ssize_t section_offset = 0;
         if (symbol != NULL) {
             is_variable = symbol->type != SYMBOL_TYPE_FUNCTION &&
                 symbol->storage_class == SYMBOL_CLASS_EXTERNAL;
-            symbol_section = symbol->section_number;
+            symbol_section_index = symbol->section_index;
             section_offset = symbol->value;
 
             if (is_variable) {
                 struct WinSectionHeader *variable_section_header =
-                    &section_headers[symbol->section_number - 1];
+                    &section_headers[symbol->section_index];
                 if (symbol->value < 0) {
                     BAIL(
                         "unexpected negative symbol value for %s\n",
@@ -113,7 +113,7 @@ bool get_runtime_import_address_table(
             .lib_name = current_import->lib_name,
             .import_name = current_import->import_name,
             .is_variable = is_variable,
-            .symbol_section = symbol_section,
+            .symbol_section_index = symbol_section_index,
             .section_offset = section_offset,
         };
         RuntimeImportAddressEntryList_add(runtime_import_table, runtime_import);

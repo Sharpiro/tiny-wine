@@ -23,6 +23,8 @@ int start_inferior() {
     printf("pow: %d\n", pow_reuslt);
     printf("pow rdi, rsi: %x, %x\n", (uint32_t)rdi, (uint32_t)rsi);
 
+    /** .bss and .data init */
+
     printf("exe_global_var_bss: %x\n", exe_global_var_bss);
     exe_global_var_bss = 1;
     printf("exe_global_var_bss: %x\n", exe_global_var_bss);
@@ -30,8 +32,6 @@ int start_inferior() {
     printf("exe_global_var_data: %x\n", exe_global_var_data);
     exe_global_var_data = 0x24;
     printf("exe_global_var_data: %x\n", exe_global_var_data);
-
-    printf("\n");
 
     printf("*get_lib_var_bss(): %x\n", *get_lib_var_bss());
     printf("lib_var_bss: %x\n", lib_var_bss);
@@ -49,7 +49,7 @@ int start_inferior() {
     printf("lib_var_data: %x\n", lib_var_data);
     printf("*get_lib_var_data(): %x\n", *get_lib_var_data());
 
-    /* Windows to Linux call and volatile registers */
+    /* Windows to Linux call ,volatile registers, many args */
 
     __asm__(
         /**/

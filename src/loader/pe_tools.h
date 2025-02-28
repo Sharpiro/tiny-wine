@@ -214,7 +214,7 @@ struct RawWinSymbol {
 typedef struct WinSymbol {
     char *name;
     int32_t value;
-    uint16_t section_number;
+    uint16_t section_index;
     uint16_t type;
     uint8_t storage_class;
     uint8_t auxillary_symbols_len;
