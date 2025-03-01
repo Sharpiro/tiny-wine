@@ -4,6 +4,12 @@
 #include "pe_tools.h"
 #include <stddef.h>
 
+// @todo: increment so large it breaks when you have more than 2 dlls
+//        should probably dynamically get real IAT lengths
+// @todo: doesn't work > 0x1000
+#define IAT_INCREMENT 0x10000
+#define IAT_LENGTH 0x1000
+
 typedef union {
     uint8_t buffer[8];
     uint64_t u64;

@@ -275,9 +275,9 @@ void *tiny_c_mmap(
     size_t offset
 ) {
     // @todo: debug or option
-    // if (address) {
-    //     flags |= MAP_FIXED_NOREPLACE;
-    // }
+    if (address) {
+        flags |= MAP_FIXED_NOREPLACE;
+    }
 #ifdef ARM32
     struct SysArgs args = {
         .param_one = address,

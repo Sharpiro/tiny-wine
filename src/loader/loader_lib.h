@@ -75,9 +75,8 @@ typedef struct WinRuntimeObject {
     struct PeData pe_data;
     MemoryRegionList memory_regions;
     WinRuntimeExportList function_exports;
-    size_t runtime_iat_object_base;
+    // Runtime object's section base IAT trampoline region
     size_t runtime_iat_section_base;
-    size_t runtime_iat_offset;
 } WinRuntimeObject;
 
 CREATE_LIST_STRUCT(WinRuntimeObject)
@@ -97,8 +96,6 @@ typedef struct RuntimeImportAddressEntry {
     const char *lib_name;
     const char *import_name;
     bool is_variable;
-    size_t symbol_section_index;
-    ssize_t section_offset;
 } RuntimeImportAddressEntry;
 
 CREATE_LIST_STRUCT(RuntimeImportAddressEntry)

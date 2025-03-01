@@ -238,10 +238,9 @@ struct PeData {
     size_t entrypoint;
     struct WinSectionHeader *section_headers;
     size_t section_headers_len;
-    const char *import_section_name;
+    struct WinSectionHeader *import_section;
     struct ImportDirectoryEntry *import_dir_entries;
     size_t import_dir_entries_len;
-    size_t import_address_table_offset;
     struct ImportAddressEntry *import_address_table;
     size_t import_address_table_len;
     const char *export_section_name;

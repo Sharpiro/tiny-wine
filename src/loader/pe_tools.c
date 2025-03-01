@@ -132,14 +132,11 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         }
     }
 
-    const char *import_section_name = NULL;
     struct ImportDirectoryEntry *import_dir_entries = NULL;
     size_t import_dir_entries_len = 0;
-    size_t import_address_table_offset = 0;
     struct ImportAddressEntry *import_address_table = NULL;
     size_t import_address_table_len = 0;
     if (import_section != NULL) {
-        import_section_name = (const char *)import_section->name;
         uint8_t *import_section_buffer =
             loader_malloc_arena(import_section->file_size);
 
@@ -241,7 +238,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
 
         size_t iat_file_offset =
             import_address_table_dir->virtual_address - import_dir_base;
-        import_address_table_offset = import_address_table_dir->virtual_address;
+        size_t import_address_table_offset =
+            import_address_table_dir->virtual_address;
 
         if (import_address_table_len > 0) {
             import_address_table = loader_malloc_arena(
@@ -402,10 +400,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .entrypoint = entrypoint,
         .section_headers = section_headers,
         .section_headers_len = section_headers_len,
-        .import_section_name = import_section_name,
+        .import_section = import_section,
         .import_dir_entries = import_dir_entries,
         .import_dir_entries_len = import_dir_entries_len,
-        .import_address_table_offset = import_address_table_offset,
         .import_address_table = import_address_table,
         .import_address_table_len = import_address_table_len,
         .export_section_name = export_section_name,

@@ -42,7 +42,7 @@ bool get_runtime_import_address_table(
     const WinRuntimeObjectList *shared_libraries,
     RuntimeImportAddressEntryList *runtime_import_table,
     size_t iat_image_base,
-    size_t runtime_iat_base
+    size_t runtime_iat_region_base
 ) {
     for (size_t i = 0; i < import_address_table_len; i++) {
         const struct ImportAddressEntry *current_import =
@@ -59,48 +59,37 @@ bool get_runtime_import_address_table(
             RuntimeImportAddressEntryList_add(
                 runtime_import_table, runtime_import
             );
-            // @todo: maybe unnecessary
-            // LOADER_LOG(
-            //     "IAT entry: %x:%x, %s\n",
-            //     runtime_import.key,
-            //     runtime_import.value,
-            //     runtime_import.import_name
-            // );
             continue;
         }
 
         const struct WinSymbol *symbol = NULL;
-        size_t runtime_obj_image_base = 0;
-        const struct WinRuntimeObject *runtime_obj =
+        size_t import_image_base = 0;
+        const struct WinRuntimeObject *import_runtime_obj =
             find_runtime_object(shared_libraries, current_import->lib_name);
-        if (runtime_obj == NULL &&
+        if (import_runtime_obj == NULL &&
             tiny_c_strcmp(current_import->lib_name, "ntdll.dll") != 0) {
             BAIL("expected runtime_obj '%s'\n", current_import->lib_name);
         }
 
-        if (runtime_obj != NULL) {
-            runtime_obj_image_base = runtime_obj->pe_data.winpe_header
-                                         ->image_optional_header.image_base;
+        if (import_runtime_obj != NULL) {
+            import_image_base = import_runtime_obj->pe_data.winpe_header
+                                    ->image_optional_header.image_base;
             symbol = find_win_symbol(
-                runtime_obj->pe_data.symbols,
-                runtime_obj->pe_data.symbols_len,
+                import_runtime_obj->pe_data.symbols,
+                import_runtime_obj->pe_data.symbols_len,
                 current_import->import_name
             );
         }
 
-        size_t runtime_import_value = runtime_iat_base + current_import->value;
+        size_t runtime_import_value =
+            runtime_iat_region_base + current_import->value;
         bool is_variable = false;
-        size_t symbol_section_index = 0;
-        ssize_t section_offset = 0;
         if (symbol != NULL) {
             is_variable = symbol->type != SYMBOL_TYPE_FUNCTION &&
                 symbol->storage_class == SYMBOL_CLASS_EXTERNAL;
-            symbol_section_index = symbol->section_index;
-            section_offset = symbol->value;
-
             if (is_variable) {
                 struct WinSectionHeader *variable_section_header =
-                    &runtime_obj->pe_data
+                    &import_runtime_obj->pe_data
                          .section_headers[symbol->section_index];
                 if (symbol->value < 0) {
                     BAIL(
@@ -108,7 +97,7 @@ bool get_runtime_import_address_table(
                         symbol->name
                     );
                 }
-                runtime_import_value = runtime_obj_image_base +
+                runtime_import_value = import_image_base +
                     variable_section_header->virtual_base_address +
                     (size_t)symbol->value;
             }
@@ -120,8 +109,6 @@ bool get_runtime_import_address_table(
             .lib_name = current_import->lib_name,
             .import_name = current_import->import_name,
             .is_variable = is_variable,
-            .symbol_section_index = symbol_section_index,
-            .section_offset = section_offset,
         };
         RuntimeImportAddressEntryList_add(runtime_import_table, runtime_import);
     }
@@ -132,22 +119,27 @@ bool get_runtime_import_address_table(
 bool map_import_address_table(
     const RuntimeImportAddressEntryList *import_address_table,
     size_t dynamic_callback_windows,
-    size_t runtime_iat_region_base
+    size_t runtime_iat_section_base
 ) {
     if (dynamic_callback_windows > UINT32_MAX) {
         BAIL("dynamic_callback_windows location exceeds 32 bits\n");
     }
+    if (!import_address_table->length) {
+        return true;
+    }
 
     struct MemoryRegion iat_region = {
-        .start = runtime_iat_region_base,
-        .end = runtime_iat_region_base + 0x1000,
+        .start = runtime_iat_section_base,
+        .end = runtime_iat_section_base + IAT_LENGTH,
         .is_direct_file_map = false,
         .file_offset = 0,
         .file_size = 0,
         .permissions = 4 | 2 | 1,
     };
+    if (!map_memory_regions(0, &iat_region, 1)) {
+        BAIL("map_memory_regions failed\n");
+    }
 
-    // @todo: static?
     Converter dyn_callback_converter = convert(dynamic_callback_windows);
     uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
         ASM_X64_MOV32_IMMEDIATE,
@@ -158,7 +150,6 @@ bool map_import_address_table(
         ASM_X64_CALL,
     };
 
-    bool memory_region_mapped = false;
     for (size_t i = 0; i < import_address_table->length; i++) {
         const struct RuntimeImportAddressEntry *current_import =
             &import_address_table->data[i];
@@ -172,13 +163,6 @@ bool map_import_address_table(
 
         if (current_import->is_variable) {
             continue;
-        }
-
-        if (!memory_region_mapped) {
-            memory_region_mapped = true;
-            if (!map_memory_regions(0, &iat_region, 1)) {
-                BAIL("map_memory_regions failed\n");
-            }
         }
 
         memcpy(

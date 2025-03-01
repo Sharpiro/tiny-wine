@@ -279,7 +279,12 @@ loader: tinyc_start.o libtinyc.a src/loader/loader_main.c
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D loader > loader.dump
 
-winloader: tinyc_start.o libtinyc.a src/loader/win_loader_main.c
+winloader: \
+		tinyc_start.o \
+		libtinyc.a \
+		src/loader/win_loader_lib.h \
+		src/loader/win_loader_lib.c \
+		src/loader/win_loader_main.c
 	@echo "winloader"
 	@$(CC) $(CFLAGS) \
 		-O0 \

@@ -83,8 +83,8 @@ int main(int argc, char **argv) {
 
     /* Imports */
 
-    const char *import_section_name =
-        pe_data.import_section_name ? pe_data.import_section_name : "N/A";
+    char *import_section_name =
+        pe_data.import_section ? (char *)pe_data.import_section->name : "N/A";
     tiny_c_printf(
         "\nImports (%d) (%s):\n",
         pe_data.import_dir_entries_len,

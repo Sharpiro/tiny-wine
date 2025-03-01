@@ -15,16 +15,13 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-#define IAT_INCREMENT 0x10000
-
-size_t rdi = 0;
-size_t rsi = 0;
+// @todo: possible to not need these backup locations?
+size_t rdi_backup = 0;
+size_t rsi_backup = 0;
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
-size_t initial_global_runtime_iat_base = 0;
-size_t curr_global_runtime_iat_base = 0;
-size_t curr_global_runtime_iat_offset = 0;
+size_t initial_global_runtime_iat_region_base = 0;
 size_t got_lib_dyn_offset_table[100] = {};
 
 static void run_asm(
@@ -78,18 +75,18 @@ static void dynamic_callback_linux(void) {
     __asm__("mov %0, r15" : "=r"(r15));
     size_t *rbp;
     __asm__("mov %0, rbp" : "=r"(rbp));
-    size_t *p1_linux_rdi;
-    __asm__("mov %0, rdi" : "=r"(p1_linux_rdi));
-    size_t *p2_linux_rsi;
-    __asm__("mov %0, rsi" : "=r"(p2_linux_rsi));
-    size_t *p3_linux_rdx;
-    __asm__("mov %0, rdx" : "=r"(p3_linux_rdx));
-    size_t *p4_linux_rcx;
-    __asm__("mov %0, rcx" : "=r"(p4_linux_rcx));
-    size_t *p5_linux_r8;
-    __asm__("mov %0, r8" : "=r"(p5_linux_r8));
-    size_t *p6_linux_r9;
-    __asm__("mov %0, r9" : "=r"(p6_linux_r9));
+    size_t *p1_rdi;
+    __asm__("mov %0, rdi" : "=r"(p1_rdi));
+    size_t *p2_rsi;
+    __asm__("mov %0, rsi" : "=r"(p2_rsi));
+    size_t *p3_rdx;
+    __asm__("mov %0, rdx" : "=r"(p3_rdx));
+    size_t *p4_rcx;
+    __asm__("mov %0, rcx" : "=r"(p4_rcx));
+    size_t *p5_r8;
+    __asm__("mov %0, r8" : "=r"(p5_r8));
+    size_t *p6_r9;
+    __asm__("mov %0, r9" : "=r"(p6_r9));
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
 
@@ -129,27 +126,26 @@ static void dynamic_callback_linux(void) {
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
-        p1_linux_rdi,
-        p2_linux_rsi,
-        p3_linux_rdx,
-        p4_linux_rcx,
-        p5_linux_r8,
-        p6_linux_r9,
+        p1_rdi,
+        p2_rsi,
+        p3_rdx,
+        p4_rcx,
+        p5_r8,
+        p6_r9,
         p7_stack1,
         p8_stack2
     );
-    LOADER_LOG("rbx: %x, rdi: %x, rsi: %x\n", rbx, rdi, rsi);
     LOADER_LOG("--- Completed dynamic linking\n");
 
     __asm__(
         /* */
         ".dynamic_callback_linux:\n"
-        "mov rdi, %[p1_linux_rdi]\n"
-        "mov rsi, %[p2_linux_rsi]\n"
-        "mov rdx, %[p3_linux_rdx]\n"
-        "mov rcx, %[p4_linux_rcx]\n"
-        "mov r8, %[p5_linux_r8]\n"
-        "mov r9, %[p6_linux_r9]\n"
+        "mov rdi, %[p1_rdi]\n"
+        "mov rsi, %[p2_rsi]\n"
+        "mov rdx, %[p3_rdx]\n"
+        "mov rcx, %[p4_rcx]\n"
+        "mov r8, %[p5_r8]\n"
+        "mov r9, %[p6_r9]\n"
         "mov r12, %[r12]\n"
         "mov r13, %[r13]\n"
         "mov r14, %[r14]\n"
@@ -162,12 +158,12 @@ static void dynamic_callback_linux(void) {
         "jmp %[function_address]\n"
         :
         : [function_address] "m"(runtime_symbol->value),
-          [p1_linux_rdi] "m"(p1_linux_rdi),
-          [p2_linux_rsi] "m"(p2_linux_rsi),
-          [p3_linux_rdx] "m"(p3_linux_rdx),
-          [p4_linux_rcx] "m"(p4_linux_rcx),
-          [p5_linux_r8] "m"(p5_linux_r8),
-          [p6_linux_r9] "m"(p6_linux_r9),
+          [p1_rdi] "m"(p1_rdi),
+          [p2_rsi] "m"(p2_rsi),
+          [p3_rdx] "m"(p3_rdx),
+          [p4_rcx] "m"(p4_rcx),
+          [p5_r8] "m"(p5_r8),
+          [p6_r9] "m"(p6_r9),
           [rbx] "m"(rbx),
           [r12] "m"(r12),
           [r13] "m"(r13),
@@ -183,8 +179,8 @@ static void dynamic_callback_linux(void) {
 static void dynamic_callback_windows(void) {
     size_t *rbx;
     __asm__("mov %0, rbx" : "=r"(rbx));
-    __asm__("mov %0, rdi" : "=r"(rdi));
-    __asm__("mov %0, rsi" : "=r"(rsi));
+    __asm__("mov %0, rdi" : "=r"(rdi_backup));
+    __asm__("mov %0, rsi" : "=r"(rsi_backup));
     size_t *r12;
     __asm__("mov %0, r12" : "=r"(r12));
     size_t *r13;
@@ -203,17 +199,19 @@ static void dynamic_callback_windows(void) {
     __asm__("mov %0, r8" : "=r"(p3_win_r8));
     size_t p4_win_r9;
     __asm__("mov %0, r9" : "=r"(p4_win_r9));
-    size_t p5_stack1 = rbp[7];
-    size_t p6_stack2 = rbp[8];
-    size_t p7_stack3 = rbp[9];
-    size_t p8_stack4 = rbp[10];
+    size_t p5_win_stack1 = rbp[7];
+    size_t p6_win_stack2 = rbp[8];
+    size_t p7_win_stack3 = rbp[9];
+    size_t p8_win_stack4 = rbp[10];
 
     size_t dyn_trampoline_end = *(rbp + 1);
     size_t dyn_trampoline_start =
         dyn_trampoline_end - DYNAMIC_CALLBACK_TRAMPOLINE_SIZE;
-    size_t iat_runtime_base = dyn_trampoline_start / 0x1000 * 0x1000;
-    size_t func_iat_value_temp =
-        dyn_trampoline_start - initial_global_runtime_iat_base;
+    // @todo: may not work with larger IATs
+    size_t runtime_iat_section_base =
+        dyn_trampoline_start / IAT_LENGTH * IAT_LENGTH;
+    size_t func_iat_value_raw =
+        dyn_trampoline_start - initial_global_runtime_iat_region_base;
 
     LOADER_LOG(
         "--- Starting Windows dyn callback -> ??? at %x\n",
@@ -225,46 +223,48 @@ static void dynamic_callback_windows(void) {
     struct PeData *source_pe = NULL;
     size_t func_iat_key = 0;
     size_t func_iat_value = 0;
-    if (iat_runtime_base == runtime_exe.runtime_iat_section_base) {
+    if (runtime_iat_section_base == runtime_exe.runtime_iat_section_base) {
         source_pe = &runtime_exe.pe_data;
-        for (size_t i = 0; i < runtime_exe.pe_data.import_address_table_len;
-             i++) {
+        func_iat_value = func_iat_value_raw;
+        size_t runtime_exe_iat_len =
+            runtime_exe.pe_data.import_address_table_len;
+        for (size_t i = 0; i < runtime_exe_iat_len; i++) {
             struct ImportAddressEntry *iat_entry =
                 &runtime_exe.pe_data.import_address_table[i];
-            size_t curr_func_iat_value =
-                func_iat_value_temp - runtime_exe.runtime_iat_offset;
-            if (iat_entry->value == curr_func_iat_value) {
+            if (iat_entry->value == func_iat_value) {
                 func_iat_key = iat_entry->key;
-                func_iat_value = iat_entry->value;
                 break;
             }
         }
     } else {
         for (size_t i = 0; i < shared_libraries.length; i++) {
             WinRuntimeObject *curr_shared_lib = &shared_libraries.data[i];
-            if (iat_runtime_base != curr_shared_lib->runtime_iat_section_base) {
+            if (runtime_iat_section_base !=
+                curr_shared_lib->runtime_iat_section_base) {
                 continue;
             }
 
+            size_t runtime_iat_offset =
+                curr_shared_lib->runtime_iat_section_base -
+                curr_shared_lib->pe_data.import_section->virtual_base_address -
+                initial_global_runtime_iat_region_base;
+            func_iat_value = func_iat_value_raw - runtime_iat_offset;
             source_pe = &curr_shared_lib->pe_data;
             for (size_t i = 0;
                  i < curr_shared_lib->pe_data.import_address_table_len;
                  i++) {
                 struct ImportAddressEntry *iat_entry =
                     &curr_shared_lib->pe_data.import_address_table[i];
-                size_t curr_func_iat_value =
-                    func_iat_value_temp - curr_shared_lib->runtime_iat_offset;
-                if (iat_entry->value == curr_func_iat_value) {
+                if (iat_entry->value == func_iat_value) {
                     func_iat_key = iat_entry->key;
-                    func_iat_value = iat_entry->value;
                     break;
                 }
             }
             break;
         }
     }
-    if (func_iat_value == 0) {
-        EXIT("func_iat_value '%x' not found\n", func_iat_value);
+    if (func_iat_key == 0) {
+        EXIT("func_iat_value_raw '%x' not found\n", func_iat_value_raw);
     }
 
     LOADER_LOG(
@@ -298,12 +298,11 @@ static void dynamic_callback_windows(void) {
         p2_win_rdx,
         p3_win_r8,
         p4_win_r9,
-        p5_stack1,
-        p6_stack2,
-        p7_stack3,
-        p8_stack4
+        p5_win_stack1,
+        p6_win_stack2,
+        p7_win_stack3,
+        p8_win_stack4
     );
-    LOADER_LOG("rbx: %x, rdi: %x, rsi: %x\n", rbx, rdi, rsi);
 
     /** Find function using library and function name */
 
@@ -355,8 +354,8 @@ static void dynamic_callback_windows(void) {
             "mov rsi, %[p2_win_rdx]\n"
             "mov rdx, %[p3_win_r8]\n"
             "mov rcx, %[p4_win_r9]\n"
-            "mov r8, %[p5_stack1]\n"
-            "mov r9, %[p6_stack1]\n"
+            "mov r8, %[p5_win_stack1]\n"
+            "mov r9, %[p6_win_stack2]\n"
             "mov r12, %[r12]\n"
             "mov r13, %[r13]\n"
             "mov r14, %[r14]\n"
@@ -396,25 +395,25 @@ static void dynamic_callback_windows(void) {
               [p2_win_rdx] "m"(p2_win_rdx),
               [p3_win_r8] "m"(p3_win_r8),
               [p4_win_r9] "m"(p4_win_r9),
-              [p5_stack1] "m"(p5_stack1),
-              [p6_stack1] "m"(p6_stack2),
+              [p5_win_stack1] "m"(p5_win_stack1),
+              [p6_win_stack2] "m"(p6_win_stack2),
               [r12] "m"(r12),
               [r13] "m"(r13),
               [r14] "m"(r14),
               [r15] "m"(r15),
               [rbx] "m"(rbx),
-              [rdi_pointer] "g"(&rdi),
-              [rsi_pointer] "g"(&rsi)
+              [rdi_pointer] "g"(&rdi_backup),
+              [rsi_pointer] "g"(&rsi_backup)
             :
         );
     } else {
         __asm__(
             /* */
             ".dynamic_callback_windows:\n"
-            "mov rcx, %[p1]\n"
-            "mov rdx, %[p2]\n"
-            "mov r8, %[p3]\n"
-            "mov r9, %[p4]\n"
+            "mov rcx, %[p1_win_rcx]\n"
+            "mov rdx, %[p2_win_rdx]\n"
+            "mov r8, %[p3_win_r8]\n"
+            "mov r9, %[p4_win_r9]\n"
             "mov r12, %[r12]\n"
             "mov r13, %[r13]\n"
             "mov r14, %[r14]\n"
@@ -428,17 +427,17 @@ static void dynamic_callback_windows(void) {
             "jmp %[function_address]\n"
             :
             : [function_address] "m"(function_export.address),
-              [p1] "r"(p1_win_rcx),
-              [p2] "m"(p2_win_rdx),
-              [p3] "m"(p3_win_r8),
-              [p4] "m"(p4_win_r9),
+              [p1_win_rcx] "m"(p1_win_rcx),
+              [p2_win_rdx] "m"(p2_win_rdx),
+              [p3_win_r8] "m"(p3_win_r8),
+              [p4_win_r9] "m"(p4_win_r9),
               [r12] "m"(r12),
               [r13] "m"(r13),
               [r14] "m"(r14),
               [r15] "m"(r15),
               [rbx] "m"(rbx),
-              [rdi_pointer] "g"(&rdi),
-              [rsi_pointer] "g"(&rsi)
+              [rdi_pointer] "g"(&rdi_backup),
+              [rsi_pointer] "g"(&rsi_backup)
             :
         );
     }
@@ -565,7 +564,9 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
 
 // @todo: recursive dll loading not supported
 static bool load_dlls(
-    struct PeData *inferior_executable, WinRuntimeObjectList *shared_libraries
+    struct PeData *inferior_executable,
+    WinRuntimeObjectList *shared_libraries,
+    size_t curr_global_runtime_iat_base
 ) {
     for (size_t i = 0; i < inferior_executable->import_dir_entries_len; i++) {
         /* Map shared libraries */
@@ -654,22 +655,13 @@ static bool load_dlls(
         /* Get IAT offsets */
 
         size_t runtime_iat_region_base = 0;
-        size_t runtime_iat_base = 0;
-        size_t runtime_iat_offset = 0;
+        size_t runtime_iat_section_base = 0;
         if (shared_lib_pe.import_address_table_len) {
-            const struct WinSectionHeader *idata_header =
-                find_win_section_header(
-                    shared_lib_pe.section_headers,
-                    shared_lib_pe.section_headers_len,
-                    ".idata"
-                );
             runtime_iat_region_base = curr_global_runtime_iat_base;
-            runtime_iat_base =
-                runtime_iat_region_base + idata_header->virtual_base_address;
+            runtime_iat_section_base = runtime_iat_region_base +
+                shared_lib_pe.import_section->virtual_base_address;
 
-            runtime_iat_offset = curr_global_runtime_iat_offset;
             curr_global_runtime_iat_base += IAT_INCREMENT;
-            curr_global_runtime_iat_offset += IAT_INCREMENT;
         }
 
         struct WinRuntimeObject shared_lib = {
@@ -677,9 +669,7 @@ static bool load_dlls(
             .pe_data = shared_lib_pe,
             .memory_regions = memory_regions,
             .function_exports = runtime_exports,
-            .runtime_iat_object_base = runtime_iat_region_base,
-            .runtime_iat_section_base = runtime_iat_base,
-            .runtime_iat_offset = runtime_iat_offset,
+            .runtime_iat_section_base = runtime_iat_section_base,
         };
         WinRuntimeObjectList_add(shared_libraries, shared_lib);
     }
@@ -689,30 +679,34 @@ static bool load_dlls(
 
 // @todo: inline func?
 static bool initialize_import_address_table(
-    const struct WinRuntimeObject *shared_lib
+    const struct WinRuntimeObject *runtime_obj
 ) {
-    if (!shared_lib->pe_data.import_address_table_len) {
+    if (!runtime_obj->pe_data.import_address_table_len) {
         return true;
     }
 
     RuntimeImportAddressEntryList runtime_import_table = {
         .allocator = loader_malloc_arena,
     };
+    size_t runtime_iat_region_base = runtime_obj->runtime_iat_section_base -
+        runtime_obj->pe_data.import_section->virtual_base_address;
     if (!get_runtime_import_address_table(
-            shared_lib->pe_data.import_address_table,
-            shared_lib->pe_data.import_address_table_len,
+            runtime_obj->pe_data.import_address_table,
+            runtime_obj->pe_data.import_address_table_len,
             &shared_libraries,
             &runtime_import_table,
-            shared_lib->pe_data.winpe_header->image_optional_header.image_base,
-            shared_lib->runtime_iat_object_base
+            runtime_obj->pe_data.winpe_header->image_optional_header.image_base,
+            runtime_iat_region_base
         )) {
         BAIL("get_runtime_import_address_table failed\n");
     }
 
+    // @todo
+    // size_t iat_region_size = runtime_obj->pe_data.import_address_table;
     if (!map_import_address_table(
             &runtime_import_table,
             (size_t)dynamic_callback_windows,
-            shared_lib->runtime_iat_section_base
+            runtime_obj->runtime_iat_section_base
         )) {
         BAIL("map_import_address_table failed\n");
     }
@@ -826,29 +820,23 @@ int main(int argc, char **argv) {
     /* Get IAT offsets */
 
     // @todo: guessing with a big length is bad
-    const size_t IAT_LEN = 0x200000;
-    initial_global_runtime_iat_base = (size_t)tiny_c_mmap(
-        0, IAT_LEN, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
+    const size_t IAT_MAX_LEN = 0x30000;
+    initial_global_runtime_iat_region_base = (size_t)tiny_c_mmap(
+        0,
+        IAT_MAX_LEN,
+        PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS,
+        -1,
+        0
     );
-    curr_global_runtime_iat_base = initial_global_runtime_iat_base;
-    if (initial_global_runtime_iat_base == (size_t)MAP_FAILED) {
+    if (initial_global_runtime_iat_region_base == (size_t)MAP_FAILED) {
         EXIT("initial_global_runtime_iat_base memory regions failed\n");
     }
 
-    size_t runtime_iat_region_base = 0;
-    size_t runtime_iat_base = 0;
-    size_t runtime_iat_offset = 0;
+    size_t runtime_iat_section_base = 0;
     if (pe_exe.import_address_table_len) {
-        const struct WinSectionHeader *idata_header = find_win_section_header(
-            pe_exe.section_headers, pe_exe.section_headers_len, ".idata"
-        );
-        runtime_iat_region_base = curr_global_runtime_iat_base;
-        runtime_iat_base =
-            runtime_iat_region_base + idata_header->virtual_base_address;
-
-        runtime_iat_offset = curr_global_runtime_iat_offset;
-        curr_global_runtime_iat_base += IAT_INCREMENT;
-        curr_global_runtime_iat_offset += IAT_INCREMENT;
+        runtime_iat_section_base = initial_global_runtime_iat_region_base +
+            pe_exe.import_section->virtual_base_address;
     }
 
     /* Load dlls */
@@ -856,7 +844,11 @@ int main(int argc, char **argv) {
     shared_libraries = (WinRuntimeObjectList){
         .allocator = loader_malloc_arena,
     };
-    if (!load_dlls(&pe_exe, &shared_libraries)) {
+    if (!load_dlls(
+            &pe_exe,
+            &shared_libraries,
+            initial_global_runtime_iat_region_base + IAT_INCREMENT
+        )) {
         EXIT("initialize_dynamic_data failed\n");
     }
 
@@ -865,14 +857,12 @@ int main(int argc, char **argv) {
         .pe_data = pe_exe,
         .memory_regions = memory_regions,
         .function_exports = {},
-        .runtime_iat_object_base = runtime_iat_region_base,
-        .runtime_iat_section_base = runtime_iat_base,
-        .runtime_iat_offset = runtime_iat_offset,
+        .runtime_iat_section_base = runtime_iat_section_base,
     };
 
     /* Map Import Address Tables */
 
-    if (tiny_c_munmap(initial_global_runtime_iat_base, IAT_LEN)) {
+    if (tiny_c_munmap(initial_global_runtime_iat_region_base, IAT_MAX_LEN)) {
         EXIT("munmap initial_global_runtime_iat_base failed\n");
     }
 
