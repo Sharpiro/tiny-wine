@@ -171,7 +171,10 @@ bool map_memory_regions(
         );
         if ((size_t)addr != memory_region->start) {
             BAIL(
-                "map failed, %x, %s\n", tinyc_errno, tinyc_strerror(tinyc_errno)
+                "failed trying to map %x, errorno %d: %s\n",
+                memory_region->start,
+                tinyc_errno,
+                tinyc_strerror(tinyc_errno)
             );
         }
     }

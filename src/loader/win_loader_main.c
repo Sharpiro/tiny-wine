@@ -687,6 +687,7 @@ static bool load_dlls(
     return true;
 }
 
+// @todo: inline func?
 static bool initialize_import_address_table(
     const struct WinRuntimeObject *shared_lib
 ) {
@@ -824,7 +825,8 @@ int main(int argc, char **argv) {
 
     /* Get IAT offsets */
 
-    const size_t IAT_LEN = 0x20000;
+    // @todo: guessing with a big length is bad
+    const size_t IAT_LEN = 0x200000;
     initial_global_runtime_iat_base = (size_t)tiny_c_mmap(
         0, IAT_LEN, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
     );
@@ -876,6 +878,7 @@ int main(int argc, char **argv) {
 
     LOADER_LOG("Initializing executable IAT\n");
     if (!initialize_import_address_table(&runtime_exe)) {
+        log_memory_regions();
         EXIT("initialize_import_address_table failed\n");
     }
     for (size_t i = 0; i < shared_libraries.length; i++) {
@@ -883,6 +886,7 @@ int main(int argc, char **argv) {
             &shared_libraries.data[i];
         LOADER_LOG("Initializing '%s' IAT\n", shared_library->name);
         if (!initialize_import_address_table(shared_library)) {
+            log_memory_regions();
             EXIT("initialize_import_address_table failed\n");
         }
     }

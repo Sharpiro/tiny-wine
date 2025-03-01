@@ -147,6 +147,7 @@ bool map_import_address_table(
         .permissions = 4 | 2 | 1,
     };
 
+    // @todo: static?
     Converter dyn_callback_converter = convert(dynamic_callback_windows);
     uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
         ASM_X64_MOV32_IMMEDIATE,
@@ -176,7 +177,7 @@ bool map_import_address_table(
         if (!memory_region_mapped) {
             memory_region_mapped = true;
             if (!map_memory_regions(0, &iat_region, 1)) {
-                BAIL("loader map memory regions failed\n");
+                BAIL("map_memory_regions failed\n");
             }
         }
 

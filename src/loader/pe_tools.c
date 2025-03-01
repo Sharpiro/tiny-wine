@@ -481,7 +481,7 @@ bool map_memory_regions_win(
     }
 
     if (!map_memory_regions(fd, editable_regions, regions_len)) {
-        BAIL("loader map memory regions failed\n");
+        BAIL("map_memory_regions failed\n");
     }
 
     for (size_t i = 0; i < regions_len; i++) {
