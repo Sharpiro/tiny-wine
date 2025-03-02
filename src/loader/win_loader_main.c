@@ -225,16 +225,9 @@ static void dynamic_callback_windows(void) {
     if (runtime_iat_section_base == runtime_exe.runtime_iat_section_base) {
         source_pe = &runtime_exe.pe_data;
         func_iat_value = func_iat_value_raw;
-        // @todo
-        size_t runtime_iat_offset = runtime_exe.runtime_iat_section_base -
-            runtime_exe.pe_data.import_section->virtual_base_address -
-            initial_global_runtime_iat_region_base;
-        if (runtime_iat_offset != 0) {
-            EXIT("non-zero runtime_iat_offset %x\n", runtime_iat_offset);
-        }
-        size_t runtime_exe_iat_len =
+        size_t runtime_obj_iat_len =
             runtime_exe.pe_data.import_address_table_len;
-        for (size_t i = 0; i < runtime_exe_iat_len; i++) {
+        for (size_t i = 0; i < runtime_obj_iat_len; i++) {
             struct ImportAddressEntry *iat_entry =
                 &runtime_exe.pe_data.import_address_table[i];
             if (iat_entry->value == func_iat_value) {
@@ -256,9 +249,9 @@ static void dynamic_callback_windows(void) {
                 initial_global_runtime_iat_region_base;
             func_iat_value = func_iat_value_raw - runtime_iat_offset;
             source_pe = &curr_shared_lib->pe_data;
-            for (size_t i = 0;
-                 i < curr_shared_lib->pe_data.import_address_table_len;
-                 i++) {
+            size_t runtime_obj_iat_len =
+                curr_shared_lib->pe_data.import_address_table_len;
+            for (size_t i = 0; i < runtime_obj_iat_len; i++) {
                 struct ImportAddressEntry *iat_entry =
                     &curr_shared_lib->pe_data.import_address_table[i];
                 if (iat_entry->value == func_iat_value) {
@@ -745,6 +738,11 @@ int main(int argc, char **argv) {
     int32_t pid = tiny_c_get_pid();
     LOADER_LOG("pid: %d\n", pid);
 
+    /* Unmap default locations */
+
+    if (tiny_c_munmap(0x10000, 0x1000)) {
+        EXIT("munmap of self failed\n");
+    }
     if (tiny_c_munmap(0x400000, 0x1000)) {
         tiny_c_fprintf(STDERR, "munmap of self failed\n");
         return -1;

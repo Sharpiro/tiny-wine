@@ -23,12 +23,12 @@ linux: \
 	libtinyc.a \
 	libtinyc.so \
 	loader \
-	programs/linux/unit_test \
-	programs/linux/env \
-	programs/linux/string \
-	programs/linux/tinyfetch \
-	programs/linux/static_pie \
-	programs/linux/dynamic
+	unit_test \
+	env \
+	string \
+	tinyfetch \
+	static_pie \
+	dynamic
 
 windows: \
 	libtinyc.a \
@@ -71,7 +71,8 @@ tinyc_sys.o: src/tiny_c/tiny_c.c
 		-DAMD64 \
 		-masm=intel \
 		-mno-sse \
-		-o tinyc_sys.o src/tiny_c/tinyc_sys.c
+		-o tinyc_sys.o \
+		src/tiny_c/tinyc_sys.c
 
 tiny_c.o: src/tiny_c/tiny_c.c
 	@$(CC) $(CFLAGS) \
@@ -85,7 +86,8 @@ tiny_c.o: src/tiny_c/tiny_c.c
 		-DAMD64 \
 		-masm=intel \
 		-mno-sse \
-		-o tiny_c.o src/tiny_c/tiny_c.c
+		-o tiny_c.o \
+		src/tiny_c/tiny_c.c
 
 libtinyc.a: tinyc_sys.o tiny_c.o
 	@echo "libtinyc.a"
@@ -259,7 +261,14 @@ windynamiclibfull.dll: \
 		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
 	@$(OBJDUMP) -M intel -D windynamiclibfull.dll > windynamiclibfull.dll.dump
 
-loader: tinyc_start.o libtinyc.a src/loader/loader_main.c
+loader: \
+	src/loader/loader_main.c\
+	src/loader/loader_lib.c \
+	src/loader/memory_map.c \
+	src/loader/elf_tools.c \
+	tinyc_start.o \
+	libtinyc.a
+	@echo "loader"
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
@@ -307,7 +316,7 @@ winloader: \
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D winloader > winloader.dump
 
-programs/linux/unit_test: tinyc_start.o libtinyc.a
+unit_test: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
@@ -320,7 +329,11 @@ programs/linux/unit_test: tinyc_start.o libtinyc.a
 		tinyc_start.o \
 		libtinyc.a
 
-programs/linux/env: tinyc_start.o libtinyc.a
+env: \
+		src/programs/linux/env/env_main.c \
+		tinyc_start.o \
+		libtinyc.a
+	@echo "env"
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
@@ -331,7 +344,7 @@ programs/linux/env: tinyc_start.o libtinyc.a
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D env > env.dump
 
-programs/linux/string: libtinyc.a libstatic.a
+string: libtinyc.a libstatic.a
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
@@ -343,7 +356,7 @@ programs/linux/string: libtinyc.a libstatic.a
 		libstatic.a
 	@$(OBJDUMP) -M intel -D string > string.dump
 
-programs/linux/tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
+tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib \
@@ -356,7 +369,7 @@ programs/linux/tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 		tinyc_start.o
 	@$(OBJDUMP) -M intel -D tinyfetch > tinyfetch.dump
 
-programs/linux/static_pie: tinyc_start.o libtinyc.a
+static_pie: tinyc_start.o libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib \
@@ -368,7 +381,7 @@ programs/linux/static_pie: tinyc_start.o libtinyc.a
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D static_pie > static_pie.dump
 
-programs/linux/dynamic: libtinyc.so libdynamic.so
+dynamic: libtinyc.so libdynamic.so
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		$(WARNINGS) \

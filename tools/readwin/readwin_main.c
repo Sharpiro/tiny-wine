@@ -3,6 +3,8 @@
 #include <fcntl.h>
 #include <stddef.h>
 
+// @todo: readwin should show difference b/w a variable marked 'importable'
+
 int main(int argc, char **argv) {
     if (argc < 2 || tiny_c_memcmp(argv[1], "--", 2) == 0) {
         EXIT("Usage: readwin <file> [-s]\n");
