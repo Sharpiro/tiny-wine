@@ -207,9 +207,8 @@ static void dynamic_callback_windows(void) {
     size_t dyn_trampoline_end = *(rbp + 1);
     size_t dyn_trampoline_start =
         dyn_trampoline_end - DYNAMIC_CALLBACK_TRAMPOLINE_SIZE;
-    // @todo: may not work with larger IATs
-    size_t runtime_iat_section_base =
-        dyn_trampoline_start / IAT_LENGTH * IAT_LENGTH;
+    size_t runtime_iat_section_base = dyn_trampoline_start /
+        MAX_TRAMPOLINE_IAT_SIZE * MAX_TRAMPOLINE_IAT_SIZE;
     size_t func_iat_value_raw =
         dyn_trampoline_start - initial_global_runtime_iat_region_base;
 
@@ -226,6 +225,13 @@ static void dynamic_callback_windows(void) {
     if (runtime_iat_section_base == runtime_exe.runtime_iat_section_base) {
         source_pe = &runtime_exe.pe_data;
         func_iat_value = func_iat_value_raw;
+        // @todo
+        size_t runtime_iat_offset = runtime_exe.runtime_iat_section_base -
+            runtime_exe.pe_data.import_section->virtual_base_address -
+            initial_global_runtime_iat_region_base;
+        if (runtime_iat_offset != 0) {
+            EXIT("non-zero runtime_iat_offset %x\n", runtime_iat_offset);
+        }
         size_t runtime_exe_iat_len =
             runtime_exe.pe_data.import_address_table_len;
         for (size_t i = 0; i < runtime_exe_iat_len; i++) {
@@ -459,7 +465,6 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         BAIL("Expected shared library to have dynamic data\n");
     }
 
-    // @todo: need runtime tracking for other shared libs
     size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
     struct MemoryRegionsInfo memory_regions_info;
     if (!get_memory_regions_info_x86(
@@ -661,7 +666,7 @@ static bool load_dlls(
             runtime_iat_section_base = runtime_iat_region_base +
                 shared_lib_pe.import_section->virtual_base_address;
 
-            curr_global_runtime_iat_base += IAT_INCREMENT;
+            curr_global_runtime_iat_base += MAX_TRAMPOLINE_IAT_SIZE;
         }
 
         struct WinRuntimeObject shared_lib = {
@@ -701,8 +706,6 @@ static bool initialize_import_address_table(
         BAIL("get_runtime_import_address_table failed\n");
     }
 
-    // @todo
-    // size_t iat_region_size = runtime_obj->pe_data.import_address_table;
     if (!map_import_address_table(
             &runtime_import_table,
             (size_t)dynamic_callback_windows,
@@ -819,11 +822,10 @@ int main(int argc, char **argv) {
 
     /* Get IAT offsets */
 
-    // @todo: guessing with a big length is bad
-    const size_t IAT_MAX_LEN = 0x30000;
+    const size_t TRAMPOLINE_IAT_RESERVED_SIZE = MAX_TRAMPOLINE_IAT_SIZE * 50;
     initial_global_runtime_iat_region_base = (size_t)tiny_c_mmap(
         0,
-        IAT_MAX_LEN,
+        TRAMPOLINE_IAT_RESERVED_SIZE,
         PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS,
         -1,
@@ -847,7 +849,7 @@ int main(int argc, char **argv) {
     if (!load_dlls(
             &pe_exe,
             &shared_libraries,
-            initial_global_runtime_iat_region_base + IAT_INCREMENT
+            initial_global_runtime_iat_region_base + MAX_TRAMPOLINE_IAT_SIZE
         )) {
         EXIT("initialize_dynamic_data failed\n");
     }
@@ -862,7 +864,9 @@ int main(int argc, char **argv) {
 
     /* Map Import Address Tables */
 
-    if (tiny_c_munmap(initial_global_runtime_iat_region_base, IAT_MAX_LEN)) {
+    if (tiny_c_munmap(
+            initial_global_runtime_iat_region_base, TRAMPOLINE_IAT_RESERVED_SIZE
+        )) {
         EXIT("munmap initial_global_runtime_iat_base failed\n");
     }
 

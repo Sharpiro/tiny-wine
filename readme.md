@@ -7,6 +7,7 @@ A basic dynamic loader for Linux and Windows.
 - Only works for toy programs created with specific Clang versions
 - No recursive dependencies
 - `malloc` leaks memory
+- Import Address Table length limited to 512 entries
 
 ## Prerequisites
 

@@ -128,9 +128,12 @@ bool map_import_address_table(
         return true;
     }
 
+    if (import_address_table->length * 8 > MAX_TRAMPOLINE_IAT_SIZE) {
+        BAIL("import_address_table length must be <= 512\n");
+    }
     struct MemoryRegion iat_region = {
         .start = runtime_iat_section_base,
-        .end = runtime_iat_section_base + IAT_LENGTH,
+        .end = runtime_iat_section_base + MAX_TRAMPOLINE_IAT_SIZE,
         .is_direct_file_map = false,
         .file_offset = 0,
         .file_size = 0,
