@@ -146,6 +146,7 @@ libntdll.so:
 		-fno-stack-protector \
 		-g \
 		-DAMD64 \
+		-DDLL \
 		-masm=intel \
 		-nostdlib \
 		-shared \
@@ -198,6 +199,7 @@ msvcrt.dll: src/dlls/msvcrt.c \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
+		-DDLL \
 		-masm=intel \
 		-nostdlib \
 		-shared \
@@ -216,6 +218,7 @@ KERNEL32.dll: src/dlls/kernel32.c
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
+		-DDLL \
 		-masm=intel \
 		-nostdlib \
 		-shared \
@@ -234,6 +237,7 @@ windynamiclib.dll: \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
+		-DDLL \
 		-masm=intel \
 		-nostdlib \
 		-shared \

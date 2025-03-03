@@ -1,4 +1,5 @@
 #include "msvcrt.h"
+#include "./export.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -9,17 +10,6 @@
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
 #pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 #pragma clang diagnostic ignored "-Wbuiltin-requires-header"
-
-/**
- * Variables must be marked as exportable with -nostdlib.
- * 'Some' functions require it as well.
- * If you use it on one function in a file, you must use it on all.
- */
-#if defined(_WIN32)
-#define EXPORTABLE __declspec(dllexport)
-#else
-#define EXPORTABLE
-#endif
 
 static size_t heap_start = 0;
 static size_t heap_end = 0;

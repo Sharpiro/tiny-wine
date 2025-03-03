@@ -1,3 +1,4 @@
+#include "./win_dynamic_lib.h"
 #include "../../../dlls/msvcrt.h"
 #include <stdbool.h>
 #include <stdint.h>
