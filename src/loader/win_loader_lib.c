@@ -143,16 +143,6 @@ bool map_import_address_table(
         BAIL("map_memory_regions failed\n");
     }
 
-    Converter dyn_callback_converter = convert(dynamic_callback_windows);
-    uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
-        ASM_X64_MOV32_IMMEDIATE,
-        dyn_callback_converter.buffer[0],
-        dyn_callback_converter.buffer[1],
-        dyn_callback_converter.buffer[2],
-        dyn_callback_converter.buffer[3],
-        ASM_X64_CALL,
-    };
-
     for (size_t i = 0; i < import_address_table->length; i++) {
         const struct RuntimeImportAddressEntry *current_import =
             &import_address_table->data[i];
@@ -164,16 +154,31 @@ bool map_import_address_table(
         size_t *runtime_import_key = (size_t *)current_import->key;
         *runtime_import_key = current_import->value;
 
+        LOADER_LOG(
+            "IAT: %x, %x, %s\n",
+            current_import->key,
+            current_import->value,
+            current_import->is_variable ? "variable" : "function"
+        );
+
         if (current_import->is_variable) {
             continue;
         }
 
+        Converter dyn_callback_converter = convert(dynamic_callback_windows);
+        uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
+            ASM_X64_MOV32_IMMEDIATE,
+            dyn_callback_converter.buffer[0],
+            dyn_callback_converter.buffer[1],
+            dyn_callback_converter.buffer[2],
+            dyn_callback_converter.buffer[3],
+            ASM_X64_CALL,
+        };
         memcpy(
             (uint8_t *)(current_import->value),
             trampoline_code,
             sizeof(trampoline_code)
         );
-        LOADER_LOG("IAT: %x, %x\n", current_import->key, current_import->value);
     }
 
     return true;

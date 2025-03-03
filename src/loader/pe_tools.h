@@ -250,6 +250,17 @@ struct PeData {
     size_t symbols_len;
 };
 
+struct RelocationBlock {
+    uint32_t page_rva;
+    uint32_t block_size;
+};
+
+// @todo: bitfields reverse order
+struct RelocationEntry {
+    uint16_t offset : 12;
+    uint16_t type : 4;
+};
+
 bool get_pe_data(int32_t fd, struct PeData *pe_data);
 
 bool get_memory_regions_info_win(

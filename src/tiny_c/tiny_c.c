@@ -275,7 +275,9 @@ void *tiny_c_mmap(
     size_t offset
 ) {
     // @todo: debug or option
-    if (address) {
+    struct utsname name;
+    tinyc_uname(&name);
+    if (*name.release >= '5') {
         flags |= MAP_FIXED_NOREPLACE;
     }
 #ifdef ARM32

@@ -2,6 +2,7 @@
 #include "./pe_tools.h"
 #include "../tiny_c/tiny_c.h"
 #include "elf_tools.h"
+#include "list.h"
 #include "loader_lib.h"
 #include "memory_map.h"
 #include <stdatomic.h>
@@ -344,12 +345,12 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         }
     }
 
+    /* Symbol table */
+
     size_t raw_symbols_len = winpe_header->image_file_header.number_of_symbols;
     struct WinSymbol *symbols = NULL;
     size_t symbols_len = 0;
     if (raw_symbols_len) {
-        /* Symbol string table */
-
         size_t raw_symbols_size = sizeof(struct RawWinSymbol) * raw_symbols_len;
         size_t symbol_table_offset =
             winpe_header->image_file_header.pointer_to_symbol_table;
@@ -361,8 +362,6 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         tinyc_lseek(fd, (off_t)string_table_offset, SEEK_SET);
         uint8_t *string_table = loader_malloc_arena(string_table_size);
         tiny_c_read(fd, string_table, string_table_size);
-
-        /* Symbol table */
 
         struct RawWinSymbol *raw_symbols =
             loader_malloc_arena(raw_symbols_size);
@@ -391,6 +390,37 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
                 .raw_index = i,
             };
             i += raw_symbol->auxillary_symbols_len;
+        }
+    }
+
+    /* Relocations */
+    const struct WinSectionHeader *relocation_section =
+        find_win_section_header(section_headers, section_headers_len, ".reloc");
+    if (relocation_section) {
+        // @todo: total relocation section size from optional header
+        uint8_t *relocation_section_buffer =
+            loader_malloc_arena(relocation_section->file_size);
+        tinyc_lseek(fd, (off_t)relocation_section->file_offset, SEEK_SET);
+        tiny_c_read(
+            fd, relocation_section_buffer, relocation_section->file_size
+        );
+        struct RelocationBlock *relocation_block =
+            (struct RelocationBlock *)relocation_section_buffer;
+        size_t relocations_len =
+            (relocation_block->block_size - sizeof(struct RelocationBlock)) /
+            sizeof(struct RelocationEntry);
+        uint16_t *relocations = (uint16_t *)(relocation_section_buffer + 8);
+        struct RelocationEntry *relocations_temp =
+            (struct RelocationEntry *)(relocation_section_buffer + 8);
+        for (size_t i = 0; i < relocations_len; i++) {
+            uint16_t relocation = relocations[i];
+            size_t relocation_type = relocation >> 12;
+            size_t relocation_offset = relocation & 0x0fff;
+            size_t relocation_address =
+                image_base + relocation_block->page_rva + relocation_offset;
+            struct RelocationEntry *temp_entry = &relocations_temp[i];
+            int x = 2;
+            //
         }
     }
 

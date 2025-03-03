@@ -228,6 +228,7 @@ KERNEL32.dll: src/dlls/kernel32.c
 	@$(OBJDUMP) -M intel -D KERNEL32.dll > KERNEL32.dll.dump
 
 windynamiclib.dll: \
+		src/programs/windows/win_dynamic/win_dynamic_lib.h \
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
 	@echo "windynamiclib.dll"
 	@$(CC) $(CFLAGS) \
@@ -293,11 +294,15 @@ loader: \
 	@$(OBJDUMP) -M intel -D loader > loader.dump
 
 winloader: \
-		tinyc_start.o \
-		libtinyc.a \
+		src/loader/win_loader_main.c \
 		src/loader/win_loader_lib.h \
 		src/loader/win_loader_lib.c \
-		src/loader/win_loader_main.c
+		src/loader/loader_lib.c \
+		src/loader/memory_map.c \
+		src/loader/pe_tools.h \
+		src/loader/pe_tools.c \
+		tinyc_start.o \
+		libtinyc.a 
 	@echo "winloader"
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -311,8 +316,8 @@ winloader: \
 		-mno-sse \
 		-o winloader \
 		src/loader/win_loader_main.c \
-		src/loader/loader_lib.c \
 		src/loader/win_loader_lib.c \
+		src/loader/loader_lib.c \
 		src/loader/memory_map.c \
 		src/loader/pe_tools.c \
 		src/loader/elf_tools.c \
