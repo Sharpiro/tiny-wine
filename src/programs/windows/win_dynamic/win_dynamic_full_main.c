@@ -47,3 +47,14 @@ int main() {
     printf("lib_var_data: %d\n", lib_var_data);
     printf("*get_lib_var_data(): %d\n", *get_lib_var_data());
 }
+
+// @todo: relocations probably
+
+/**
+ * Required for accessing mingw dynamic library variables.
+ * Called with stdlib only.
+ * A default version is provided with stdlib, but can be overriden here.
+ */
+void _pei386_runtime_relocator(void) {
+    // exit(255);
+}

@@ -394,13 +394,15 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     }
 
     /* Relocations */
+
+    struct ImageDataDirectory *relocation_dir =
+        &image_optional_header.data_directory[DATA_DIR_RELOC_INDEX];
     RelocationEntryList relocations = {
         .allocator = loader_malloc_arena,
     };
     const struct WinSectionHeader *relocation_section =
         find_win_section_header(section_headers, section_headers_len, ".reloc");
     if (relocation_section) {
-        // @todo: total relocation section size from optional header
         uint8_t *relocation_section_buffer =
             loader_malloc_arena(relocation_section->file_size);
         tinyc_lseek(fd, (off_t)relocation_section->file_offset, SEEK_SET);
@@ -409,23 +411,28 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         );
 
         const size_t RELOCATION_BLOCK_SIZE = sizeof(struct RelocationBlock);
-        struct RelocationBlock *relocation_block =
-            (struct RelocationBlock *)relocation_section_buffer;
-        size_t relocations_len =
-            (relocation_block->block_size - RELOCATION_BLOCK_SIZE) /
-            sizeof(uint16_t);
-        uint16_t *raw_relocations =
-            (uint16_t *)(relocation_section_buffer + RELOCATION_BLOCK_SIZE);
-        for (size_t i = 0; i < relocations_len; i++) {
-            uint16_t raw_relocation = raw_relocations[i];
-            size_t type = raw_relocation >> 12;
-            size_t offset = raw_relocation & 0x0fff;
-            struct RelocationEntry relocation_entry = {
-                .offset = offset,
-                .type = type,
-                .block_page_rva = relocation_block->page_rva,
-            };
-            RelocationEntryList_add(&relocations, relocation_entry);
+        size_t block_bytes_parsed = 0;
+        while (block_bytes_parsed < relocation_dir->size) {
+            struct RelocationBlock *relocation_block =
+                (struct RelocationBlock *)relocation_section_buffer;
+            size_t relocations_len =
+                (relocation_block->block_size - RELOCATION_BLOCK_SIZE) /
+                sizeof(uint16_t);
+            uint16_t *raw_relocations =
+                (uint16_t *)(relocation_section_buffer + RELOCATION_BLOCK_SIZE);
+            for (size_t i = 0; i < relocations_len; i++) {
+                uint16_t raw_relocation = raw_relocations[i];
+                size_t type = raw_relocation >> 12;
+                size_t offset = raw_relocation & 0x0fff;
+                struct RelocationEntry relocation_entry = {
+                    .offset = offset,
+                    .type = type,
+                    .block_page_rva = relocation_block->page_rva,
+                };
+                RelocationEntryList_add(&relocations, relocation_entry);
+            }
+            block_bytes_parsed += relocation_block->block_size;
+            relocation_section_buffer += relocation_block->block_size;
         }
     }
 

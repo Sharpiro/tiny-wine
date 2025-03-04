@@ -68,6 +68,8 @@ void _start() {
     exit(result);
 }
 
+// @todo: relocations probably
+
 /**
  * Required for accessing mingw dynamic library variables.
  * Seemingly never called.

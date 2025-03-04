@@ -135,6 +135,7 @@ struct ImageOptionalHeader {
 
 #define DATA_DIR_EXPORT_DIR_INDEX 0
 #define DATA_DIR_IMPORT_DIR_INDEX 1
+#define DATA_DIR_RELOC_INDEX 5
 #define DATA_DIR_IAT_INDEX 12
 
 struct WinPEHeader {

@@ -7,6 +7,7 @@
 
 EXPORTABLE extern int32_t lib_var_bss;
 EXPORTABLE extern int32_t lib_var_data;
+// __declspec(dllexport) extern int32_t lib_var_data;
 
 EXPORTABLE int32_t *get_lib_var_bss();
 
