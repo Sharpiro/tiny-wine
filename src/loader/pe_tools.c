@@ -394,6 +394,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     }
 
     /* Relocations */
+    RelocationEntryList relocations = {
+        .allocator = loader_malloc_arena,
+    };
     const struct WinSectionHeader *relocation_section =
         find_win_section_header(section_headers, section_headers_len, ".reloc");
     if (relocation_section) {
@@ -404,23 +407,25 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         tiny_c_read(
             fd, relocation_section_buffer, relocation_section->file_size
         );
+
+        const size_t RELOCATION_BLOCK_SIZE = sizeof(struct RelocationBlock);
         struct RelocationBlock *relocation_block =
             (struct RelocationBlock *)relocation_section_buffer;
         size_t relocations_len =
-            (relocation_block->block_size - sizeof(struct RelocationBlock)) /
-            sizeof(struct RelocationEntry);
-        uint16_t *relocations = (uint16_t *)(relocation_section_buffer + 8);
-        struct RelocationEntry *relocations_temp =
-            (struct RelocationEntry *)(relocation_section_buffer + 8);
+            (relocation_block->block_size - RELOCATION_BLOCK_SIZE) /
+            sizeof(uint16_t);
+        uint16_t *raw_relocations =
+            (uint16_t *)(relocation_section_buffer + RELOCATION_BLOCK_SIZE);
         for (size_t i = 0; i < relocations_len; i++) {
-            uint16_t relocation = relocations[i];
-            size_t relocation_type = relocation >> 12;
-            size_t relocation_offset = relocation & 0x0fff;
-            size_t relocation_address =
-                image_base + relocation_block->page_rva + relocation_offset;
-            struct RelocationEntry *temp_entry = &relocations_temp[i];
-            int x = 2;
-            //
+            uint16_t raw_relocation = raw_relocations[i];
+            size_t type = raw_relocation >> 12;
+            size_t offset = raw_relocation & 0x0fff;
+            struct RelocationEntry relocation_entry = {
+                .offset = offset,
+                .type = type,
+                .block_page_rva = relocation_block->page_rva,
+            };
+            RelocationEntryList_add(&relocations, relocation_entry);
         }
     }
 
@@ -440,6 +445,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         .export_entries_len = export_entries_len,
         .symbols = symbols,
         .symbols_len = symbols_len,
+        .relocations = relocations,
     };
 
     return true;

@@ -232,6 +232,19 @@ struct ImportAddressEntry {
     const char *import_name;
 };
 
+struct RelocationBlock {
+    uint32_t page_rva;
+    uint32_t block_size;
+};
+
+typedef struct RelocationEntry {
+    size_t offset;
+    size_t type;
+    size_t block_page_rva;
+} RelocationEntry;
+
+CREATE_LIST_STRUCT(RelocationEntry)
+
 struct PeData {
     struct ImageDosHeader *dos_header;
     struct WinPEHeader *winpe_header;
@@ -248,17 +261,7 @@ struct PeData {
     size_t export_entries_len;
     struct WinSymbol *symbols;
     size_t symbols_len;
-};
-
-struct RelocationBlock {
-    uint32_t page_rva;
-    uint32_t block_size;
-};
-
-// @todo: bitfields reverse order
-struct RelocationEntry {
-    uint16_t offset : 12;
-    uint16_t type : 4;
+    RelocationEntryList relocations;
 };
 
 bool get_pe_data(int32_t fd, struct PeData *pe_data);

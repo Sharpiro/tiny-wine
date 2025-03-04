@@ -3,8 +3,6 @@
 #include <fcntl.h>
 #include <stddef.h>
 
-// @todo: readwin should show difference b/w a variable marked 'importable'
-
 int main(int argc, char **argv) {
     if (argc < 2 || tiny_c_memcmp(argv[1], "--", 2) == 0) {
         EXIT("Usage: readwin <file> [-s]\n");
@@ -133,6 +131,18 @@ int main(int argc, char **argv) {
         tiny_c_printf(
             "%d: %x: %s\n", i, export_entry->address, export_entry->name
         );
+    }
+
+    /* Relocations */
+
+    tiny_c_printf("\nRelocations (%d):\n", pe_data.relocations.length);
+    for (size_t i = 0; i < pe_data.relocations.length; i++) {
+        struct RelocationEntry *relocation = &pe_data.relocations.data[i];
+        size_t offset = relocation->block_page_rva + relocation->offset;
+        char *type = relocation->type == 0x00 ? "IMAGE_REL_BASED_ABSOLUTE"
+            : relocation->type == 0x0a        ? "IMAGE_REL_BASED_DIR64"
+                                              : "UNKNOWN";
+        tiny_c_printf("%d: %x, %s\n", i, offset, type);
     }
 
     /* Symbols */

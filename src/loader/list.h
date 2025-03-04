@@ -26,6 +26,7 @@
                 return false;                                                  \
             }                                                                  \
                                                                                \
+            /* @todo: old list never freed */                                  \
             memcpy(list->data, old_list_data, old_list_size);                  \
         }                                                                      \
         list->data[list->length++] = data;                                     \
