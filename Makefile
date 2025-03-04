@@ -33,7 +33,6 @@ linux: \
 windows: \
 	libtinyc.a \
 	libntdll.so \
-	libmsvcrt.so \
 	ntdll.dll \
 	msvcrt.dll \
 	KERNEL32.dll \
@@ -155,24 +154,29 @@ libntdll.so:
 		src/dlls/ntdll.c
 	@$(OBJDUMP) -M intel -D libntdll.so > libntdll.so.dump
 
-libmsvcrt.so: libntdll.so
-	@echo "libmsvcrt.so"
-	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(WARNINGS) \
-		-fno-stack-protector \
-		-g \
-		-DAMD64 \
-		-masm=intel \
-		-nostdlib \
-		-shared \
-		-fPIC \
-		-o libmsvcrt.so \
-		./libntdll.so \
-		src/dlls/msvcrt.c
-	@$(OBJDUMP) -M intel -D libmsvcrt.so > libmsvcrt.so.dump
+# @todo: needed?
+# libmsvcrt.so: \
+# 		src/dlls/msvcrt.c \
+# 		ntdll.dll
+# 	@echo "libmsvcrt.so"
+# 	@$(CC) $(CFLAGS) \
+# 		-O0 \
+# 		$(WARNINGS) \
+# 		-fno-stack-protector \
+# 		-g \
+# 		-DAMD64 \
+# 		-masm=intel \
+# 		-nostdlib \
+# 		-shared \
+# 		-fPIC \
+# 		-o libmsvcrt.so \
+# 		./libntdll.so \
+# 		src/dlls/msvcrt.c
+# 	@$(OBJDUMP) -M intel -D libmsvcrt.so > libmsvcrt.so.dump
 
-ntdll.dll: src/dlls/ntdll.c
+ntdll.dll: \
+		src/dlls/ntdll.c \
+		libntdll.so
 	@echo "ntdll.dll"
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -189,8 +193,9 @@ ntdll.dll: src/dlls/ntdll.c
 		src/dlls/ntdll.c
 	@$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 
-msvcrt.dll: src/dlls/msvcrt.c \
-						ntdll.dll
+msvcrt.dll: \
+		src/dlls/msvcrt.c \
+		ntdll.dll
 	@echo "msvcrt.dll"
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -249,6 +254,7 @@ windynamiclib.dll: \
 	@$(OBJDUMP) -M intel -D windynamiclib.dll > windynamiclib.dll.dump
 
 windynamiclibfull.dll: \
+		src/programs/windows/win_dynamic/win_dynamic_lib.h \
 		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
 	@echo "windynamiclibfull.dll"
 	@$(CC) $(CFLAGS) \
@@ -258,6 +264,7 @@ windynamiclibfull.dll: \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
+		-DDLL \
 		-masm=intel \
 		-shared \
 		-fPIC \
@@ -435,7 +442,6 @@ windynamic.exe: \
 
 windynamicfull.exe: \
 		winloader \
-		libntdll.so \
 		msvcrt.dll \
 		KERNEL32.dll \
 		src/programs/windows/win_dynamic/win_dynamic_full_main.c \
@@ -456,6 +462,7 @@ windynamicfull.exe: \
 		src/programs/windows/win_dynamic/win_dynamic_full_main.c
 	@$(OBJDUMP) -M intel -D windynamicfull.exe > windynamicfull.exe.dump
 
+# @todo: needed?
 # programs/windows/win_dynamic_linux: libmsvcrt.so libntdll.so
 # 	@$(CC) $(CFLAGS) \
 # 		-O0 \

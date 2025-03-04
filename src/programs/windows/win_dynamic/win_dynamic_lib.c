@@ -3,13 +3,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// @todo: use w/ both windynamic and windynamicfull?
-
-int32_t lib_var_bss = 0x00;
-int32_t lib_var_data = 0x42;
+int32_t lib_var_bss = 0;
+int32_t lib_var_data = 42;
 
 /**
- * Called on load, unload, etc.
+ * Called on stdlib load, unload, etc.
  */
 bool DllMain(
     [[maybe_unused]] void *hinstDLL,

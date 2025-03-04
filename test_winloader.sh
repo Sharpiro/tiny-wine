@@ -12,7 +12,6 @@ assert() {
 
 expected=`cat <<EOF
 pow: 16
-pow rdi, rsi: 42, 43
 exe_global_var_bss: 0
 exe_global_var_bss: 1
 exe_global_var_data: 42
@@ -46,9 +45,16 @@ exe_global_var_bss: 0
 exe_global_var_bss: 1
 exe_global_var_data: 42
 exe_global_var_data: 24
+*get_lib_var_bss(): 0
 lib_var_bss: 0
 lib_var_bss: 1
 lib_var_bss: 44
+*get_lib_var_bss(): 44
+*get_lib_var_data(): 42
+lib_var_data: 42
+lib_var_data: 43
+lib_var_data: 44
+*get_lib_var_data(): 44
 EOF
 `
 result=`./winloader ./windynamicfull.exe`
