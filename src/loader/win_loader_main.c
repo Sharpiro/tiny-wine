@@ -15,6 +15,8 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
+// @todo: do we want to dump all binaries in current dir?
+
 // @todo: possible to not need these backup locations?
 size_t rdi_backup = 0;
 size_t rsi_backup = 0;

@@ -245,15 +245,6 @@ EXPORTABLE size_t add_many_msvcrt(
     return result;
 }
 
-EXPORTABLE void __C_specific_handler() {
-}
-
-EXPORTABLE void __getmainargs() {
-}
-
-EXPORTABLE void __initenv() {
-}
-
 #if UINTPTR_MAX == 0xFFFFFFFFFFFFFFFF
 
 EXPORTABLE void *__iob_func(void) {
@@ -266,6 +257,29 @@ EXPORTABLE int32_t _fileno(FILE *stream) {
 }
 
 #endif
+
+// @todo: uses custom fprintf, not stdlib.h fprintf
+EXPORTABLE int32_t fprintf(
+    [[maybe_unused]] FILE *__restrict stream,
+    [[maybe_unused]] const char *__restrict format,
+    ...
+) {
+    int32_t file_no = _fileno(stream);
+    va_list var_args;
+    va_start(var_args, format);
+    fprintf_internal(file_no, format, var_args);
+    va_end(var_args);
+    return 0;
+}
+
+EXPORTABLE void __C_specific_handler() {
+}
+
+EXPORTABLE void __getmainargs() {
+}
+
+EXPORTABLE void __initenv() {
+}
 
 EXPORTABLE void __lconv_init() {
 }
@@ -280,9 +294,13 @@ EXPORTABLE void _acmdln() {
 }
 
 EXPORTABLE void _amsg_exit() {
+    fprintf(stderr, "_amsg_exit unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void _cexit() {
+    fprintf(stderr, "_cexit unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void _commode() {
@@ -295,37 +313,23 @@ EXPORTABLE void _initterm() {
 }
 
 EXPORTABLE void _onexit() {
+    fprintf(stderr, "_onexit unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void abort() {
+    fprintf(stderr, "abort unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void calloc() {
-}
-
-EXPORTABLE int32_t fprintf(
-    [[maybe_unused]] FILE *__restrict stream,
-    [[maybe_unused]] const char *__restrict format,
-    ...
-) {
-    int32_t file_no = _fileno(stream);
-    va_list var_args;
-    va_start(var_args, format);
-    fprintf_internal(file_no, format, var_args);
-    va_end(var_args);
-    return 0;
+    fprintf(stderr, "calloc unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void free() {
-}
-
-EXPORTABLE size_t fwrite(
-    [[maybe_unused]] const void *__restrict __ptr,
-    [[maybe_unused]] size_t __size,
-    [[maybe_unused]] size_t __n,
-    [[maybe_unused]] uint8_t *__restrict __s
-) {
-    exit(3);
+    fprintf(stderr, "free unimplemented\n");
+    exit(42);
 }
 
 // @note: fake malloc that leaks memory
@@ -363,27 +367,34 @@ EXPORTABLE void *memcpy(
 }
 
 EXPORTABLE void signal() {
-    exit(109);
+    fprintf(stderr, "signal unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void strncmp() {
-    exit(108);
+    fprintf(stderr, "strncmp unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE int32_t vfprintf(
-    [[maybe_unused]] uint8_t *__restrict __s,
-    [[maybe_unused]] const char *__restrict __format,
-    [[maybe_unused]] __gnuc_va_list __arg
+    [[maybe_unused]] FILE *__restrict stream,
+    [[maybe_unused]] const char *__restrict format,
+    [[maybe_unused]] __gnuc_va_list arg
 ) {
-    exit(2);
+    int32_t file_no = _fileno(stream);
+    fprintf_internal(file_no, format, arg);
+    fprintf(stderr, "\nDEBUG: inserted newline manually\n");
+    return 0;
 }
 
 EXPORTABLE void ___lc_codepage_func() {
-    exit(107);
+    fprintf(stderr, "___lc_codepage_func unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void ___mb_cur_max_func() {
-    exit(106);
+    fprintf(stderr, "___mb_cur_max_func unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE int32_t *_errno() {
@@ -406,8 +417,28 @@ EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
     return c;
 }
 
+EXPORTABLE size_t fwrite(
+    [[maybe_unused]] const char *__restrict ptr,
+    [[maybe_unused]] size_t size,
+    [[maybe_unused]] size_t n,
+    [[maybe_unused]] FILE *__restrict stream
+) {
+    if (size != 1) {
+        fprintf(stderr, "unsupported fwrite size\n");
+        exit(42);
+    }
+
+    for (size_t i = 0; i < n; i++) {
+        char c = ptr[i];
+        fputc(c, stream);
+    }
+
+    return size * n;
+}
+
 EXPORTABLE void localeconv() {
-    exit(103);
+    fprintf(stderr, "localeconv unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void *memset(void *s_buffer, int32_t c_value, size_t n_count) {
@@ -418,9 +449,11 @@ EXPORTABLE void *memset(void *s_buffer, int32_t c_value, size_t n_count) {
 }
 
 EXPORTABLE void strerror() {
-    exit(104);
+    fprintf(stderr, "strerror unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void wcslen() {
-    exit(105);
+    fprintf(stderr, "wcslen unimplemented\n");
+    exit(42);
 }
