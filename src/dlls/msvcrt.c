@@ -318,8 +318,8 @@ EXPORTABLE void _onexit() {
 }
 
 EXPORTABLE void abort() {
-    fprintf(stderr, "abort unimplemented\n");
-    exit(42);
+    // __asm__("int 3");
+    NtTerminateProcess((HANDLE)-1, 1);
 }
 
 EXPORTABLE void calloc() {
