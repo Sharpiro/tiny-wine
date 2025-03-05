@@ -274,12 +274,6 @@ void *tiny_c_mmap(
     int32_t fd,
     size_t offset
 ) {
-    // @todo: debug or option
-    struct utsname name;
-    tinyc_uname(&name);
-    if (*name.release >= '5') {
-        flags |= MAP_FIXED_NOREPLACE;
-    }
 #ifdef ARM32
     struct SysArgs args = {
         .param_one = address,

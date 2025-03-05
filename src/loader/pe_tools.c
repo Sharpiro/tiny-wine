@@ -43,6 +43,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     }
 
     int8_t *pe_header_buffer = loader_malloc_arena(1000);
+    if (!pe_header_buffer) {
+        BAIL("malloc failed\n");
+    }
     tiny_c_read(fd, pe_header_buffer, 1000);
     struct ImageDosHeader *dos_header =
         (struct ImageDosHeader *)pe_header_buffer;

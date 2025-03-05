@@ -161,11 +161,17 @@ bool map_memory_regions(
             memory_region->is_direct_file_map ? 0 : MAP_ANONYMOUS;
         size_t file_offset =
             memory_region->is_direct_file_map ? memory_region->file_offset : 0;
+        size_t flags = MAP_PRIVATE | MAP_FIXED | map_anonymous;
+        struct utsname name;
+        tinyc_uname(&name);
+        if (*name.release >= '5') {
+            flags |= MAP_FIXED_NOREPLACE;
+        }
         uint8_t *addr = tiny_c_mmap(
             memory_region->start,
             memory_region_len,
             map_protection,
-            MAP_PRIVATE | MAP_FIXED | map_anonymous,
+            flags,
             fd,
             file_offset
         );
