@@ -4,10 +4,10 @@ A basic dynamic loader for Linux and Windows.
 
 ## Limitations
 
-- Only works for toy programs created with specific Clang versions
+- Only works for toy programs created with this repository
 - No recursive dependencies
 - `malloc` leaks memory
-- Import Address Table length limited to 512 entries
+- Import Address Table is limited to 512 entries
 
 ## Prerequisites
 

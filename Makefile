@@ -421,7 +421,8 @@ windynamic.exe: \
 		msvcrt.dll \
 		ntdll.dll \
 		windynamiclib.dll \
-		src/programs/windows/win_dynamic/win_dynamic_main.c
+		src/programs/windows/win_dynamic/win_dynamic_main.c \
+		src/programs/windows/win_dynamic/runtime_start.c
 	@echo "windynamic.exe"
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -430,6 +431,7 @@ windynamic.exe: \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
+		-DNO_STDLIB \
 		-masm=intel \
 		-nostdlib \
 		-fPIC \
@@ -437,15 +439,17 @@ windynamic.exe: \
 		ntdll.dll \
 		msvcrt.dll \
 		windynamiclib.dll \
-		src/programs/windows/win_dynamic/win_dynamic_main.c
+		src/programs/windows/win_dynamic/win_dynamic_main.c \
+		src/programs/windows/win_dynamic/runtime_start.c
 	@$(OBJDUMP) -M intel -D windynamic.exe > windynamic.exe.dump
 
 windynamicfull.exe: \
 		winloader \
 		msvcrt.dll \
 		KERNEL32.dll \
+		windynamiclibfull.dll \
 		src/programs/windows/win_dynamic/win_dynamic_full_main.c \
-		windynamiclibfull.dll
+		src/programs/windows/win_dynamic/runtime_start.c
 	@echo "windynamicfull.exe"
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -459,7 +463,8 @@ windynamicfull.exe: \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o windynamicfull.exe \
 		windynamiclibfull.dll \
-		src/programs/windows/win_dynamic/win_dynamic_full_main.c
+		src/programs/windows/win_dynamic/win_dynamic_full_main.c \
+		src/programs/windows/win_dynamic/runtime_start.c
 	@$(OBJDUMP) -M intel -D windynamicfull.exe > windynamicfull.exe.dump
 
 # @todo: needed?
