@@ -4,9 +4,10 @@ A basic dynamic loader for Linux and Windows.
 
 ## Limitations
 
-- Only works for toy programs created with this repository
+- Only works for toy programs created with MinGW in this repository
 - No recursive dependencies
 - `malloc` leaks memory
+- loaders use a lot of memory and don't release it
 - Import Address Table is limited to 512 entries
 
 ## Prerequisites

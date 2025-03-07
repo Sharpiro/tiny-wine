@@ -887,43 +887,15 @@ int main(int argc, char **argv) {
 
     log_memory_regions();
 
-    /* Bypass Thread Local Storage */
+    /* Thread Local Storage init */
 
-    size_t *tls_buffer = tiny_c_mmap(
-        0, 0x1000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
-    );
-    if (tls_buffer == MAP_FAILED) {
-        EXIT("TLS memory regions failed\n");
+    const size_t GS_OFFSET = 0x30;
+    size_t *tls_buffer = loader_malloc_arena(GS_OFFSET + sizeof(uint64_t));
+    if (tls_buffer == NULL) {
+        EXIT("TLS memory init failed\n");
     }
 
-    const struct WinSymbol *initialized_symbol =
-        find_win_symbol(pe_exe.symbols, pe_exe.symbols_len, "initialized");
-    if (initialized_symbol) {
-        LOADER_LOG("Setting 'initialized' for TLS\n");
-        struct WinSectionHeader *section_header =
-            &pe_exe.section_headers[initialized_symbol->section_index];
-        size_t section_offset = section_header->virtual_base_address +
-            (size_t)initialized_symbol->value;
-        size_t symbol_address = image_base + section_offset;
-        size_t *temp_init_ptr = (size_t *)symbol_address;
-        *temp_init_ptr = 0x01;
-    }
-    const struct WinSymbol *refptr__imp__acmdln_symbol = find_win_symbol(
-        pe_exe.symbols, pe_exe.symbols_len, ".refptr.__imp__acmdln"
-    );
-    if (refptr__imp__acmdln_symbol) {
-        LOADER_LOG("Setting 'refptr__imp__acmdln_symbol' for TLS\n");
-        struct WinSectionHeader *section_header =
-            &pe_exe.section_headers[refptr__imp__acmdln_symbol->section_index];
-        size_t section_offset = section_header->virtual_base_address +
-            (size_t)refptr__imp__acmdln_symbol->value;
-        size_t symbol_address = image_base + section_offset;
-        size_t *refptr__imp__acmdln = (size_t *)symbol_address;
-        size_t *refptr__imp__acmdln2 = (size_t *)*refptr__imp__acmdln;
-        *refptr__imp__acmdln2 = (size_t)tls_buffer;
-    }
-
-    tls_buffer[0x30 / sizeof(uint64_t)] = (size_t)tls_buffer;
+    tls_buffer[GS_OFFSET / sizeof(uint64_t)] = (size_t)tls_buffer;
     if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)tls_buffer) != 0) {
         EXIT("tinyc_sys_arch_prctl failed\n");
     }
