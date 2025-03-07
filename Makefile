@@ -214,7 +214,9 @@ msvcrt.dll: \
 		ntdll.dll
 	@$(OBJDUMP) -M intel -D msvcrt.dll > msvcrt.dll.dump
 
-KERNEL32.dll: src/dlls/kernel32.c
+KERNEL32.dll: \
+		ntdll.dll \
+		src/dlls/kernel32.c
 	@echo "KERNEL32.dll"
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -229,6 +231,7 @@ KERNEL32.dll: src/dlls/kernel32.c
 		-shared \
 		-fPIC \
 		-o KERNEL32.dll \
+		ntdll.dll \
 		src/dlls/kernel32.c 
 	@$(OBJDUMP) -M intel -D KERNEL32.dll > KERNEL32.dll.dump
 

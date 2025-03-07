@@ -772,8 +772,8 @@ int main(int argc, char **argv) {
     MemoryRegionList memory_regions = (MemoryRegionList){
         .allocator = loader_malloc_arena,
     };
-    const size_t WINDOWS_HEADER_SIZE =
-        sizeof(struct ImageDosHeader) + sizeof(struct WinPEHeader);
+    // const size_t WINDOWS_HEADER_SIZE =
+    //     sizeof(struct ImageDosHeader) + sizeof(struct WinPEHeader);
 
     MemoryRegionList_add(
         &memory_regions,
@@ -782,7 +782,8 @@ int main(int argc, char **argv) {
             .end = image_base + 0x1000,
             .is_direct_file_map = false,
             .file_offset = 0x00,
-            .file_size = WINDOWS_HEADER_SIZE,
+            // @todo: smarter PE data size
+            .file_size = 0x1000,
             .permissions = 4 | 0 | 0,
         }
     );

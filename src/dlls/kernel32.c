@@ -1,3 +1,4 @@
+#include "ntdll.h"
 #include <stddef.h>
 
 void DllMainCRTStartup(void) {
@@ -31,6 +32,7 @@ void TlsGetValue() {
 }
 
 void VirtualProtect() {
+    NtTerminateProcess((HANDLE)-1, 2);
 }
 
 void VirtualQuery() {

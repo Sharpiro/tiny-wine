@@ -5,14 +5,15 @@
 
 /*
  * Inserted into and called in the `main` function.
- * Replaces manually setting the global 'initialized' symbol used during stdlib
- * TLS setup.
+ * Replaces setting global 'initialized' symbol during stdlib TLS setup.
  */
 void __main(void) {
 }
 
 /*
  * Used in older Clang versions for TLS setup.
+ * Replaces setting global '.refptr.__imp__acmdln' symbol during stdlib TLS
+ * setup.
  */
 void *__p__acmdln() {
     static size_t x = 0;
