@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-int32_t lib_var_bss = 0;
-int32_t lib_var_data = 42;
+uint64_t lib_var_bss = 0;
+uint64_t lib_var_data = 42;
 
 /**
  * Called on stdlib load, unload, etc.
@@ -17,10 +17,10 @@ bool DllMain(
     return true;
 }
 
-int32_t *get_lib_var_bss() {
+uint64_t *get_lib_var_bss() {
     return &lib_var_bss;
 }
 
-int32_t *get_lib_var_data() {
+uint64_t *get_lib_var_data() {
     return &lib_var_data;
 }

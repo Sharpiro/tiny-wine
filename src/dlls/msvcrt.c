@@ -274,37 +274,37 @@ EXPORTABLE int32_t fprintf(
 
 EXPORTABLE void __C_specific_handler() {
     fprintf(stderr, "__C_specific_handler unimplemented\n");
-    exit(1);
+    exit(42);
 }
 
 EXPORTABLE void __getmainargs() {
     fprintf(stderr, "__getmainarg unimplemented\n");
-    exit(1);
+    exit(42);
 }
 
 EXPORTABLE void __initenv() {
     fprintf(stderr, "__initenv unimplemented\n");
-    exit(1);
+    exit(42);
 }
 
 EXPORTABLE void __lconv_init() {
     fprintf(stderr, "__lconv_init unimplemented\n");
-    exit(1);
+    exit(42);
 }
 
 EXPORTABLE void __set_app_type() {
     fprintf(stderr, "__set_app_type unimplemented\n");
-    exit(1);
+    exit(42);
 }
 
 EXPORTABLE void __setusermatherr() {
     fprintf(stderr, "__setusermatherr unimplemented\n");
-    exit(1);
+    exit(42);
 }
 
 EXPORTABLE void _acmdln() {
     fprintf(stderr, "_acmdln unimplemented\n");
-    exit(1);
+    exit(42);
 }
 
 EXPORTABLE void _amsg_exit() {
@@ -328,7 +328,6 @@ EXPORTABLE void _fmode() {
 }
 
 EXPORTABLE void _initterm() {
-    fprintf(stderr, "_initterm unimplemented\n");
 }
 
 EXPORTABLE void _onexit() {
@@ -337,8 +336,7 @@ EXPORTABLE void _onexit() {
 }
 
 EXPORTABLE void abort() {
-    __asm__("int 3");
-    NtTerminateProcess((HANDLE)-1, 1);
+    NtTerminateProcess((HANDLE)-1, 3);
 }
 
 EXPORTABLE void calloc() {

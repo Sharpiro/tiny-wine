@@ -1,11 +1,14 @@
+#include <stddef.h>
 #include <stdint.h>
 
+typedef int16_t WORD;
 typedef int32_t LONG, NTSTATUS;
 typedef uint32_t DWORD, ULONG;
 typedef int64_t LONGLONG;
 typedef uint64_t ULONGLONG, ULONG_PTR;
-typedef void *HANDLE, *PVOID;
-typedef uint32_t *PULONG;
+typedef void *HANDLE, *PVOID, *LPVOID;
+typedef uint32_t *PULONG, *PDWORD;
+typedef size_t SIZE_T;
 
 typedef union _ULARGE_INTEGER {
     struct {

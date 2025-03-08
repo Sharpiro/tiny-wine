@@ -3,6 +3,13 @@
 
 // @todo: relocations probably
 
+// @todo: overriding these functions through the linker is less flexible
+//        than at runtime through memory poking b/c now you are requiring the
+//        program to be built with these rather than just being built with a
+//        similar compiler. Another option is to tell the loader to override
+//        these functions at load time which would let us avoid awkward memory
+//        poking, but still give us the flexibility.
+
 /*
  * Inserted into and called in the `main` function.
  * Replaces setting global 'initialized' symbol during stdlib TLS setup.

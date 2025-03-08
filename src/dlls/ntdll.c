@@ -114,3 +114,13 @@ size_t sys_brk(size_t brk) {
     };
     return syscall(SYS_brk, &args);
 }
+
+size_t mprotect(size_t address, size_t length, size_t protection) {
+    struct SysArgs args = {
+        .param_one = address,
+        .param_two = length,
+        .param_three = protection,
+    };
+    size_t result = syscall(SYS_mprotect, &args);
+    return result;
+}

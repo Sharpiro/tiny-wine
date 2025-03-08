@@ -1,14 +1,10 @@
 #pragma once
 
-#include "../../../dlls/export.h"
 #include <stdint.h>
 
-// @todo: doesn't need 'EXPORTABLE' when running directly in Windows
+extern uint64_t lib_var_bss;
+extern uint64_t lib_var_data;
 
-EXPORTABLE extern int32_t lib_var_bss;
-// EXPORTABLE extern int32_t lib_var_data;
-__declspec(dllexport) extern int32_t lib_var_data;
+uint64_t *get_lib_var_bss();
 
-EXPORTABLE int32_t *get_lib_var_bss();
-
-EXPORTABLE int32_t *get_lib_var_data();
+uint64_t *get_lib_var_data();

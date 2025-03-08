@@ -18,19 +18,19 @@ int main() {
     printf("exe_global_var_data: %d\n", exe_global_var_data);
 
     printf("*get_lib_var_bss(): %d\n", *get_lib_var_bss());
-    printf("lib_var_bss: %d\n", lib_var_bss);
-    lib_var_bss += 1;
-    printf("lib_var_bss: %d\n", lib_var_bss);
-    lib_var_bss = 44;
-    printf("lib_var_bss: %d\n", lib_var_bss);
+    printf("lib_var_bss: %d\n", *((uint64_t *)lib_var_bss));
+    *((uint64_t *)lib_var_bss) += 1;
+    printf("lib_var_bss: %d\n", *((uint64_t *)lib_var_bss));
+    *((uint64_t *)lib_var_bss) = 44;
+    printf("lib_var_bss: %d\n", *((uint64_t *)lib_var_bss));
     printf("*get_lib_var_bss(): %d\n", *get_lib_var_bss());
 
     printf("*get_lib_var_data(): %d\n", *get_lib_var_data());
-    printf("lib_var_data: %d\n", lib_var_data);
-    lib_var_data += 1;
-    printf("lib_var_data: %d\n", lib_var_data);
-    lib_var_data = 44;
-    printf("lib_var_data: %d\n", lib_var_data);
+    printf("lib_var_data: %d\n", *((uint64_t *)lib_var_data));
+    *((uint64_t *)lib_var_data) += 1;
+    printf("lib_var_data: %d\n", *((uint64_t *)lib_var_data));
+    *((uint64_t *)lib_var_data) += 1;
+    printf("lib_var_data: %d\n", *((uint64_t *)lib_var_data));
     printf("*get_lib_var_data(): %d\n", *get_lib_var_data());
 
     /* Windows to Linux call ,volatile registers, many args */
