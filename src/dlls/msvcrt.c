@@ -25,6 +25,8 @@ static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
 void DllMainCRTStartup(void) {
 }
 
+EXPORTABLE char *_acmdln;
+
 EXPORTABLE size_t strlen(const char *data) {
     if (data == NULL) {
         return 0;
@@ -302,11 +304,6 @@ EXPORTABLE void __setusermatherr() {
     exit(42);
 }
 
-EXPORTABLE void _acmdln() {
-    fprintf(stderr, "_acmdln unimplemented\n");
-    exit(42);
-}
-
 EXPORTABLE void _amsg_exit() {
     fprintf(stderr, "_amsg_exit unimplemented\n");
     exit(42);
@@ -330,9 +327,7 @@ EXPORTABLE void _fmode() {
 EXPORTABLE void _initterm() {
 }
 
-EXPORTABLE void _onexit() {
-    fprintf(stderr, "_onexit unimplemented\n");
-    exit(42);
+EXPORTABLE void _onexit([[maybe_unused]] void (*func)()) {
 }
 
 EXPORTABLE void abort() {

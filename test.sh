@@ -2,10 +2,11 @@
 
 echo "cleaning"
 make clean
-echo "building linux targets"
-make linux
-echo "building windows targets"
-make windows
+echo "building"
+make
+if [[  $? -ne 0 ]]; then
+    exit
+fi
 
 loop_count=${1:-1}
 for ((i = 0; i < loop_count; i++)); do 
