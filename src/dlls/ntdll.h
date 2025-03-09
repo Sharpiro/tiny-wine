@@ -44,3 +44,5 @@ size_t add_many_ntdll(
 size_t sys_brk(size_t brk);
 
 size_t mprotect(size_t address, size_t length, size_t protection);
+
+void _init_relocations_loader();

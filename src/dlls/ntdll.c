@@ -124,3 +124,7 @@ size_t mprotect(size_t address, size_t length, size_t protection) {
     size_t result = syscall(SYS_mprotect, &args);
     return result;
 }
+
+void _init_relocations_loader() {
+    sys_write(1, "_init_relocations_loader\n", 25);
+}

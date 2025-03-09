@@ -174,6 +174,11 @@ static void dynamic_callback_linux(void) {
     );
 }
 
+void _init_relocations_loader() {
+    LOADER_LOG("_init_relocations_loader\n");
+    EXIT("_init_relocations_loader");
+}
+
 /*
  * Dynamic callback from Windows to Windows, or from Windows to Linux
  * libntdll.so

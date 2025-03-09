@@ -4,6 +4,14 @@
 int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
+void _init_relocations_win();
+
+void _pei386_runtime_relocator(void) {
+    fprintf(stderr, "_pei386_runtime_relocator\n");
+    _init_relocations_win();
+    // exit(1);
+}
+
 int main() {
     printf("pow: %d\n", (int32_t)pow(2, 4));
 
@@ -18,19 +26,19 @@ int main() {
     printf("exe_global_var_data: %d\n", exe_global_var_data);
 
     printf("*get_lib_var_bss(): %d\n", *get_lib_var_bss());
-    printf("lib_var_bss: %d\n", *((uint64_t *)lib_var_bss));
-    *((uint64_t *)lib_var_bss) += 1;
-    printf("lib_var_bss: %d\n", *((uint64_t *)lib_var_bss));
-    *((uint64_t *)lib_var_bss) = 44;
-    printf("lib_var_bss: %d\n", *((uint64_t *)lib_var_bss));
+    printf("lib_var_bss: %d\n", lib_var_bss);
+    lib_var_bss += 1;
+    printf("lib_var_bss: %d\n", lib_var_bss);
+    lib_var_bss = 44;
+    printf("lib_var_bss: %d\n", lib_var_bss);
     printf("*get_lib_var_bss(): %d\n", *get_lib_var_bss());
 
     printf("*get_lib_var_data(): %d\n", *get_lib_var_data());
-    printf("lib_var_data: %d\n", *((uint64_t *)lib_var_data));
-    *((uint64_t *)lib_var_data) += 1;
-    printf("lib_var_data: %d\n", *((uint64_t *)lib_var_data));
-    *((uint64_t *)lib_var_data) += 1;
-    printf("lib_var_data: %d\n", *((uint64_t *)lib_var_data));
+    printf("lib_var_data: %d\n", lib_var_data);
+    lib_var_data += 1;
+    printf("lib_var_data: %d\n", lib_var_data);
+    lib_var_data += 1;
+    printf("lib_var_data: %d\n", lib_var_data);
     printf("*get_lib_var_data(): %d\n", *get_lib_var_data());
 
     /* Windows to Linux call ,volatile registers, many args */
@@ -53,4 +61,13 @@ int main() {
     );
     printf("add_many_msvcrt: %d\n", add_many_result);
     printf("add_many_msvcrt rdi, rsi: %x, %x\n", (uint32_t)rdi, (uint32_t)rsi);
+}
+
+void __main(void) {
+}
+
+void mainCRTStartup() {
+    _pei386_runtime_relocator();
+    int result = main();
+    exit(result);
 }
