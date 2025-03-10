@@ -2,6 +2,7 @@
 #include "./export.h"
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -146,13 +147,13 @@ struct PrintItem {
     size_t start;
     size_t length;
     char formatter;
+    bool is_large_formatter;
 };
 
 static void fprintf_internal(
     int32_t file_handle, const char *format, va_list var_args
 ) {
-    size_t print_items_index = 0;
-    size_t print_items_count = 0;
+    size_t print_items_len = 0;
     struct PrintItem print_items[128] = {0};
 
     size_t last_print_index = 0;
@@ -167,14 +168,19 @@ static void fprintf_internal(
                 .start = last_print_index,
                 .length = i - last_print_index,
             };
-            print_items[print_items_index++] = print_item;
+            print_items[print_items_len++] = print_item;
 
-            struct PrintItem print_item_str = {
+            bool is_large_formatter = false;
+            if (format[i + 1] == 'z') {
+                is_large_formatter = true;
+                i += 1;
+            }
+            struct PrintItem print_item_formater = {
                 .formatter = format[i + 1],
+                .is_large_formatter = is_large_formatter,
             };
-            print_items[print_items_index++] = print_item_str;
-            print_items_count += 2;
-            i++;
+            print_items[print_items_len++] = print_item_formater;
+            i += 1;
             last_print_index = i + 1;
         }
     }
@@ -183,10 +189,9 @@ static void fprintf_internal(
         .start = last_print_index,
         .length = i - last_print_index,
     };
-    print_items[print_items_index++] = print_item;
-    print_items_count++;
+    print_items[print_items_len++] = print_item;
 
-    for (size_t i = 0; i < print_items_count; i++) {
+    for (size_t i = 0; i < print_items_len; i++) {
         struct PrintItem print_item = print_items[i];
         switch (print_item.formatter) {
         case 0x00: {
@@ -201,12 +206,16 @@ static void fprintf_internal(
         }
         case 'p':
         case 'x': {
-            size_t data = va_arg(var_args, size_t);
+            size_t data = print_item.is_large_formatter
+                ? va_arg(var_args, uint64_t)
+                : va_arg(var_args, uint32_t);
             print_number_hex(file_handle, data);
             break;
         }
         case 'd': {
-            size_t data = va_arg(var_args, size_t);
+            size_t data = print_item.is_large_formatter
+                ? va_arg(var_args, uint64_t)
+                : va_arg(var_args, uint32_t);
             print_number_decimal(file_handle, data);
             break;
         }
