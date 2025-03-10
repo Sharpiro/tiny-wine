@@ -179,6 +179,10 @@ static void dynamic_callback_linux(void) {
 static void dynamic_callback_windows(void) {
     size_t *rbx;
     __asm__("mov %0, rbx" : "=r"(rbx));
+    size_t rdi = 0;
+    __asm__("mov %0, rdi" : "=r"(rdi));
+    size_t rsi = 0;
+    __asm__("mov %0, rsi" : "=r"(rsi));
     __asm__("mov %0, rdi" : "=r"(rdi_backup));
     __asm__("mov %0, rsi" : "=r"(rsi_backup));
     size_t *r12;
@@ -418,8 +422,8 @@ static void dynamic_callback_windows(void) {
             "mov r14, %[r14]\n"
             "mov r15, %[r15]\n"
             "mov rbx, %[rbx]\n"
-            "mov rdi, [%[rdi_pointer]]\n"
-            "mov rsi, [%[rsi_pointer]]\n"
+            "mov rdi, %[rdi]\n"
+            "mov rsi, %[rsi]\n"
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 8\n"
@@ -435,8 +439,8 @@ static void dynamic_callback_windows(void) {
               [r14] "m"(r14),
               [r15] "m"(r15),
               [rbx] "m"(rbx),
-              [rdi_pointer] "g"(&rdi_backup),
-              [rsi_pointer] "g"(&rsi_backup)
+              [rdi] "m"(rdi),
+              [rsi] "m"(rsi)
             :
         );
     }

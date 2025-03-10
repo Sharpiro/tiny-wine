@@ -5,8 +5,8 @@
 #include "pe_tools.h"
 #include <stddef.h>
 
-#define ASM_X64_MOV32_IMMEDIATE 0xb8
-#define ASM_X64_CALL 0xff, 0xd0
+#define ASM_X64_MOV32_IMMEDIATE_INTO_EAX 0xb8
+#define ASM_X64_CALL_EAX 0xff, 0xd0
 
 inline Converter convert(size_t x) {
     return (Converter){.u64 = x};
@@ -167,12 +167,12 @@ bool map_import_address_table(
 
         Converter dyn_callback_converter = convert(dynamic_callback_windows);
         uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
-            ASM_X64_MOV32_IMMEDIATE,
+            ASM_X64_MOV32_IMMEDIATE_INTO_EAX,
             dyn_callback_converter.buffer[0],
             dyn_callback_converter.buffer[1],
             dyn_callback_converter.buffer[2],
             dyn_callback_converter.buffer[3],
-            ASM_X64_CALL,
+            ASM_X64_CALL_EAX,
         };
         memcpy(
             (uint8_t *)(current_import->value),
