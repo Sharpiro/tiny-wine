@@ -80,34 +80,6 @@ NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
     return result;
 }
 
-size_t add_many_ntdll_internal(
-    size_t one,
-    size_t two,
-    size_t three,
-    size_t four,
-    size_t five,
-    size_t six,
-    size_t seven,
-    size_t eight
-) {
-    return one + two + three + four + five + six + seven + eight;
-}
-
-size_t add_many_ntdll(
-    size_t one,
-    size_t two,
-    size_t three,
-    size_t four,
-    size_t five,
-    size_t six,
-    size_t seven,
-    size_t eight
-) {
-    size_t result =
-        add_many_ntdll_internal(one, two, three, four, five, six, seven, eight);
-    return result;
-}
-
 size_t sys_brk(size_t brk) {
     struct SysArgs args = {
         .param_one = brk,
@@ -123,8 +95,4 @@ size_t mprotect(size_t address, size_t length, size_t protection) {
     };
     size_t result = syscall(SYS_mprotect, &args);
     return result;
-}
-
-void _init_relocations_loader() {
-    sys_write(1, "_init_relocations_loader\n", 25);
 }

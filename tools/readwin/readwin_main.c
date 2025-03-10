@@ -23,17 +23,13 @@ int main(int argc, char **argv) {
     tiny_c_close(fd);
 
     size_t dos_magic = pe_data.dos_header->magic;
-    size_t pe_magic = pe_data.winpe_header->image_optional_header.magic;
+    size_t pe_magic = pe_data.winpe_optional_header.magic;
     char *class = pe_magic == PE32_MAGIC ? "PE32" : "PE32+";
-    bool is_64_bit = pe_magic == PE32_PLUS_MAGIC;
-    size_t image_header_start = (size_t)pe_data.dos_header->e_lfanew;
     size_t section_headers_start =
-        image_header_start + sizeof(struct WinPEHeader);
-    size_t base_of_code =
-        pe_data.winpe_header->image_optional_header.base_of_code;
-    size_t image_base = is_64_bit
-        ? pe_data.winpe_header->image_optional_header.image_base
-        : pe_data.winpe_header->image_optional_header_32.image_base;
+        (size_t)pe_data.dos_header->image_file_header_start +
+        sizeof(struct WinPEHeader);
+    size_t base_of_code = pe_data.winpe_optional_header.base_of_code;
+    size_t image_base = pe_data.winpe_optional_header.image_base;
 
     /* General information */
 

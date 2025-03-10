@@ -15,8 +15,6 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-// @todo: do we want to dump all binaries in current dir?
-
 // @todo: possible to not need these backup locations?
 size_t rdi_backup = 0;
 size_t rsi_backup = 0;
@@ -172,11 +170,6 @@ static void dynamic_callback_linux(void) {
           [r14] "m"(r14),
           [r15] "m"(r15)
     );
-}
-
-void _init_relocations_loader() {
-    LOADER_LOG("_init_relocations_loader\n");
-    EXIT("_init_relocations_loader");
 }
 
 /*
@@ -567,7 +560,6 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     return true;
 }
 
-// @todo: recursive dll loading not supported
 static bool load_dlls(
     struct PeData *inferior_executable,
     WinRuntimeObjectList *shared_libraries,
@@ -682,7 +674,6 @@ static bool load_dlls(
     return true;
 }
 
-// @todo: inline func?
 static bool initialize_import_address_table(
     const struct WinRuntimeObject *runtime_obj
 ) {
@@ -777,18 +768,20 @@ int main(int argc, char **argv) {
     MemoryRegionList memory_regions = (MemoryRegionList){
         .allocator = loader_malloc_arena,
     };
-    // const size_t WINDOWS_HEADER_SIZE =
-    //     sizeof(struct ImageDosHeader) + sizeof(struct WinPEHeader);
+    size_t win_headers_size = sizeof(struct ImageDosHeader) +
+        sizeof(struct WinPEHeader) + pe_exe.winpe_optional_header.headers_size;
+    if (win_headers_size > 0x1000) {
+        EXIT("Unsupported win_headers_size\n");
+    }
 
     MemoryRegionList_add(
         &memory_regions,
         (struct MemoryRegion){
             .start = image_base,
-            .end = image_base + 0x1000,
+            .end = image_base + win_headers_size,
             .is_direct_file_map = false,
             .file_offset = 0x00,
-            // @todo: smarter PE data size
-            .file_size = 0x1000,
+            .file_size = win_headers_size,
             .permissions = 4 | 0 | 0,
         }
     );

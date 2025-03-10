@@ -4,7 +4,6 @@
 #include "pe_tools.h"
 #include <stddef.h>
 
-// @todo: max supported IAT length 512
 #define MAX_TRAMPOLINE_IAT_SIZE (512 * 8)
 
 typedef union {

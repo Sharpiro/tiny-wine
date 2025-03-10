@@ -23,17 +23,6 @@ typedef struct _WinFileInternal {
 
 void *__iob_func();
 
-size_t add_many_msvcrt(
-    [[maybe_unused]] size_t one,
-    [[maybe_unused]] size_t two,
-    [[maybe_unused]] size_t three,
-    [[maybe_unused]] size_t four,
-    [[maybe_unused]] size_t five,
-    [[maybe_unused]] size_t six,
-    [[maybe_unused]] size_t seven,
-    [[maybe_unused]] size_t eight
-);
-
 double pow(double x, double y);
 
 void exit(int32_t exit_code);

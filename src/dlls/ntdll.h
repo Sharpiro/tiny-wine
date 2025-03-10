@@ -30,19 +30,6 @@ int32_t NtWriteFile(
 
 NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus);
 
-size_t add_many_ntdll(
-    [[maybe_unused]] size_t one,
-    [[maybe_unused]] size_t two,
-    [[maybe_unused]] size_t three,
-    [[maybe_unused]] size_t four,
-    [[maybe_unused]] size_t five,
-    [[maybe_unused]] size_t six,
-    [[maybe_unused]] size_t seven,
-    [[maybe_unused]] size_t eight
-);
-
 size_t sys_brk(size_t brk);
 
 size_t mprotect(size_t address, size_t length, size_t protection);
-
-void _init_relocations_loader();

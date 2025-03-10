@@ -232,21 +232,6 @@ EXPORTABLE int32_t printf(const char *format, ...) {
     return 0;
 }
 
-EXPORTABLE size_t add_many_msvcrt(
-    [[maybe_unused]] size_t one,
-    [[maybe_unused]] size_t two,
-    [[maybe_unused]] size_t three,
-    [[maybe_unused]] size_t four,
-    [[maybe_unused]] size_t five,
-    [[maybe_unused]] size_t six,
-    [[maybe_unused]] size_t seven,
-    [[maybe_unused]] size_t eight
-) {
-    size_t result =
-        add_many_ntdll(one, two, three, four, five, six, seven, eight);
-    return result;
-}
-
 #if UINTPTR_MAX == 0xFFFFFFFFFFFFFFFF
 
 EXPORTABLE void *__iob_func(void) {

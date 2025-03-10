@@ -2,7 +2,6 @@
 #include "./pe_tools.h"
 #include "../tiny_c/tiny_c.h"
 #include "elf_tools.h"
-#include "list.h"
 #include "loader_lib.h"
 #include "memory_map.h"
 #include <stdatomic.h>
@@ -52,7 +51,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (dos_header->magic != DOS_MAGIC) {
         BAIL("Invalid DOS header\n");
     }
-    size_t image_header_start = (size_t)dos_header->e_lfanew;
+    size_t image_header_start = (size_t)dos_header->image_file_header_start;
     struct WinPEHeader *winpe_header =
         (struct WinPEHeader *)(pe_header_buffer + image_header_start);
     bool is_64_bit =
@@ -70,6 +69,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             .data_directory_len = optional_header->data_directory_len,
             .data_directory = {},
             .image_optional_header_size = sizeof(*optional_header),
+            .image_size = optional_header->size_of_image,
+            .headers_size = optional_header->size_of_headers,
         };
         memcpy(
             image_optional_header.data_directory,
@@ -88,6 +89,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             .data_directory_len = optional_header->data_directory_len,
             .data_directory = {},
             .image_optional_header_size = sizeof(*optional_header),
+            .image_size = optional_header->size_of_image,
+            .headers_size = optional_header->size_of_headers,
         };
         memcpy(
             image_optional_header.data_directory,
@@ -106,7 +109,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         image_base + winpe_header->image_optional_header.address_of_entry_point;
     struct ImageDataDirectory *import_address_table_dir =
         &image_optional_header.data_directory[DATA_DIR_IAT_INDEX];
-    size_t section_headers_start = (size_t)dos_header->e_lfanew +
+    size_t section_headers_start = (size_t)dos_header->image_file_header_start +
         WIN_OPTIONAL_HEADER_START +
         image_optional_header.image_optional_header_size;
 
@@ -442,6 +445,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     *pe_data = (struct PeData){
         .dos_header = dos_header,
         .winpe_header = winpe_header,
+        .winpe_optional_header = image_optional_header,
         .entrypoint = entrypoint,
         .section_headers = section_headers,
         .section_headers_len = section_headers_len,
