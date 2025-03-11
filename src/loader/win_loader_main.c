@@ -157,7 +157,7 @@ static void dynamic_callback_linux(void) {
         "add rsp, 16\n"
         "jmp %[function_address]\n"
         :
-        : [function_address] "m"(runtime_symbol->value),
+        : [function_address] "r"(runtime_symbol->value),
           [p1_rdi] "m"(p1_rdi),
           [p2_rsi] "m"(p2_rsi),
           [p3_rdx] "m"(p3_rdx),
@@ -368,32 +368,35 @@ static void dynamic_callback_windows(void) {
             "pop rbp\n"
             "add rsp, 8\n"
 
-            /* Duplicate windows stack frame */
+            /* Duplicate windows stack frame (72 bytes) */
 
-            "lea r11, [rsp + 64]\n"
+            "lea r11, [rsp + 72]\n"
             "lea r10, [rsp]\n"
             ".dynamic_callback_windows_loop_start:\n"
             "cmp r11, r10\n"
-            "jl .dynamic_callback_windows_loop_end\n"
-            "push [r11]\n"
+            "je .dynamic_callback_windows_loop_end\n"
+            "push [r11 - 8]\n"
             "sub r11, 8\n"
             "jmp .dynamic_callback_windows_loop_start\n"
             ".dynamic_callback_windows_loop_end:\n"
+            "add rsp, 72\n"
 
             /* Convert to linux stack frame */
 
-            "add rsp, 7 * 8\n"
+            "sub rsp, 16\n"
+            // "mov QWORD PTR [rsp], 0x7fff00000011\n"
+            // "mov QWORD PTR [rsp + 8], 0x42\n"
             "call %[function_address]\n"
 
             /* Restore original windows state */
 
+            "add rsp, 16\n"
             "mov rdi, [%[rdi_pointer]]\n"
             "mov rsi, [%[rsi_pointer]]\n"
 
-            "add rsp, 2 * 8\n"
             "ret\n"
             :
-            : [function_address] "m"(function_export.address),
+            : [function_address] "r"(function_export.address),
               [p1_win_rcx] "m"(p1_win_rcx),
               [p2_win_rdx] "m"(p2_win_rdx),
               [p3_win_r8] "m"(p3_win_r8),
@@ -429,7 +432,7 @@ static void dynamic_callback_windows(void) {
             "add rsp, 8\n"
             "jmp %[function_address]\n"
             :
-            : [function_address] "m"(function_export.address),
+            : [function_address] "r"(function_export.address),
               [p1_win_rcx] "m"(p1_win_rcx),
               [p2_win_rdx] "m"(p2_win_rdx),
               [p3_win_r8] "m"(p3_win_r8),

@@ -220,6 +220,7 @@ KERNEL32.dll: \
 	@$(OBJDUMP) -M intel -D KERNEL32.dll > KERNEL32.dll.dump
 
 windynamiclib.dll: \
+		ntdll.dll \
 		src/programs/windows/win_dynamic/win_dynamic_lib.h \
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
 	@echo "windynamiclib.dll"
@@ -237,6 +238,7 @@ windynamiclib.dll: \
 		-fPIC \
 		-Wl,-e,DllMain \
 		-o windynamiclib.dll \
+		ntdll.dll \
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
 	@$(OBJDUMP) -M intel -D windynamiclib.dll > windynamiclib.dll.dump
 

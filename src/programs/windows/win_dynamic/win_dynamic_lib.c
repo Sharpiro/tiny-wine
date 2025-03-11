@@ -24,3 +24,7 @@ uint64_t *get_lib_var_bss() {
 uint64_t *get_lib_var_data() {
     return &lib_var_data;
 }
+
+int large(int a, int b, int c, int d, int e, int f, int g, int h) {
+    return large_ntdll(a, b, c, d, e, f, g, h);
+}
