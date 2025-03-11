@@ -15,9 +15,14 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
+struct SwapState {
+    size_t rbx;
+    size_t rdi;
+    size_t rsi;
+};
+
 // @todo: possible to not need these backup locations?
-size_t rdi_backup = 0;
-size_t rsi_backup = 0;
+struct SwapState swap_state = {};
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
@@ -177,14 +182,12 @@ static void dynamic_callback_linux(void) {
  * libntdll.so
  */
 static void dynamic_callback_windows(void) {
-    size_t *rbx;
+    size_t rbx;
     __asm__("mov %0, rbx" : "=r"(rbx));
     size_t rdi = 0;
     __asm__("mov %0, rdi" : "=r"(rdi));
     size_t rsi = 0;
     __asm__("mov %0, rsi" : "=r"(rsi));
-    __asm__("mov %0, rdi" : "=r"(rdi_backup));
-    __asm__("mov %0, rsi" : "=r"(rsi_backup));
     size_t *r12;
     __asm__("mov %0, r12" : "=r"(r12));
     size_t *r13;
@@ -349,6 +352,11 @@ static void dynamic_callback_windows(void) {
 
     if (is_lib_ntdll) {
         /* Converts from Windows state to Linux state, and back */
+        swap_state = (struct SwapState){
+            .rbx = rbx,
+            .rdi = rdi,
+            .rsi = rsi,
+        };
         __asm__(
             /* Setup registers */
 
@@ -368,32 +376,45 @@ static void dynamic_callback_windows(void) {
             "pop rbp\n"
             "add rsp, 8\n"
 
-            /* Duplicate windows stack frame (72 bytes) */
+            // /* Duplicate windows stack frame (72 bytes) */
 
-            "lea r11, [rsp + 72]\n"
-            "lea r10, [rsp]\n"
-            ".dynamic_callback_windows_loop_start:\n"
-            "cmp r11, r10\n"
-            "je .dynamic_callback_windows_loop_end\n"
-            "push [r11 - 8]\n"
-            "sub r11, 8\n"
-            "jmp .dynamic_callback_windows_loop_start\n"
-            ".dynamic_callback_windows_loop_end:\n"
-            "add rsp, 72\n"
+            ".dynamic_callback_windows_loop_init:\n"
 
-            /* Convert to linux stack frame */
+            // "lea r11, [rsp + 72]\n"
+            // "lea r10, [rsp]\n"
+            // ".dynamic_callback_windows_loop_start:\n"
+            // "cmp r11, r10\n"
+            // "je .dynamic_callback_windows_loop_end\n"
+            // "push [r11 - 8]\n"
+            // "sub r11, 8\n"
+            // "jmp .dynamic_callback_windows_loop_start\n"
+            // ".dynamic_callback_windows_loop_end:\n"
+            // "add rsp, 72\n"
+            // "sub rsp, 16\n"
 
-            "sub rsp, 16\n"
+            // /* Convert to linux stack frame */
+
             // "mov QWORD PTR [rsp], 0x7fff00000011\n"
             // "mov QWORD PTR [rsp + 8], 0x42\n"
+
+            "pop rbx\n"
+            // "mov r11, [%[temp_pointer_index]]\n"
+            // "mov [%[temp_pointer]], r10\n"
+            "add rsp, 32\n"
+            "add rsp, 16\n"
             "call %[function_address]\n"
 
             /* Restore original windows state */
 
-            "add rsp, 16\n"
-            "mov rdi, [%[rdi_pointer]]\n"
-            "mov rsi, [%[rsi_pointer]]\n"
+            // "mov rdi, [%[rdi_pointer]]\n"
+            // "mov rsi, [%[rsi_pointer]]\n"
 
+            "sub rsp, 16\n"
+            "sub rsp, 32\n"
+            "push rbx\n"
+            "mov rbx, [%[swap_state_rbx]]\n"
+            "mov rdi, [%[swap_state_rdi]]\n"
+            "mov rsi, [%[swap_state_rsi]]\n"
             "ret\n"
             :
             : [function_address] "r"(function_export.address),
@@ -408,8 +429,12 @@ static void dynamic_callback_windows(void) {
               [r14] "m"(r14),
               [r15] "m"(r15),
               [rbx] "m"(rbx),
-              [rdi_pointer] "g"(&rdi_backup),
-              [rsi_pointer] "g"(&rsi_backup)
+              //   [rdi_pointer] "g"(&rdi_backup),
+              //   [rsi_pointer] "g"(&rsi_backup),
+              [swap_state_rbx] "g"(&swap_state.rbx),
+              [swap_state_rdi] "g"(&swap_state.rdi),
+              [swap_state_rsi] "g"(&swap_state.rsi)
+            //   [temp_pointer_index] "g"(&temp_backup_index)
             :
         );
     } else {

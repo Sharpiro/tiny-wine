@@ -36,6 +36,10 @@ int main() {
     // printf(
     //     "large params: 1, %x, %x, %x, %x, %x, %x, %x\n", 2, 3, 4, 5, 6, 7, 8
     // );
-    large(1, 2, 3, 4, 5, 6, 7, 8);
+    // int lg = large(1, 2, 3, 4, 5, 6, 7, 8);
+    // return lg;
+    printf("-------------------------------------- %d\n", 1);
+    // puts("xyz");
+    // malloc(1);
     // printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
 }

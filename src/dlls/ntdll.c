@@ -98,5 +98,6 @@ size_t mprotect(size_t address, size_t length, size_t protection) {
 }
 
 int large_ntdll(int a, int b, int c, int d, int e, int f, int g, int h) {
+    sys_write(1, "ok\n", 3);
     return 0x42;
 }
