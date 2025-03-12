@@ -21,13 +21,12 @@ struct SwapState {
     size_t rsi;
 };
 
-// @todo: possible to not need these backup locations?
-struct SwapState swap_state = {};
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
 size_t initial_global_runtime_iat_region_base = 0;
 size_t got_lib_dyn_offset_table[100] = {};
+struct SwapState swap_state = {};
 
 static void run_asm(
     [[maybe_unused]] size_t frame_start,
@@ -352,6 +351,7 @@ static void dynamic_callback_windows(void) {
 
     if (is_lib_ntdll) {
         /* Converts from Windows state to Linux state, and back */
+
         swap_state = (struct SwapState){
             .rbx = rbx,
             .rdi = rdi,
@@ -360,7 +360,7 @@ static void dynamic_callback_windows(void) {
         __asm__(
             /* Setup registers */
 
-            ".dynamic_callback_windows_swap:\n"
+            ".dynamic_callback_windows_swap_init:\n"
             "mov rdi, %[p1_win_rcx]\n"
             "mov rsi, %[p2_win_rdx]\n"
             "mov rdx, %[p3_win_r8]\n"
@@ -371,47 +371,23 @@ static void dynamic_callback_windows(void) {
             "mov r13, %[r13]\n"
             "mov r14, %[r14]\n"
             "mov r15, %[r15]\n"
-            "mov rbx, %[rbx]\n"
             "mov rsp, rbp\n"
             "pop rbp\n"
-            "add rsp, 8\n"
+            "add rsp, 8\n" // Remove dynamic trampoline address
 
-            // /* Duplicate windows stack frame (72 bytes) */
+            /* Convert to linux stack frame */
 
-            ".dynamic_callback_windows_loop_init:\n"
-
-            // "lea r11, [rsp + 72]\n"
-            // "lea r10, [rsp]\n"
-            // ".dynamic_callback_windows_loop_start:\n"
-            // "cmp r11, r10\n"
-            // "je .dynamic_callback_windows_loop_end\n"
-            // "push [r11 - 8]\n"
-            // "sub r11, 8\n"
-            // "jmp .dynamic_callback_windows_loop_start\n"
-            // ".dynamic_callback_windows_loop_end:\n"
-            // "add rsp, 72\n"
-            // "sub rsp, 16\n"
-
-            // /* Convert to linux stack frame */
-
-            // "mov QWORD PTR [rsp], 0x7fff00000011\n"
-            // "mov QWORD PTR [rsp + 8], 0x42\n"
-
-            "pop rbx\n"
-            // "mov r11, [%[temp_pointer_index]]\n"
-            // "mov [%[temp_pointer]], r10\n"
-            "add rsp, 32\n"
-            "add rsp, 16\n"
+            ".dynamic_callback_windows_swap_call:\n"
+            "pop rbx\n"     // Save return address
+            "add rsp, 32\n" // Remove frame padding
+            "add rsp, 16\n" // Remove stack params 5 & 6
             "call %[function_address]\n"
 
-            /* Restore original windows state */
+            /* Restore windows stack frame and remaining registers */
 
-            // "mov rdi, [%[rdi_pointer]]\n"
-            // "mov rsi, [%[rsi_pointer]]\n"
-
-            "sub rsp, 16\n"
-            "sub rsp, 32\n"
-            "push rbx\n"
+            "sub rsp, 16\n" // Restore stack params 5 & 6 space
+            "sub rsp, 32\n" // Restore frame padding
+            "push rbx\n"    // Restore return address
             "mov rbx, [%[swap_state_rbx]]\n"
             "mov rdi, [%[swap_state_rdi]]\n"
             "mov rsi, [%[swap_state_rsi]]\n"
@@ -428,13 +404,9 @@ static void dynamic_callback_windows(void) {
               [r13] "m"(r13),
               [r14] "m"(r14),
               [r15] "m"(r15),
-              [rbx] "m"(rbx),
-              //   [rdi_pointer] "g"(&rdi_backup),
-              //   [rsi_pointer] "g"(&rsi_backup),
               [swap_state_rbx] "g"(&swap_state.rbx),
               [swap_state_rdi] "g"(&swap_state.rdi),
               [swap_state_rsi] "g"(&swap_state.rsi)
-            //   [temp_pointer_index] "g"(&temp_backup_index)
             :
         );
     } else {
@@ -454,7 +426,7 @@ static void dynamic_callback_windows(void) {
             "mov rsi, %[rsi]\n"
             "mov rsp, rbp\n"
             "pop rbp\n"
-            "add rsp, 8\n"
+            "add rsp, 8\n" // Remove dynamic trampoline address
             "jmp %[function_address]\n"
             :
             : [function_address] "r"(function_export.address),

@@ -9,6 +9,10 @@ int32_t exe_global_var_data = 42;
 
 int main() {
     printf("look how far we've come\n");
+    printf(
+        "large params: 1, %x, %x, %x, %x, %x, %x, %x\n", 2, 3, 4, 5, 6, 7, 8
+    );
+    printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
 
     uint32_t *buffer = malloc(0x1000);
     buffer[0] = 0xffffffff;
@@ -46,9 +50,4 @@ int main() {
     lib_var_data = 44;
     printf("lib_var_data: %zd\n", lib_var_data);
     printf("*get_lib_var_data(): %zd\n", *get_lib_var_data());
-
-    printf(
-        "large params: 1, %x, %x, %x, %x, %x, %x, %x\n", 2, 3, 4, 5, 6, 7, 8
-    );
-    printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
 }

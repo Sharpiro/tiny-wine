@@ -254,7 +254,6 @@ EXPORTABLE int32_t _fileno(FILE *stream) {
 
 #endif
 
-// @todo: uses custom fprintf, not stdlib.h fprintf
 EXPORTABLE int32_t fprintf(
     [[maybe_unused]] FILE *__restrict stream,
     [[maybe_unused]] const char *__restrict format,
