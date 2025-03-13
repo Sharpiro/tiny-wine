@@ -1,16 +1,13 @@
 #include "ntdll.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdlib.h>
 
 #define PAGE_EXECUTE_READWRITE 0x40
 
-// @todo: this func exists many places
 void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
     for (size_t i = 0; i < n; i++) {
         ((uint8_t *)dest)[i] = ((uint8_t *)src)[i];
     }
-
     return dest;
 }
 
