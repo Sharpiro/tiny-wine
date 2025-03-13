@@ -435,7 +435,11 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
                     .type = type,
                     .block_page_rva = relocation_block->page_rva,
                 };
-                RelocationEntryList_add(&relocations, relocation_entry);
+                bool add_result =
+                    RelocationEntryList_add(&relocations, relocation_entry);
+                if (!add_result) {
+                    BAIL("Failed adding relocation to list\n");
+                }
             }
             block_bytes_parsed += relocation_block->block_size;
             relocation_section_buffer += relocation_block->block_size;

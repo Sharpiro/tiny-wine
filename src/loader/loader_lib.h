@@ -5,9 +5,8 @@
 #include "pe_tools.h"
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
 
-#define LOADER_BUFFER_LEN 0x200'000
+#define LOADER_BUFFER_LEN 0x210'000
 // @todo: hard-coding this may cause random program failures due to ASLR etc.
 #define LOADER_SHARED_LIB_START 0x500000
 

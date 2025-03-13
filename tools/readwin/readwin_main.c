@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
 
     /* General information */
 
+    tiny_c_printf("File: %s\n", filename);
     tiny_c_printf("PE Header:\n");
     tiny_c_printf("DOS magic: %s\n", (char *)&dos_magic);
     tiny_c_printf("PE magic: %x\n", pe_magic);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "stddef.h"
-#include "string.h"
+#include <stddef.h>
+#include <string.h>
 
 #define CREATE_LIST_STRUCT(type)                                               \
     typedef struct {                                                           \
@@ -14,7 +14,7 @@
     [[maybe_unused]] static inline bool type##List_add(                        \
         type##List *list, type data                                            \
     ) {                                                                        \
-        const int MIN_CAPACITY = 20;                                           \
+        const int MIN_CAPACITY = 16;                                           \
         if (list->length == list->capacity) {                                  \
             type *old_list_data = list->data;                                  \
             size_t old_list_size = sizeof(type) * list->capacity;              \
