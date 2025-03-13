@@ -11,6 +11,12 @@ typedef union {
     uint64_t u64;
 } Converter;
 
+struct SwapState {
+    size_t rbx;
+    size_t rdi;
+    size_t rsi;
+};
+
 extern inline Converter convert(size_t x);
 
 const struct WinRuntimeObject *find_runtime_object(

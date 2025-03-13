@@ -26,7 +26,6 @@ uint64_t *get_lib_var_data() {
 }
 
 int large_params(
-
     int one,
     int two,
     int three,

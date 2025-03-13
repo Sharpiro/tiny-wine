@@ -10,7 +10,7 @@ A basic dynamic loader for Linux and Windows.
 - loaders use a lot of memory and don't release it
 - Import Address Table limit is 512 entries
 - Windows header size limit is 4 KiB
-- 64 bit only
+- x64 only
 
 ## Prerequisites
 

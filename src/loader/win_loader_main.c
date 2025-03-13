@@ -15,26 +15,6 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-struct MachineState {
-    size_t p1_rdi;
-    size_t p2_rsi;
-    size_t p3_rdx;
-    size_t p4_rcx;
-    size_t p5_r8;
-    size_t p6_r9;
-    size_t rbx;
-    size_t r12;
-    size_t r13;
-    size_t r14;
-    size_t r15;
-    size_t rbp;
-};
-struct SwapState {
-    size_t rbx;
-    size_t rdi;
-    size_t rsi;
-};
-
 struct WinRuntimeObject runtime_exe;
 struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
@@ -81,18 +61,7 @@ static void run_asm(
  * Dynamic callback from Linux to Linux
  */
 static void dynamic_callback_linux(void) {
-    size_t r12;
-    size_t r13;
-    size_t r14;
-    size_t r15;
-    size_t p1_rdi;
-    size_t p2_rsi;
-    size_t p3_rdx;
-    size_t p4_rcx;
-    size_t p5_r8;
-    size_t p6_r9;
-    size_t rbx;
-    size_t *rbp;
+    size_t r12, r13, r14, r15, rdi, rsi, rdx, rcx, p5_r8, p6_r9, rbx, *rbp;
     __asm__(
         //
         "mov %[r12], r12\n"
@@ -113,10 +82,10 @@ static void dynamic_callback_linux(void) {
           [r14] "=m"(r14),
           [r15] "=m"(r15),
           [rbp] "=m"(rbp),
-          [p1_rdi] "=m"(p1_rdi),
-          [p2_rsi] "=m"(p2_rsi),
-          [p3_rdx] "=m"(p3_rdx),
-          [p4_rcx] "=m"(p4_rcx),
+          [p1_rdi] "=m"(rdi),
+          [p2_rsi] "=m"(rsi),
+          [p3_rdx] "=m"(rdx),
+          [p4_rcx] "=m"(rcx),
           [p5_r8] "=m"(p5_r8),
           [p6_r9] "=m"(p6_r9)
     );
@@ -158,10 +127,10 @@ static void dynamic_callback_linux(void) {
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
-        p1_rdi,
-        p2_rsi,
-        p3_rdx,
-        p4_rcx,
+        rdi,
+        rsi,
+        rdx,
+        rcx,
         p5_r8,
         p6_r9,
         p7_stack1,
@@ -190,10 +159,10 @@ static void dynamic_callback_linux(void) {
         "jmp %[function_address]\n"
         :
         : [function_address] "r"(runtime_symbol->value),
-          [p1_rdi] "m"(p1_rdi),
-          [p2_rsi] "m"(p2_rsi),
-          [p3_rdx] "m"(p3_rdx),
-          [p4_rcx] "m"(p4_rcx),
+          [p1_rdi] "m"(rdi),
+          [p2_rsi] "m"(rsi),
+          [p3_rdx] "m"(rdx),
+          [p4_rcx] "m"(rcx),
           [p5_r8] "m"(p5_r8),
           [p6_r9] "m"(p6_r9),
           [rbx] "m"(rbx),
@@ -211,18 +180,7 @@ static void dynamic_callback_linux(void) {
 static void dynamic_callback_windows(void) {
     // @todo: asm test full register state before and after
 
-    size_t r12;
-    size_t r13;
-    size_t r14;
-    size_t r15;
-    size_t p1_win_rcx;
-    size_t p2_win_rdx;
-    size_t p3_win_r8;
-    size_t p4_win_r9;
-    size_t rbx;
-    size_t rdi;
-    size_t rsi;
-    size_t *rbp;
+    size_t r12, r13, r14, r15, rcx, rdx, r8, r9, rbx, rdi, rsi, *rbp;
     __asm__(
         //
         "mov %[r12], r12\n"
@@ -245,10 +203,10 @@ static void dynamic_callback_windows(void) {
           [r14] "=m"(r14),
           [r15] "=m"(r15),
           [rbp] "=m"(rbp),
-          [p1_win_rcx] "=m"(p1_win_rcx),
-          [p2_win_rdx] "=m"(p2_win_rdx),
-          [p3_win_r8] "=m"(p3_win_r8),
-          [p4_win_r9] "=m"(p4_win_r9)
+          [p1_win_rcx] "=m"(rcx),
+          [p2_win_rdx] "=m"(rdx),
+          [p3_win_r8] "=m"(r8),
+          [p4_win_r9] "=m"(r9)
     );
 
     size_t p5_win_stack1 = rbp[7];
@@ -347,10 +305,10 @@ static void dynamic_callback_windows(void) {
         "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         lib_name,
         import_entry->name,
-        p1_win_rcx,
-        p2_win_rdx,
-        p3_win_r8,
-        p4_win_r9,
+        rcx,
+        rdx,
+        r8,
+        r9,
         p5_win_stack1,
         p6_win_stack2,
         p7_win_stack3,
@@ -437,10 +395,10 @@ static void dynamic_callback_windows(void) {
             "ret\n"
             :
             : [function_address] "r"(function_export.address),
-              [p1_win_rcx] "m"(p1_win_rcx),
-              [p2_win_rdx] "m"(p2_win_rdx),
-              [p3_win_r8] "m"(p3_win_r8),
-              [p4_win_r9] "m"(p4_win_r9),
+              [p1_win_rcx] "m"(rcx),
+              [p2_win_rdx] "m"(rdx),
+              [p3_win_r8] "m"(r8),
+              [p4_win_r9] "m"(r9),
               [p5_win_stack1] "m"(p5_win_stack1),
               [p6_win_stack2] "m"(p6_win_stack2),
               [r12] "m"(r12),
@@ -472,10 +430,10 @@ static void dynamic_callback_windows(void) {
             "jmp %[function_address]\n"
             :
             : [function_address] "r"(function_export.address),
-              [p1_win_rcx] "m"(p1_win_rcx),
-              [p2_win_rdx] "m"(p2_win_rdx),
-              [p3_win_r8] "m"(p3_win_r8),
-              [p4_win_r9] "m"(p4_win_r9),
+              [p1_win_rcx] "m"(rcx),
+              [p2_win_rdx] "m"(rdx),
+              [p3_win_r8] "m"(r8),
+              [p4_win_r9] "m"(r9),
               [r12] "m"(r12),
               [r13] "m"(r13),
               [r14] "m"(r14),

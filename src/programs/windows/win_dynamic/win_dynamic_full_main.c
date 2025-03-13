@@ -1,4 +1,4 @@
-#include "win_dynamic_lib.h"
+#include "win_dynamic_lib_full.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
