@@ -9,4 +9,13 @@ uint64_t *get_lib_var_bss();
 
 uint64_t *get_lib_var_data();
 
-int large(int a, int b, int c, int d, int e, int f, int g, int h);
+int large_params(
+    int one,
+    int two,
+    int three,
+    int four,
+    int five,
+    int six,
+    int seven,
+    int eight
+);

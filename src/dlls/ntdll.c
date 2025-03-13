@@ -96,11 +96,3 @@ size_t mprotect(size_t address, size_t length, size_t protection) {
     size_t result = syscall(SYS_mprotect, &args);
     return result;
 }
-
-int large_ntdll_local(int a, int b, int c, int d, int e, int f, int g, int h) {
-    return a + b + c + d + e + f + g + h;
-}
-
-int large_ntdll(int a, int b, int c, int d, int e, int f, int g, int h) {
-    return large_ntdll_local(a, b, c, d, e, f, g, h);
-}

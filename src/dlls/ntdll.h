@@ -33,5 +33,3 @@ NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus);
 size_t sys_brk(size_t brk);
 
 size_t mprotect(size_t address, size_t length, size_t protection);
-
-int large_ntdll(int a, int b, int c, int d, int e, int f, int g, int h);
