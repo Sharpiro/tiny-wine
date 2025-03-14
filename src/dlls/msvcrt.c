@@ -1,5 +1,5 @@
 #include "msvcrt.h"
-#include "./export.h"
+#include "./macros.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>

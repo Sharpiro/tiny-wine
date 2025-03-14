@@ -1,3 +1,4 @@
+#include "../dlls/macros.h"
 #include "../tiny_c/tiny_c.h"
 #include "../tiny_c/tinyc_sys.h"
 #include "./pe_tools.h"
@@ -61,34 +62,8 @@ static void run_asm(
  * Dynamic callback from Linux to Linux
  */
 static void dynamic_callback_linux(void) {
-    size_t r12, r13, r14, r15, rdi, rsi, rdx, rcx, p5_r8, p6_r9, rbx, *rbp;
-    __asm__(
-        //
-        "mov %[r12], r12\n"
-        "mov %[r13], r13\n"
-        "mov %[r14], r14\n"
-        "mov %[r15], r15\n"
-        "mov %[p1_rdi], rdi\n"
-        "mov %[p2_rsi], rsi\n"
-        "mov %[p3_rdx], rdx\n"
-        "mov %[p4_rcx], rcx\n"
-        "mov %[p5_r8], r8\n"
-        "mov %[p6_r9], r9\n"
-        "mov %[rbx], rbx\n"
-        "mov %[rbp], rbp\n"
-        : [rbx] "=m"(rbx),
-          [r12] "=m"(r12),
-          [r13] "=m"(r13),
-          [r14] "=m"(r14),
-          [r15] "=m"(r15),
-          [rbp] "=m"(rbp),
-          [p1_rdi] "=m"(rdi),
-          [p2_rsi] "=m"(rsi),
-          [p3_rdx] "=m"(rdx),
-          [p4_rcx] "=m"(rcx),
-          [p5_r8] "=m"(p5_r8),
-          [p6_r9] "=m"(p6_r9)
-    );
+    size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
+    GET_PRESERVED_STATE();
 
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
@@ -131,8 +106,8 @@ static void dynamic_callback_linux(void) {
         rsi,
         rdx,
         rcx,
-        p5_r8,
-        p6_r9,
+        r8,
+        r9,
         p7_stack1,
         p8_stack2
     );
@@ -163,8 +138,8 @@ static void dynamic_callback_linux(void) {
           [p2_rsi] "m"(rsi),
           [p3_rdx] "m"(rdx),
           [p4_rcx] "m"(rcx),
-          [p5_r8] "m"(p5_r8),
-          [p6_r9] "m"(p6_r9),
+          [p5_r8] "m"(r8),
+          [p6_r9] "m"(r9),
           [rbx] "m"(rbx),
           [r12] "m"(r12),
           [r13] "m"(r13),
@@ -178,36 +153,8 @@ static void dynamic_callback_linux(void) {
  * libntdll.so
  */
 static void dynamic_callback_windows(void) {
-    // @todo: asm test full register state before and after
-
-    size_t r12, r13, r14, r15, rcx, rdx, r8, r9, rbx, rdi, rsi, *rbp;
-    __asm__(
-        //
-        "mov %[r12], r12\n"
-        "mov %[r13], r13\n"
-        "mov %[r14], r14\n"
-        "mov %[r15], r15\n"
-        "mov %[p1_win_rcx], rcx\n"
-        "mov %[p2_win_rdx], rdx\n"
-        "mov %[p3_win_r8], r8\n"
-        "mov %[p4_win_r9], r9\n"
-        "mov %[rbx], rbx\n"
-        "mov %[rdi], rdi\n"
-        "mov %[rsi], rsi\n"
-        "mov %[rbp], rbp\n"
-        : [rbx] "=m"(rbx),
-          [rdi] "=m"(rdi),
-          [rsi] "=m"(rsi),
-          [r12] "=m"(r12),
-          [r13] "=m"(r13),
-          [r14] "=m"(r14),
-          [r15] "=m"(r15),
-          [rbp] "=m"(rbp),
-          [p1_win_rcx] "=m"(rcx),
-          [p2_win_rdx] "=m"(rdx),
-          [p3_win_r8] "=m"(r8),
-          [p4_win_r9] "=m"(r9)
-    );
+    size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
+    GET_PRESERVED_STATE();
 
     size_t p5_win_stack1 = rbp[7];
     size_t p6_win_stack2 = rbp[8];

@@ -5,9 +5,6 @@ int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
 int main() {
-    printf(
-        "large params: 1, %x, %x, %x, %x, %x, %x, %x\n", 2, 3, 4, 5, 6, 7, 8
-    );
     printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
     printf("pow: %d\n", (int32_t)pow(2, 4));
 
@@ -36,4 +33,24 @@ int main() {
     lib_var_data += 1;
     printf("lib_var_data: %zd\n", lib_var_data);
     printf("*get_lib_var_data(): %zd\n", *get_lib_var_data());
+
+    /* Preserved register state */
+
+    DEBUG_SET_MACHINE_STATE();
+    size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, rbp;
+    GET_PRESERVED_STATE();
+    size_t rbp_saved = rbp;
+    large_params(1, 2, 3, 4, 5, 6, 7, 8);
+    GET_PRESERVED_STATE();
+    printf(
+        "preserved state: %zx, %zx, %zx, %zx, %zx, %zx, %zx, %x\n",
+        rbx,
+        rdi,
+        rsi,
+        r12,
+        r13,
+        r14,
+        r15,
+        rbp == rbp_saved ? 8 : 0
+    );
 }

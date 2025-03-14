@@ -422,6 +422,7 @@ windynamic.exe: \
 		msvcrt.dll \
 		ntdll.dll \
 		windynamiclib.dll \
+		src/dlls/macros.h \
 		src/programs/windows/win_dynamic/win_dynamic_main.c \
 		src/programs/windows/win_dynamic/runtime.c
 	@echo "windynamic.exe"
