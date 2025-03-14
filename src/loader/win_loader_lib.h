@@ -11,7 +11,7 @@ typedef union {
     uint64_t u64;
 } Converter;
 
-struct SwapState {
+struct PreservedSwapState {
     size_t rbx;
     size_t rdi;
     size_t rsi;

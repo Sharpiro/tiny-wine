@@ -27,7 +27,7 @@ lib_var_data: 42
 lib_var_data: 43
 lib_var_data: 44
 *get_lib_var_data(): 44
-preserved state: 1, 2, 3, 4, 5, 6, 7, 8
+preserved registers: 1, 2, 3, 4, 5, 6, 7, 8
 EOF
 `
 

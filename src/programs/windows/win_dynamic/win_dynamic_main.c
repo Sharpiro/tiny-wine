@@ -38,12 +38,12 @@ int main() {
 
     DEBUG_SET_MACHINE_STATE();
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, rbp;
-    GET_PRESERVED_STATE();
+    GET_PRESERVED_REGISTERS();
     size_t rbp_saved = rbp;
     large_params(1, 2, 3, 4, 5, 6, 7, 8);
-    GET_PRESERVED_STATE();
+    GET_PRESERVED_REGISTERS();
     printf(
-        "preserved state: %zx, %zx, %zx, %zx, %zx, %zx, %zx, %x\n",
+        "preserved registers: %zx, %zx, %zx, %zx, %zx, %zx, %zx, %x\n",
         rbx,
         rdi,
         rsi,

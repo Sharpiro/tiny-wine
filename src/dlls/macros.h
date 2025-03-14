@@ -19,7 +19,7 @@
 #define EXPORTABLE
 #endif
 
-#define GET_PRESERVED_STATE()                                                  \
+#define GET_PRESERVED_REGISTERS()                                              \
     __asm__("mov %[rbx], rbx\n"                                                \
             "mov %[rcx], rcx\n"                                                \
             "mov %[rdx], rdx\n"                                                \

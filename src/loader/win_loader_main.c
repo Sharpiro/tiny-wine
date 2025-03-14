@@ -21,7 +21,7 @@ struct RuntimeObject *lib_ntdll;
 WinRuntimeObjectList shared_libraries = {};
 size_t initial_global_runtime_iat_region_base = 0;
 size_t got_lib_dyn_offset_table[100] = {};
-struct SwapState swap_state = {};
+struct PreservedSwapState preserved_swap_state = {};
 
 static void run_asm(
     [[maybe_unused]] size_t frame_start,
@@ -63,7 +63,7 @@ static void run_asm(
  */
 static void dynamic_callback_linux(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
-    GET_PRESERVED_STATE();
+    GET_PRESERVED_REGISTERS();
 
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
@@ -154,7 +154,7 @@ static void dynamic_callback_linux(void) {
  */
 static void dynamic_callback_windows(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
-    GET_PRESERVED_STATE();
+    GET_PRESERVED_REGISTERS();
 
     size_t p5_win_stack1 = rbp[7];
     size_t p6_win_stack2 = rbp[8];
@@ -302,7 +302,7 @@ static void dynamic_callback_windows(void) {
     if (is_lib_ntdll) {
         /* Converts from Windows state to Linux state, and back */
 
-        swap_state = (struct SwapState){
+        preserved_swap_state = (struct PreservedSwapState){
             .rbx = rbx,
             .rdi = rdi,
             .rsi = rsi,
@@ -352,9 +352,9 @@ static void dynamic_callback_windows(void) {
               [r13] "m"(r13),
               [r14] "m"(r14),
               [r15] "m"(r15),
-              [swap_state_rbx] "g"(&swap_state.rbx),
-              [swap_state_rdi] "g"(&swap_state.rdi),
-              [swap_state_rsi] "g"(&swap_state.rsi)
+              [swap_state_rbx] "g"(&preserved_swap_state.rbx),
+              [swap_state_rdi] "g"(&preserved_swap_state.rdi),
+              [swap_state_rsi] "g"(&preserved_swap_state.rsi)
             :
         );
     } else {
