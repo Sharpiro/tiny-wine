@@ -7,8 +7,10 @@
 int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
-int main() {
+// @todo: args don't work
+int main(int argc, char **argv) {
     printf("look how far we've come\n");
+    // printf("%d, %s\n", argc, *argv);
     printf(
         "large params: 1, %x, %x, %x, %x, %x, %x, %x\n", 2, 3, 4, 5, 6, 7, 8
     );

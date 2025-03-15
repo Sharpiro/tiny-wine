@@ -11,6 +11,7 @@ assert() {
 # Dynamic Test
 
 expected=`cat <<EOF
+1, ./windynamic.exe
 uint32: 12345678, uint64: 1234567812345678
 pow: 16
 exe_global_var_bss: 0

@@ -14,10 +14,19 @@ void _pei386_runtime_relocator(void) {
 void __main(void) {
 }
 
-int main();
+__attribute__((naked)) void mainCRTStartup() {
+    __asm__(
 
-void mainCRTStartup() {
-    _pei386_runtime_relocator();
-    int result = main();
-    exit(result);
+        "mov r12, [rsp]\n"
+        "lea r13, [rsp + 8]\n"
+        "sub rsp, 0x20\n" // Add required stack space
+        "sub rsp, 0x08\n" // Add stack alignment
+        "call _pei386_runtime_relocator\n"
+        "mov ecx, r12d\n"
+        "mov rdx, r13\n"
+        "call main\n"
+        "add rsp, 0x28\n"
+        "mov rcx, rax\n"
+        "jmp exit\n"
+    );
 }

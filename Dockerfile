@@ -1,3 +1,5 @@
+# @todo: run as current user to avoid file errors on rebuild?
+
 FROM ubuntu:22.04
 
 ENV CC="clang"

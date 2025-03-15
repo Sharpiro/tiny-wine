@@ -1,3 +1,4 @@
+#include "../dlls/macros.h"
 #include "../tiny_c/tiny_c.h"
 #include "../tiny_c/tinyc_sys.h"
 #include "elf_tools.h"
@@ -17,61 +18,12 @@ size_t got_lib_dyn_offset_table[100] = {};
 
 // @todo: loaders shouldn't depend on clib, even statically
 
-#ifdef AMD64
-
-static void run_asm(
-    [[maybe_unused]] size_t frame_start,
-    size_t stack_start,
-    size_t program_entry
-) {
-    __asm__("mov rbx, 0x00\n"
-            "mov rsp, %[stack_start]\n"
-
-            /* clear 'PF' flag */
-            "mov r15, 0xff\n"
-            "xor r15, 1\n"
-
-            "mov rax, 0x00\n"
-            "mov rcx, 0x00\n"
-            "mov rdx, 0x00\n"
-            "mov rsi, 0x00\n"
-            "mov rdi, 0x00\n"
-            "mov r8, 0x00\n"
-            "mov r9, 0x00\n"
-            "mov r10, 0x00\n"
-            "mov r11, 0x00\n"
-            "mov r12, 0x00\n"
-            "mov r13, 0x00\n"
-            "mov r14, 0x00\n"
-            "mov r15, 0x00\n"
-            :
-            : [stack_start] "r"(stack_start));
-
-    __asm__("mov rbp, 0\n"
-            "jmp %[program_entry]\n"
-            :
-            : [program_entry] "r"(program_entry)
-            : "rax");
-}
-
 // @note: unclear why some docs consider r10 to be 4th param instead of rcx
 void dynamic_callback_linux(void) {
-    size_t *rbp;
-    __asm__("mov %0, rbp" : "=r"(rbp));
-    size_t *p1;
-    __asm__("mov %0, rdi" : "=r"(p1));
-    size_t *p2;
-    __asm__("mov %0, rsi" : "=r"(p2));
-    size_t *p3;
-    __asm__("mov %0, rdx" : "=r"(p3));
-    size_t *p4;
-    __asm__("mov %0, rcx" : "=r"(p4));
-    size_t *p5;
-    __asm__("mov %0, r8" : "=r"(p5));
-    size_t *p6;
-    __asm__("mov %0, r9" : "=r"(p6));
-    size_t p7 = *(rbp + 4);
-    size_t p8 = *(rbp + 5);
+    size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
+    GET_PRESERVED_REGISTERS();
+    size_t p7_stack1 = *(rbp + 4);
+    size_t p8_stack2 = *(rbp + 5);
 
     LOADER_LOG("starting dynamic linking at %x\n", dynamic_callback_linux);
 
@@ -126,138 +78,53 @@ void dynamic_callback_linux(void) {
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
-        p1,
-        p2,
-        p3,
-        p4,
-        p5,
-        p6,
-        p7,
-        p8
+        rdi,
+        rsi,
+        rdx,
+        rcx,
+        r8,
+        r9,
+        p7_stack1,
+        p8_stack2
     );
     LOADER_LOG("completed dynamic linking\n");
 
-    __asm__("mov r15, %0\n"
-            "mov rdi, %1\n"
-            "mov rsi, %2\n"
-            "mov rdx, %3\n"
-            "mov rcx, %4\n"
-            "mov r8, %5\n"
-            "mov r9, %6\n"
-            "mov rsp, rbp\n"
-            "pop rbp\n"
-            "add rsp, 16\n"
-            "jmp r15\n" ::"r"(runtime_symbol->value),
-            "r"(p1),
-            "r"(p2),
-            "r"(p3),
-            "r"(p4),
-            "r"(p5),
-            "r"(p6)
-            : "r15", "rdi", "rsi", "rdx", "rcx", "r8", "r9");
-}
-
-#endif
-
-#ifdef ARM32
-
-static void run_asm(
-    size_t frame_start, size_t stack_start, size_t program_entry
-) {
-    __asm__("mov r0, #0\n"
-            "mov r1, #0\n"
-            "mov r2, #0\n"
-            "mov r3, #0\n"
-            "mov r4, #0\n"
-            "mov r5, #0\n"
-            "mov r6, #0\n"
-            "mov r7, #0\n"
-            "mov r8, #0\n"
-            "mov r9, #0\n"
-            "mov r10, #0\n"
-            :
-            :
-            : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
-    );
-
-    __asm__("mov fp, %[frame_start]\n"
-            "mov sp, %[stack_start]\n"
-            "bx %[program_entry]\n"
-            :
-            : [frame_start] "r"(frame_start),
-              [stack_start] "r"(stack_start),
-              [program_entry] "r"(program_entry)
-            :);
-}
-
-void dynamic_linker_callback(void) {
-    __asm__("mov r10, r0\n");
-    size_t r0 = GET_REGISTER("r10");
-    size_t r1 = GET_REGISTER("r1");
-    size_t r2 = GET_REGISTER("r2");
-    size_t r3 = GET_REGISTER("r3");
-    size_t r4 = GET_REGISTER("r4");
-    size_t r5 = GET_REGISTER("r5");
-    size_t *got_entry = (size_t *)GET_REGISTER("r12");
-
-    LOADER_LOG(
-        "dynamically linking %x:%x from %x\n",
-        got_entry,
-        *got_entry,
-        dynamic_linker_callback
-    );
-
-    const struct RuntimeRelocation *runtime_relocation;
-    if (!find_runtime_relocation(
-            runtime_func_relocations,
-            runtime_func_relocations_len,
-            (size_t)got_entry,
-            &runtime_relocation
-        )) {
-        EXIT("relocation %x not found\n", got_entry);
-    }
-    if (!get_runtime_address(
-            runtime_relocation->name,
-            runtime_dyn_symbols,
-            runtime_dyn_symbols_len,
-            got_entry
-        )) {
-        EXIT("couldn't find runtime symbol '%s'\n", runtime_relocation->name);
-    }
-
-    LOADER_LOG(
-        "%x: %s(%x, %x, %x, %x, %x, %x)\n",
-        *got_entry,
-        runtime_relocation->name,
-        r0,
-        r1,
-        r2,
-        r3,
-        r4,
-        r5
-    );
-
     __asm__(
-        "mov r10, %0\n"
-        "mov r0, %1\n"
-        "mov r1, %2\n"
-        "mov r2, %3\n"
-        "mov r3, %4\n"
-        "mov r4, %5\n"
-        "mov r5, %6\n"
-        "mov sp, fp\n"
-        "pop {fp, r12, lr}\n"
-        "bx r10\n" ::"r"(*got_entry),
-        "r"(r0),
-        "r"(r1),
-        "r"(r2),
-        "r"(r3),
-        "r"(r4),
-        "r"(r5)
+
+        ".dynamic_callback_linux:\n"
+        "mov rdi, %[p1_rdi]\n"
+        "mov rsi, %[p2_rsi]\n"
+        "mov rdx, %[p3_rdx]\n"
+        "mov rcx, %[p4_rcx]\n"
+        "mov r8, %[p5_r8]\n"
+        "mov r9, %[p6_r9]\n"
+        "mov r12, %[r12]\n"
+        "mov r13, %[r13]\n"
+        "mov r14, %[r14]\n"
+        "mov r15, %[r15]\n"
+
+        "mov rbx, %[rbx]\n"
+        "mov rsp, rbp\n"
+        "pop rbp\n"
+        "add rsp, 16\n"
+        "jmp %[function_address]\n"
+        :
+        :
+
+        [function_address] "r"(runtime_symbol->value),
+        [p1_rdi] "m"(rdi),
+        [p2_rsi] "m"(rsi),
+        [p3_rdx] "m"(rdx),
+        [p4_rcx] "m"(rcx),
+        [p5_r8] "m"(r8),
+        [p6_r9] "m"(r9),
+        [rbx] "m"(rbx),
+        [r12] "m"(r12),
+        [r13] "m"(r13),
+        [r14] "m"(r14),
+        [r15] "m"(r15)
     );
 }
-
-#endif
 
 static bool initialize_dynamic_data(
     struct DynamicData *inferior_dyn_data,
@@ -707,17 +574,23 @@ int main(int32_t argc, char **argv) {
     };
 
     /* Jump to program */
-    size_t *frame_pointer = (size_t *)argv - 1;
-    size_t *inferior_frame_pointer = frame_pointer + 1;
-    *inferior_frame_pointer = (size_t)(argc - 1);
-    size_t *stack_start = inferior_frame_pointer;
-    LOADER_LOG("frame_pointer: %x\n", frame_pointer);
-    LOADER_LOG("stack_start: %x\n", stack_start);
+
+    size_t *inferior_stack = (size_t *)argv;
+    *inferior_stack = (size_t)(argc - 1);
+
+    LOADER_LOG("inferior_entry: %x\n", inferior_elf.header.e_entry);
+    LOADER_LOG("inferior_stack: %x\n", inferior_stack);
     LOADER_LOG("------------running program------------\n");
 
-    run_asm(
-        (size_t)inferior_frame_pointer,
-        (size_t)stack_start,
-        inferior_elf.header.e_entry
+    __asm__(
+
+        ".loader_run_asm:\n"
+        "mov rsp, %[inferior_stack]\n"
+        "jmp %[inferior_entry]\n"
+        :
+        :
+
+        [inferior_stack] "m"(inferior_stack),
+        [inferior_entry] "m"(inferior_elf.header.e_entry)
     );
 }

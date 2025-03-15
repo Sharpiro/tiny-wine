@@ -23,41 +23,6 @@ size_t initial_global_runtime_iat_region_base = 0;
 size_t got_lib_dyn_offset_table[100] = {};
 struct PreservedSwapState preserved_swap_state = {};
 
-static void run_asm(
-    [[maybe_unused]] size_t frame_start,
-    size_t stack_start,
-    size_t program_entry
-) {
-    __asm__("mov rbx, 0x00\n"
-            "mov rsp, %[stack_start]\n"
-
-            /* clear 'PF' flag */
-            "mov r15, 0xff\n"
-            "xor r15, 1\n"
-
-            "mov rax, 0x00\n"
-            "mov rcx, 0x00\n"
-            "mov rdx, 0x00\n"
-            "mov rsi, 0x00\n"
-            "mov rdi, 0x00\n"
-            "mov r8, 0x00\n"
-            "mov r9, 0x00\n"
-            "mov r10, 0x00\n"
-            "mov r11, 0x00\n"
-            "mov r12, 0x00\n"
-            "mov r13, 0x00\n"
-            "mov r14, 0x00\n"
-            "mov r15, 0x00\n"
-            :
-            : [stack_start] "r"(stack_start));
-
-    __asm__("mov rbp, 0x00\n"
-            "jmp %[program_entry]\n"
-            :
-            : [program_entry] "r"(program_entry)
-            : "rax");
-}
-
 /*
  * Dynamic callback from Linux to Linux
  */
@@ -114,7 +79,7 @@ static void dynamic_callback_linux(void) {
     LOADER_LOG("Completed dynamic linking to %x\n", runtime_symbol->value);
 
     __asm__(
-        /* */
+
         ".dynamic_callback_linux:\n"
         "mov rdi, %[p1_rdi]\n"
         "mov rsi, %[p2_rsi]\n"
@@ -130,21 +95,23 @@ static void dynamic_callback_linux(void) {
         "mov rbx, %[rbx]\n"
         "mov rsp, rbp\n"
         "pop rbp\n"
-        "add rsp, 16\n"
+        "add rsp, 16\n" // remove dynamic linking information
         "jmp %[function_address]\n"
         :
-        : [function_address] "r"(runtime_symbol->value),
-          [p1_rdi] "m"(rdi),
-          [p2_rsi] "m"(rsi),
-          [p3_rdx] "m"(rdx),
-          [p4_rcx] "m"(rcx),
-          [p5_r8] "m"(r8),
-          [p6_r9] "m"(r9),
-          [rbx] "m"(rbx),
-          [r12] "m"(r12),
-          [r13] "m"(r13),
-          [r14] "m"(r14),
-          [r15] "m"(r15)
+        :
+
+        [function_address] "r"(runtime_symbol->value),
+        [p1_rdi] "m"(rdi),
+        [p2_rsi] "m"(rsi),
+        [p3_rdx] "m"(rdx),
+        [p4_rcx] "m"(rcx),
+        [p5_r8] "m"(r8),
+        [p6_r9] "m"(r9),
+        [rbx] "m"(rbx),
+        [r12] "m"(r12),
+        [r13] "m"(r13),
+        [r14] "m"(r14),
+        [r15] "m"(r15)
     );
 }
 
@@ -659,12 +626,6 @@ static bool initialize_import_address_table(
     return true;
 }
 
-__attribute__((naked)) void win_loader_implicit_end(void) {
-    __asm__("mov rdi, rax\n"
-            "mov rax, 0x3c\n"
-            "syscall\n");
-}
-
 int main(int argc, char **argv) {
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -852,18 +813,26 @@ int main(int argc, char **argv) {
 
     /* Jump to program */
 
-    size_t *frame_pointer = (size_t *)argv - 1;
-    size_t *inferior_frame_pointer = frame_pointer + 1;
-    *inferior_frame_pointer = (size_t)(argc - 1);
-    size_t *stack_start = inferior_frame_pointer;
-    *stack_start = (size_t)win_loader_implicit_end;
-    LOADER_LOG("entrypoint: %x\n", pe_exe.entrypoint);
-    LOADER_LOG("frame_pointer: %x\n", frame_pointer);
-    LOADER_LOG("stack_start: %x\n", stack_start);
-    LOADER_LOG("end func: %x\n", *stack_start);
+    size_t *inferior_stack = (size_t *)argv;
+    *inferior_stack = (size_t)(argc - 1);
+
+    LOADER_LOG("inferior_entry: %x\n", pe_exe.entrypoint);
+    LOADER_LOG("inferior_stack: %x\n", inferior_stack);
     LOADER_LOG("------------running program------------\n");
 
-    run_asm(
-        (size_t)inferior_frame_pointer, (size_t)stack_start, pe_exe.entrypoint
+    // @todo: are we respecting 16 byte stack alignment?
+    if ((size_t)inferior_stack % 16 != 0) {
+        EXIT("Invalid windows stack alignment\n");
+    }
+    __asm__(
+
+        ".loader_run_asm:\n"
+        "mov rsp, %[inferior_stack]\n"
+        "jmp %[inferior_entry]\n"
+        :
+        :
+
+        [inferior_stack] "m"(inferior_stack),
+        [inferior_entry] "m"(pe_exe.entrypoint)
     );
 }
