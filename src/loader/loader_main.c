@@ -584,7 +584,7 @@ int main(int32_t argc, char **argv) {
 
     __asm__(
 
-        ".loader_run_asm:\n"
+        ".loader_jump_to_entry:\n"
         "mov rsp, %[inferior_stack]\n"
         "jmp %[inferior_entry]\n"
         :

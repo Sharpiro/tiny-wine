@@ -4,8 +4,8 @@
 int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
-int main(int argc, char **argv) {
-    printf("%d, %s\n", argc, *argv);
+// @todo: args don't work
+int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
     printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
     printf("pow: %d\n", (int32_t)pow(2, 4));
 

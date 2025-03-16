@@ -293,6 +293,7 @@ static void dynamic_callback_windows(void) {
 
             /* Convert to linux stack frame */
 
+            ".loader_dynamic_callback_windows_swap:\n"
             "pop rbx\n"     // Save return address
             "add rsp, 32\n" // Remove frame padding
             "add rsp, 16\n" // Remove stack params 5 & 6
@@ -341,6 +342,7 @@ static void dynamic_callback_windows(void) {
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 8\n" // Remove dynamic trampoline address
+            ".loader_dynamic_callback_windows:\n"
             "jmp %[function_address]\n"
             :
             : [function_address] "r"(function_export.address),
@@ -626,6 +628,15 @@ static bool initialize_import_address_table(
     return true;
 }
 
+__attribute__((naked)) void win_loader_implicit_end(void) {
+    __asm__(
+
+        "mov rdi, rax\n"
+        "mov rax, 0x3c\n"
+        "syscall\n"
+    );
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -811,22 +822,23 @@ int main(int argc, char **argv) {
         EXIT("tinyc_sys_arch_prctl failed\n");
     }
 
+    /* @todo: setup inferior argv */
+
     /* Jump to program */
 
     size_t *inferior_stack = (size_t *)argv;
-    *inferior_stack = (size_t)(argc - 1);
+    *inferior_stack = (size_t)win_loader_implicit_end;
+    if ((size_t)inferior_stack % 16 != 8) {
+        EXIT("Windows stack pointer modulo 16 must be 8 at function start\n");
+    }
 
     LOADER_LOG("inferior_entry: %x\n", pe_exe.entrypoint);
     LOADER_LOG("inferior_stack: %x\n", inferior_stack);
     LOADER_LOG("------------running program------------\n");
 
-    // @todo: are we respecting 16 byte stack alignment?
-    if ((size_t)inferior_stack % 16 != 0) {
-        EXIT("Invalid windows stack alignment\n");
-    }
     __asm__(
 
-        ".loader_run_asm:\n"
+        ".loader_jump_to_entry:\n"
         "mov rsp, %[inferior_stack]\n"
         "jmp %[inferior_entry]\n"
         :
