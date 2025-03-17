@@ -26,7 +26,7 @@ static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
 void DllMainCRTStartup(void) {
 }
 
-EXPORTABLE char *_acmdln;
+EXPORTABLE char *_acmdln = "always be closing";
 
 EXPORTABLE size_t strlen(const char *data) {
     if (data == NULL) {
@@ -391,14 +391,21 @@ EXPORTABLE int32_t vfprintf(
     return 0;
 }
 
-EXPORTABLE void ___lc_codepage_func() {
+/* Returns the code page identifier for the current locale */
+EXPORTABLE int ___lc_codepage_func() {
     fprintf(stderr, "___lc_codepage_func unimplemented\n");
     exit(42);
+    // const int CODE_PAGE_WINDOWS = 1252;
+    // const int CODE_PAGE_UTF8 = 65001;
+    // return CODE_PAGE_WINDOWS;
 }
 
-EXPORTABLE void ___mb_cur_max_func() {
+/* Returns the maximum number of bytes in a multibyte character for the current
+ * locale */
+EXPORTABLE int ___mb_cur_max_func() {
     fprintf(stderr, "___mb_cur_max_func unimplemented\n");
     exit(42);
+    // return 1;
 }
 
 EXPORTABLE int32_t *_errno() {
@@ -457,7 +464,15 @@ EXPORTABLE void strerror() {
     exit(42);
 }
 
-EXPORTABLE void wcslen() {
-    fprintf(stderr, "wcslen unimplemented\n");
-    exit(42);
+// @todo: wchar_t vs uint16_t since windows only
+/* Wide C-string length */
+EXPORTABLE size_t wcslen(const wchar_t *s) {
+    size_t length = 0;
+    for (size_t i = 0; true; i++) {
+        if (s[i] == 0) {
+            break;
+        }
+        length += 1;
+    }
+    return length;
 }

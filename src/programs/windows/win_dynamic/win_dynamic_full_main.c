@@ -1,18 +1,55 @@
 // #include "win_dynamic_lib_full.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
+// #include "../../../dlls/win_type.h"
+// #include <stddef.h>
+// #include <stdint.h>
+// #include <stdio.h>
 // #include <stdlib.h>
+// #include <wchar.h>
 
 // int32_t exe_global_var_bss = 0;
 // int32_t exe_global_var_data = 42;
 
 // @todo: args don't work
-int main(int argc, char **argv) {
-    printf("%d, %#zx, %#zx, %s\n", argc, (size_t)argv, (size_t)*argv, *argv);
-    // for (int i = 0; i < argc; i++) {
-    //     printf("%s\n", argv[i]);
-    // }
+
+// char *to_char_pointer(wchar_t *data) {
+//     size_t length = wcslen(data);
+//     char *buffer = malloc(length + 1);
+//     size_t i;
+//     for (i = 0; i < length; i++) {
+//         buffer[i] = (char)data[i];
+//     }
+//     buffer[i] = 0x00;
+//     return buffer;
+// }
+
+// extern char *_acmdln;
+
+int main(int argc, char **argv, char **envp) {
+    return argc;
+    // size_t *argv_ref = (size_t *)0x14000c020;
+    // size_t *argc_ref = (size_t *)0x14000c028;
+    // printf("argv %p, %zx\n", argv_ref, *argv_ref);
+    // printf("argc %p, %zx\n", argc_ref, *argc_ref);
+    // printf(
+    //     "args: %d, %#zx, %#zx, %s\n", argc, (size_t)argv, (size_t)*argv,
+    //     *argv
+    // );
+    // TEB *teb = NULL;
+    // __asm__("mov %0, gs:[0x30]\n" : "=r"(teb));
+    // printf("teb: %p, %p\n", teb, teb->Reserved1[0]);
+    // printf("_acmdln: %s\n", _acmdln);
+
+    // UNICODE_STRING *image_path_name =
+    //     &teb->ProcessEnvironmentBlock->ProcessParameters->ImagePathName;
+    // printf(
+    //     "teb: %p, %d, %d\n",
+    //     teb,
+    //     image_path_name->Length,
+    //     image_path_name->MaximumLength
+    // );
+    // char *idk = to_char_pointer((wchar_t *)image_path_name->Buffer);
+    // printf("image_path_name: %s\n", idk);
+
     // printf("%d, %s\n", argc, *argv);
     // printf("look how far we've come\n");
     // printf(

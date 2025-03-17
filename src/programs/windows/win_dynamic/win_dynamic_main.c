@@ -6,7 +6,12 @@
 
 // @todo: args don't work
 int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
-    printf("%d, %s\n", argc, *argv);
+    // int main() {
+    // TEB *teb = NULL;
+    // size_t *teb = NULL;
+    // __asm__("move %0, gs:[0x30]\n" : "=r"(teb));
+    // printf("teb: %p\n", teb);
+    // printf("%d, %s\n", argc, *argv);
     // printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
     // printf("pow: %d\n", (int32_t)pow(2, 4));
 

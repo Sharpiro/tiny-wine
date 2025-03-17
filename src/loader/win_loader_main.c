@@ -638,44 +638,6 @@ __attribute__((naked)) void win_loader_implicit_end(void) {
     );
 }
 
-typedef struct _UNICODE_STRING {
-    USHORT Length;
-    USHORT MaximumLength;
-    PWSTR Buffer;
-} UNICODE_STRING;
-
-typedef struct _RTL_USER_PROCESS_PARAMETERS {
-    BYTE Reserved1[16];
-    PVOID Reserved2[10];
-    UNICODE_STRING ImagePathName;
-    UNICODE_STRING CommandLine;
-} RTL_USER_PROCESS_PARAMETERS, *PRTL_USER_PROCESS_PARAMETERS;
-
-typedef struct _PEB {
-    BYTE Reserved1[2];
-    BYTE BeingDebugged;
-    BYTE Reserved2[21];
-    PVOID LoaderData;
-    PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
-    BYTE Reserved3[520];
-    PVOID PostProcessInitRoutine;
-    BYTE Reserved4[136];
-    ULONG SessionId;
-} PEB, *PPEB;
-
-typedef struct _TEB {
-    PVOID Reserved1[12];
-    PPEB ProcessEnvironmentBlock;
-    PVOID Reserved2[399];
-    BYTE Reserved3[1952];
-    PVOID TlsSlots[64];
-    BYTE Reserved4[8];
-    PVOID Reserved5[26];
-    PVOID ReservedForOle;
-    PVOID Reserved6[4];
-    PVOID TlsExpansionSlots;
-} TEB, *PTEB;
-
 int main(int argc, char **argv) {
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -857,51 +819,55 @@ int main(int argc, char **argv) {
     if ((size_t)gs_region == (size_t)MAP_FAILED) {
         EXIT("tls_buffer memory regions failed\n");
     }
-    // uint8_t *thread_region = (uint8_t *)tiny_c_mmap(
-    //     0, 0x2000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
-    // );
-    // if ((size_t)thread_region == (size_t)MAP_FAILED) {
-    //     EXIT("tls_buffer memory regions failed\n");
-    // }
-    WCHAR *cmd = loader_malloc_arena(sizeof(WCHAR));
+    memset(gs_region, 0xff, 0x1000);
+
+    USHORT cmd_len = 3;
+    WCHAR *cmd = loader_malloc_arena(sizeof(WCHAR) * (cmd_len + 1));
     if (cmd == NULL) {
         EXIT("cmd memory init failed\n");
     }
+    memset(cmd, 0xff, sizeof(WCHAR) * (cmd_len + 1));
     RTL_USER_PROCESS_PARAMETERS *params =
         loader_malloc_arena(sizeof(RTL_USER_PROCESS_PARAMETERS));
     if (params == NULL) {
         EXIT("params memory init failed\n");
     }
+    memset(params, 0xff, sizeof(RTL_USER_PROCESS_PARAMETERS));
     PEB *peb = loader_malloc_arena(sizeof(PEB));
     if (peb == NULL) {
         EXIT("peb memory init failed\n");
     }
+    memset(peb, 0xff, sizeof(PEB));
     TEB *teb = loader_malloc_arena(sizeof(TEB));
     if (teb == NULL) {
         EXIT("teb memory init failed\n");
     }
+    memset(teb, 0xff, sizeof(TEB));
 
-    *cmd = 42;
-    *params = (RTL_USER_PROCESS_PARAMETERS){
-        .ImagePathName =
-            {
-                .Length = 1,
-                .MaximumLength = 1,
-                .Buffer = cmd,
-            },
-        .CommandLine =
-            {
-                .Length = 1,
-                .MaximumLength = 1,
-                .Buffer = cmd,
-            },
-    };
-    *peb = (PEB){
-        .ProcessParameters = params,
-    };
-    *teb = (TEB){
-        .ProcessEnvironmentBlock = peb,
-    };
+    // cmd[0] = 'A';
+    // cmd[1] = 'B';
+    // cmd[2] = 'C';
+    // cmd[3] = 0x00;
+    // *params = (RTL_USER_PROCESS_PARAMETERS){
+    //     .ImagePathName =
+    //         {
+    //             .Length = cmd_len,
+    //             .MaximumLength = cmd_len,
+    //             .Buffer = cmd,
+    //         },
+    //     .CommandLine =
+    //         {
+    //             .Length = 11,
+    //             .MaximumLength = 12,
+    //             .Buffer = cmd,
+    //         },
+    // };
+    // *peb = (PEB){
+    //     .ProcessParameters = params,
+    // };
+    // *teb = (TEB){
+    //     .ProcessEnvironmentBlock = peb,
+    // };
 
     gs_region[0x30 / sizeof(uint64_t)] = (size_t)teb;
     gs_region[0x60 / sizeof(uint64_t)] = (size_t)peb;
