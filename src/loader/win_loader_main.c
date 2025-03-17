@@ -1,4 +1,5 @@
 #include "../dlls/macros.h"
+#include "../dlls/win_type.h"
 #include "../tiny_c/tiny_c.h"
 #include "../tiny_c/tinyc_sys.h"
 #include "./pe_tools.h"
@@ -637,6 +638,44 @@ __attribute__((naked)) void win_loader_implicit_end(void) {
     );
 }
 
+typedef struct _UNICODE_STRING {
+    USHORT Length;
+    USHORT MaximumLength;
+    PWSTR Buffer;
+} UNICODE_STRING;
+
+typedef struct _RTL_USER_PROCESS_PARAMETERS {
+    BYTE Reserved1[16];
+    PVOID Reserved2[10];
+    UNICODE_STRING ImagePathName;
+    UNICODE_STRING CommandLine;
+} RTL_USER_PROCESS_PARAMETERS, *PRTL_USER_PROCESS_PARAMETERS;
+
+typedef struct _PEB {
+    BYTE Reserved1[2];
+    BYTE BeingDebugged;
+    BYTE Reserved2[21];
+    PVOID LoaderData;
+    PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
+    BYTE Reserved3[520];
+    PVOID PostProcessInitRoutine;
+    BYTE Reserved4[136];
+    ULONG SessionId;
+} PEB, *PPEB;
+
+typedef struct _TEB {
+    PVOID Reserved1[12];
+    PPEB ProcessEnvironmentBlock;
+    PVOID Reserved2[399];
+    BYTE Reserved3[1952];
+    PVOID TlsSlots[64];
+    BYTE Reserved4[8];
+    PVOID Reserved5[26];
+    PVOID ReservedForOle;
+    PVOID Reserved6[4];
+    PVOID TlsExpansionSlots;
+} TEB, *PTEB;
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         tiny_c_fprintf(STDERR, "Filename required\n", argc);
@@ -811,14 +850,64 @@ int main(int argc, char **argv) {
 
     /* Thread Local Storage init */
 
-    const size_t GS_OFFSET = 0x30;
-    size_t *tls_buffer = loader_malloc_arena(GS_OFFSET + sizeof(uint64_t));
-    if (tls_buffer == NULL) {
-        EXIT("TLS memory init failed\n");
+    // const size_t GS_OFFSET = 0x30;
+    size_t *gs_region = (size_t *)tiny_c_mmap(
+        0, 0x1000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
+    );
+    if ((size_t)gs_region == (size_t)MAP_FAILED) {
+        EXIT("tls_buffer memory regions failed\n");
+    }
+    // uint8_t *thread_region = (uint8_t *)tiny_c_mmap(
+    //     0, 0x2000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
+    // );
+    // if ((size_t)thread_region == (size_t)MAP_FAILED) {
+    //     EXIT("tls_buffer memory regions failed\n");
+    // }
+    WCHAR *cmd = loader_malloc_arena(sizeof(WCHAR));
+    if (cmd == NULL) {
+        EXIT("cmd memory init failed\n");
+    }
+    RTL_USER_PROCESS_PARAMETERS *params =
+        loader_malloc_arena(sizeof(RTL_USER_PROCESS_PARAMETERS));
+    if (params == NULL) {
+        EXIT("params memory init failed\n");
+    }
+    PEB *peb = loader_malloc_arena(sizeof(PEB));
+    if (peb == NULL) {
+        EXIT("peb memory init failed\n");
+    }
+    TEB *teb = loader_malloc_arena(sizeof(TEB));
+    if (teb == NULL) {
+        EXIT("teb memory init failed\n");
     }
 
-    tls_buffer[GS_OFFSET / sizeof(uint64_t)] = (size_t)tls_buffer;
-    if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)tls_buffer) != 0) {
+    *cmd = 42;
+    *params = (RTL_USER_PROCESS_PARAMETERS){
+        .ImagePathName =
+            {
+                .Length = 1,
+                .MaximumLength = 1,
+                .Buffer = cmd,
+            },
+        .CommandLine =
+            {
+                .Length = 1,
+                .MaximumLength = 1,
+                .Buffer = cmd,
+            },
+    };
+    *peb = (PEB){
+        .ProcessParameters = params,
+    };
+    *teb = (TEB){
+        .ProcessEnvironmentBlock = peb,
+    };
+
+    gs_region[0x30 / sizeof(uint64_t)] = (size_t)teb;
+    gs_region[0x60 / sizeof(uint64_t)] = (size_t)peb;
+    // thread_region[0x30 / sizeof(uint64_t)] = (size_t)thread_region;
+    // *(thread_region + 0x30) = (size_t)thread_region;
+    if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)gs_region) != 0) {
         EXIT("tinyc_sys_arch_prctl failed\n");
     }
 

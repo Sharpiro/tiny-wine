@@ -1,7 +1,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef int16_t WORD;
+typedef uint8_t BYTE;
+typedef int16_t SHORT;
+typedef uint16_t WORD, USHORT;
 typedef int32_t LONG, NTSTATUS;
 typedef uint32_t DWORD, ULONG;
 typedef int64_t LONGLONG;
@@ -9,6 +11,8 @@ typedef uint64_t ULONGLONG, ULONG_PTR;
 typedef void *HANDLE, *PVOID, *LPVOID;
 typedef uint32_t *PULONG, *PDWORD;
 typedef size_t SIZE_T;
+typedef wchar_t WCHAR;
+typedef WCHAR *PWSTR;
 
 typedef union _ULARGE_INTEGER {
     struct {
