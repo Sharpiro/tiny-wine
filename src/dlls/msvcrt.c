@@ -26,7 +26,7 @@ static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
 void DllMainCRTStartup(void) {
 }
 
-EXPORTABLE char *_acmdln = "always be closing";
+EXPORTABLE char *_acmdln = "something else";
 
 EXPORTABLE size_t strlen(const char *data) {
     if (data == NULL) {
@@ -272,9 +272,28 @@ EXPORTABLE void __C_specific_handler() {
     exit(42);
 }
 
-EXPORTABLE void __getmainargs() {
-    fprintf(stderr, "__getmainarg unimplemented\n");
-    exit(42);
+// char *arg1 = "broski";
+// char *arg2 = "nopeski";
+char *arg_vector[] = {"always", "be", "closing"};
+
+/**
+ * @param do_wild_card If nonzero, enables wildcard expansion for command-line
+ arguments (only relevant in certain CRT implementations).
+ * @param start_info Reserved for interanl use.
+ */
+EXPORTABLE int __getmainargs(
+    int *pargc,
+    char ***pargv,
+    [[maybe_unused]] char ***penvp,
+    [[maybe_unused]] int do_wild_card,
+    [[maybe_unused]] void *start_info
+) {
+    // fprintf(stderr, "__getmainarg unimplemented\n");
+    // exit(42);
+    const size_t ARGC = sizeof(arg_vector) / sizeof(*arg_vector);
+    *pargc = ARGC;
+    *pargv = arg_vector;
+    return 0;
 }
 
 EXPORTABLE void __initenv() {
@@ -287,9 +306,10 @@ EXPORTABLE void __lconv_init() {
     exit(42);
 }
 
-EXPORTABLE void __set_app_type() {
-    fprintf(stderr, "__set_app_type unimplemented\n");
-    exit(42);
+/**
+ * Informs runtime if app is console or gui.
+ */
+EXPORTABLE void __set_app_type([[maybe_unused]] int type) {
 }
 
 EXPORTABLE void __setusermatherr() {
@@ -317,7 +337,20 @@ EXPORTABLE void _fmode() {
     exit(42);
 }
 
-EXPORTABLE void _initterm() {
+typedef void (*_PVFV)(void);
+
+/**
+ * Initializes app with an array of functions
+ */
+EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
+    size_t len = (size_t)(last - first);
+    for (size_t i = 0; i < len; i++) {
+        _PVFV func = first[i];
+        if (func == NULL) {
+            continue;
+        }
+        func();
+    }
 }
 
 EXPORTABLE void _onexit([[maybe_unused]] void (*func)()) {
