@@ -21,6 +21,8 @@ typedef struct _WinFileInternal {
 #define stdout ((FILE *)((_WinFileInternal *)__iob_func() + 1))
 #define stderr ((FILE *)((_WinFileInternal *)__iob_func() + 2))
 
+extern char *_acmdln;
+
 void *__iob_func();
 
 double pow(double x, double y);
@@ -36,3 +38,5 @@ int32_t puts(const char *data);
 int32_t fileno(FILE *file);
 
 void *malloc(size_t n);
+
+size_t wcslen(const wchar_t *s);

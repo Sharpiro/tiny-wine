@@ -526,3 +526,18 @@ void print_buffer(uint8_t *buffer, size_t length) {
     }
     tiny_c_printf("\n");
 }
+
+size_t tinyc_strlen(const char *data) {
+    if (data == NULL) {
+        return 0;
+    }
+
+    size_t len = 0;
+    for (size_t i = 0; true; i++) {
+        if (data[i] == 0) {
+            break;
+        }
+        len++;
+    }
+    return len;
+}

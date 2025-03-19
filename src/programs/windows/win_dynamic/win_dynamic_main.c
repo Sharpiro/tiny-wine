@@ -4,8 +4,44 @@
 // int32_t exe_global_var_bss = 0;
 // int32_t exe_global_var_data = 42;
 
+// @todo: duped
+char *to_char_pointer(wchar_t *data) {
+    size_t length = wcslen(data);
+    char *buffer = malloc(length + 1);
+    size_t i;
+    for (i = 0; i < length; i++) {
+        buffer[i] = (char)data[i];
+    }
+    buffer[i] = 0x00;
+    return buffer;
+}
+
 // @todo: args don't work
 int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
+    // printf("args: %d, %zx: ", argc, (size_t)argv);
+    // for (int i = 0; i < argc; i++) {
+    //     printf("'%s', ", argv[i]);
+    // }
+    // printf("\n");
+
+    printf("_acmdln: %p, '%s'\n", _acmdln, _acmdln);
+
+    TEB *teb = NULL;
+    __asm__("mov %0, gs:[0x30]\n" : "=r"(teb));
+    UNICODE_STRING *command_line =
+        &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
+    printf(
+        "teb: %p, %d, %d\n",
+        teb,
+        command_line->Length,
+        command_line->MaximumLength
+    );
+    printf(
+        "command_line: %p, '%s'\n",
+        command_line->Buffer,
+        to_char_pointer((wchar_t *)command_line->Buffer)
+    );
+
     // int main() {
     // TEB *teb = NULL;
     // size_t *teb = NULL;

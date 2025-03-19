@@ -810,18 +810,17 @@ int main(int argc, char **argv) {
 
     log_memory_regions();
 
-    /* Thread Local Storage init */
+    /* Thread Local Storage and process params init */
 
-    // const size_t GS_OFFSET = 0x30;
-    size_t *gs_region = (size_t *)tiny_c_mmap(
-        0, 0x1000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
-    );
-    if ((size_t)gs_region == (size_t)MAP_FAILED) {
-        EXIT("tls_buffer memory regions failed\n");
+    size_t *gs_mem = loader_malloc_arena(0x100);
+    if (gs_mem == NULL) {
+        EXIT("gs_region memory init failed\n");
     }
-
-    USHORT cmd_len = 3;
-    WCHAR *cmd = loader_malloc_arena(sizeof(WCHAR) * (cmd_len + 1));
+    if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)gs_mem) != 0) {
+        EXIT("tinyc_sys_arch_prctl failed\n");
+    }
+    USHORT CMD_MAX_LEN = 0x100;
+    WCHAR *cmd = loader_malloc_arena(sizeof(WCHAR) * CMD_MAX_LEN);
     if (cmd == NULL) {
         EXIT("cmd memory init failed\n");
     }
@@ -839,21 +838,36 @@ int main(int argc, char **argv) {
         EXIT("teb memory init failed\n");
     }
 
-    cmd[0] = 'A';
-    cmd[1] = 'B';
-    cmd[2] = 'C';
-    cmd[3] = 0x00;
+    size_t *inferior_stack = (size_t *)argv;
+    if ((size_t)inferior_stack % 16 != 8) {
+        EXIT("Windows stack pointer modulo 16 must be 8 at function start\n");
+    }
+
+    size_t cmd_len = 0;
+    size_t inferior_argc = (size_t)argc - 1;
+    for (size_t i = 0; i < inferior_argc; i++) {
+        char *string = argv[i + 1];
+        size_t string_len = tinyc_strlen(string);
+        LOADER_LOG("stack arg %d: %s\n", i, string);
+        for (size_t i = 0; i < string_len; i++) {
+            cmd[cmd_len] = (WCHAR)string[i];
+            cmd_len += 1;
+        }
+        if (i + 1 != inferior_argc) {
+            cmd[cmd_len] = ' ';
+            cmd_len += 1;
+        }
+    }
+
+    if (cmd_len >= CMD_MAX_LEN) {
+        EXIT("Command line length exceeded max %d\n", CMD_MAX_LEN);
+    }
+
     *params = (RTL_USER_PROCESS_PARAMETERS){
-        .ImagePathName =
-            {
-                .Length = cmd_len,
-                .MaximumLength = cmd_len,
-                .Buffer = cmd,
-            },
         .CommandLine =
             {
-                .Length = 11,
-                .MaximumLength = 12,
+                .Length = (USHORT)cmd_len,
+                .MaximumLength = CMD_MAX_LEN,
                 .Buffer = cmd,
             },
     };
@@ -864,23 +878,12 @@ int main(int argc, char **argv) {
         .ProcessEnvironmentBlock = peb,
     };
 
-    gs_region[0x30 / sizeof(uint64_t)] = (size_t)teb;
-    gs_region[0x60 / sizeof(uint64_t)] = (size_t)peb;
-    // thread_region[0x30 / sizeof(uint64_t)] = (size_t)thread_region;
-    // *(thread_region + 0x30) = (size_t)thread_region;
-    if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)gs_region) != 0) {
-        EXIT("tinyc_sys_arch_prctl failed\n");
-    }
-
-    /* @todo: setup inferior argv */
+    gs_mem[0x30 / sizeof(uint64_t)] = (size_t)teb;
+    gs_mem[0x60 / sizeof(uint64_t)] = (size_t)peb;
 
     /* Jump to program */
 
-    size_t *inferior_stack = (size_t *)argv;
     *inferior_stack = (size_t)win_loader_implicit_end;
-    if ((size_t)inferior_stack % 16 != 8) {
-        EXIT("Windows stack pointer modulo 16 must be 8 at function start\n");
-    }
 
     LOADER_LOG("inferior_entry: %x\n", pe_exe.entrypoint);
     LOADER_LOG("inferior_stack: %x\n", inferior_stack);

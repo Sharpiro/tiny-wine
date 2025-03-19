@@ -87,3 +87,5 @@ off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence);
     })
 
 #endif
+
+size_t tinyc_strlen(const char *data);

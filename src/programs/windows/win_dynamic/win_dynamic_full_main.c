@@ -11,6 +11,7 @@
 
 // @todo: args don't work
 
+// @todo: duped
 char *to_char_pointer(wchar_t *data) {
     size_t length = wcslen(data);
     char *buffer = malloc(length + 1);
@@ -25,40 +26,29 @@ char *to_char_pointer(wchar_t *data) {
 extern char *_acmdln;
 
 int main(int argc, char **argv, [[maybe_unused]] char **envp) {
-    // return argc;
-    // size_t *argv_ref = (size_t *)0x14000c020;
-    // size_t *argc_ref = (size_t *)0x14000c028;
-    // printf("argv %p, %zx\n", argv_ref, *argv_ref);
-    // printf("argc %p, %zx\n", argc_ref, *argc_ref);
+    printf("args: %d, %zx: ", argc, (size_t)argv);
+    for (int i = 0; i < argc; i++) {
+        printf("'%s', ", argv[i]);
+    }
+    printf("\n");
 
-    printf("stack: %#zx\n", (size_t)&argc);
-    printf("heap: %#zx\n", (size_t)malloc(0x10));
-    printf(
-        "args: %d, %#zx, %#zx, '%s'\n", argc, (size_t)argv, (size_t)*argv, *argv
-    );
-
-    // for (int i = 0; i < argc; i++) {
-    //     printf("arg: %d/%d, '%s'\n", i + 1, argc, argv[i]);
-    // }
-
-    // _acmdln = "idk bro";
-    *_acmdln = '*';
     printf("_acmdln: %p, '%s'\n", _acmdln, _acmdln);
 
     TEB *teb = NULL;
     __asm__("mov %0, gs:[0x30]\n" : "=r"(teb));
-
-    UNICODE_STRING *command_line =
-        &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
+    PEB *peb = NULL;
+    __asm__("mov %0, gs:[0x60]\n" : "=r"(peb));
+    // UNICODE_STRING *command_line =
+    //     &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
+    UNICODE_STRING *command_line = &peb->ProcessParameters->CommandLine;
+    // printf(
+    //     "teb: %p, %d, %d\n",
+    //     teb,
+    //     command_line->Length,
+    //     command_line->MaximumLength
+    // );
     printf(
-        "teb: %p, %d, %d\n",
-        teb,
-        command_line->Length,
-        command_line->MaximumLength
-    );
-    command_line->Buffer[0] = '$';
-    printf(
-        "image_path_name: %p, '%s'\n",
+        "command_line: %p, '%s'\n",
         command_line->Buffer,
         to_char_pointer((wchar_t *)command_line->Buffer)
     );

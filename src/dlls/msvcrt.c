@@ -26,7 +26,7 @@ static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
 void DllMainCRTStartup(void) {
 }
 
-EXPORTABLE char *_acmdln = "something else";
+EXPORTABLE char *_acmdln = NULL;
 
 EXPORTABLE size_t strlen(const char *data) {
     if (data == NULL) {
@@ -204,6 +204,12 @@ static void fprintf_internal(
             print(file_handle, data);
             break;
         }
+        case 'c': {
+            char data = va_arg(var_args, char);
+            // @todo: not a real char pointer
+            print(file_handle, &data);
+            break;
+        }
         case 'p':
         case 'x': {
             size_t data = print_item.is_large_formatter
@@ -276,34 +282,16 @@ EXPORTABLE void __C_specific_handler() {
 // char *arg2 = "nopeski";
 char *arg_vector[] = {"always", "be", "closing"};
 
-/**
- * @param do_wild_card If nonzero, enables wildcard expansion for command-line
- arguments (only relevant in certain CRT implementations).
- * @param start_info Reserved for interanl use.
- */
-EXPORTABLE int __getmainargs(
-    int *pargc,
-    char ***pargv,
-    [[maybe_unused]] char ***penvp,
-    [[maybe_unused]] int do_wild_card,
-    [[maybe_unused]] void *start_info
-) {
-    // fprintf(stderr, "__getmainarg unimplemented\n");
-    // exit(42);
-    const size_t ARGC = sizeof(arg_vector) / sizeof(*arg_vector);
-    *pargc = ARGC;
-    *pargv = arg_vector;
-    return 0;
-}
-
 EXPORTABLE void __initenv() {
     fprintf(stderr, "__initenv unimplemented\n");
     exit(42);
 }
 
-EXPORTABLE void __lconv_init() {
-    fprintf(stderr, "__lconv_init unimplemented\n");
-    exit(42);
+/**
+ * Initialize locale-specific information.
+ */
+EXPORTABLE int __lconv_init() {
+    return 0;
 }
 
 /**
@@ -337,39 +325,6 @@ EXPORTABLE void _fmode() {
     exit(42);
 }
 
-typedef void (*_PVFV)(void);
-
-/**
- * Initializes app with an array of functions
- */
-EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
-    size_t len = (size_t)(last - first);
-    for (size_t i = 0; i < len; i++) {
-        _PVFV func = first[i];
-        if (func == NULL) {
-            continue;
-        }
-        func();
-    }
-}
-
-EXPORTABLE void _onexit([[maybe_unused]] void (*func)()) {
-}
-
-EXPORTABLE void abort() {
-    NtTerminateProcess((HANDLE)-1, 3);
-}
-
-EXPORTABLE void calloc() {
-    fprintf(stderr, "calloc unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void free() {
-    fprintf(stderr, "free unimplemented\n");
-    exit(42);
-}
-
 // @note: fake malloc that leaks memory
 EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
@@ -392,6 +347,121 @@ EXPORTABLE void *malloc(size_t n) {
     heap_index += n;
 
     return address;
+}
+
+// @todo: wchar_t vs uint16_t since windows only
+/* Wide C-string length */
+EXPORTABLE size_t wcslen(const wchar_t *s) {
+    size_t length = 0;
+    for (size_t i = 0; true; i++) {
+        if (s[i] == 0) {
+            break;
+        }
+        length += 1;
+    }
+    return length;
+}
+
+// @todo: duped
+char *to_char_pointer(wchar_t *data) {
+    size_t length = wcslen(data);
+    char *buffer = malloc(length + 1);
+    size_t i;
+    for (i = 0; i < length; i++) {
+        buffer[i] = (char)data[i];
+    }
+    buffer[i] = 0x00;
+    return buffer;
+}
+
+typedef void (*_PVFV)(void);
+
+/**
+ * Initializes app with an array of functions
+ */
+EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
+    TEB *teb = NULL;
+    __asm__("mov %0, gs:[0x30]\n" : "=r"(teb));
+    UNICODE_STRING *command_line =
+        &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
+    _acmdln = to_char_pointer((wchar_t *)command_line->Buffer);
+
+    size_t len = (size_t)(last - first);
+    for (size_t i = 0; i < len; i++) {
+        _PVFV func = first[i];
+        if (func == NULL) {
+            continue;
+        }
+        fprintf(stderr, "DEBUG: _initterm func %zd\n", i);
+        func();
+    }
+}
+
+/**
+ * Locate character in string
+ */
+char *strchrnul(const char *string, int c) {
+    size_t string_len = strlen(string);
+    for (size_t i = 0; i < string_len; i++) {
+        if (string[i] == c) {
+            return (char *)(string + i);
+        }
+    }
+    return (char *)(string + string_len);
+}
+
+/**
+ * @param do_wild_card If nonzero, enables wildcard expansion for
+ command-line arguments (only relevant in certain CRT implementations).
+ * @param start_info Reserved for interanl use.
+ */
+EXPORTABLE int __getmainargs(
+    int *pargc,
+    char ***pargv,
+    [[maybe_unused]] char ***penvp,
+    [[maybe_unused]] int do_wild_card,
+    [[maybe_unused]] void *start_info
+) {
+    char *current_cmd = _acmdln;
+    while (true) {
+        size_t start = (size_t)current_cmd;
+        current_cmd = strchrnul(current_cmd, ' ');
+        size_t end = (size_t)current_cmd;
+
+        fprintf(
+            stderr,
+            "\nDEBUG: current_word: %zd, %zd, %s\n",
+            start - (size_t)_acmdln,
+            end - (size_t)_acmdln,
+            (char *)start
+        );
+
+        if (*current_cmd == 0x00) {
+            break;
+        }
+        current_cmd += 1;
+    }
+
+    *pargc = 1;
+    *pargv = &_acmdln;
+    return 0;
+}
+
+EXPORTABLE void _onexit([[maybe_unused]] void (*func)()) {
+}
+
+EXPORTABLE void abort() {
+    NtTerminateProcess((HANDLE)-1, 3);
+}
+
+EXPORTABLE void calloc() {
+    fprintf(stderr, "calloc unimplemented\n");
+    exit(42);
+}
+
+EXPORTABLE void free() {
+    fprintf(stderr, "free unimplemented\n");
+    exit(42);
 }
 
 EXPORTABLE void *memcpy(
@@ -433,8 +503,8 @@ EXPORTABLE int ___lc_codepage_func() {
     // return CODE_PAGE_WINDOWS;
 }
 
-/* Returns the maximum number of bytes in a multibyte character for the current
- * locale */
+/* Returns the maximum number of bytes in a multibyte character for the
+ * current locale */
 EXPORTABLE int ___mb_cur_max_func() {
     fprintf(stderr, "___mb_cur_max_func unimplemented\n");
     exit(42);
@@ -495,17 +565,4 @@ EXPORTABLE void *memset(void *s_buffer, int32_t c_value, size_t n_count) {
 EXPORTABLE void strerror() {
     fprintf(stderr, "strerror unimplemented\n");
     exit(42);
-}
-
-// @todo: wchar_t vs uint16_t since windows only
-/* Wide C-string length */
-EXPORTABLE size_t wcslen(const wchar_t *s) {
-    size_t length = 0;
-    for (size_t i = 0; true; i++) {
-        if (s[i] == 0) {
-            break;
-        }
-        length += 1;
-    }
-    return length;
 }
