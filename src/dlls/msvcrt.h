@@ -21,8 +21,6 @@ typedef struct _WinFileInternal {
 #define stdout ((FILE *)((_WinFileInternal *)__iob_func() + 1))
 #define stderr ((FILE *)((_WinFileInternal *)__iob_func() + 2))
 
-extern char *_acmdln;
-
 void *__iob_func();
 
 double pow(double x, double y);

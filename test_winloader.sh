@@ -11,6 +11,8 @@ assert() {
 # Dynamic Test
 
 expected=`cat <<EOF
+'./windynamic.exe', 'a', 'b', 'c'
+large params: 1, 2, 3, 4, 5, 6, 7, 8
 uint32: 12345678, uint64: 1234567812345678
 pow: 16
 exe_global_var_bss: 0
@@ -31,16 +33,17 @@ preserved registers: 1, 2, 3, 4, 5, 6, 7, 8
 EOF
 `
 
-result=`./winloader ./windynamic.exe`
+result=`./winloader ./windynamic.exe a b c`
 assert [ $? == 0 ]
 assert [ "$result" == "$expected" ]
 
 # Dynamic stdlib test
 
 expected=`cat <<EOF
-look how far we've come
+'./windynamicfull.exe', 'a', 'b', 'c'
 large params: 1, 2, 3, 4, 5, 6, 7, 8
 uint32: 12345678, uint64: 1234567812345678
+pow: 16
 malloc: ffffffff
 stdin: 0, stdout: 1, stderr: 2
 exe_global_var_bss: 0
@@ -59,7 +62,7 @@ lib_var_data: 44
 *get_lib_var_data(): 44
 EOF
 `
-result=`./winloader ./windynamicfull.exe`
+result=`./winloader ./windynamicfull.exe a b c`
 assert [ $? == 0 ]
 assert [ "$result" == "$expected" ]
 

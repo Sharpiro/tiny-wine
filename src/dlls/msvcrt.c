@@ -6,6 +6,19 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#ifdef VERBOSE
+
+#define LOG(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
+
+#else
+
+#define LOG(fmt, ...)                                                          \
+    if (0) {                                                                   \
+        (void)0, ##__VA_ARGS__;                                                \
+    }
+
+#endif
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
@@ -27,6 +40,30 @@ void DllMainCRTStartup(void) {
 }
 
 EXPORTABLE char *_acmdln = NULL;
+
+char *command_line_array[0x100] = {};
+
+/**
+ * Set n bytes of s to c.
+ */
+EXPORTABLE void *memset(void *s_buffer, int32_t c_value, size_t n_count) {
+    for (size_t i = 0; i < n_count; i++) {
+        ((uint8_t *)s_buffer)[i] = (uint8_t)c_value;
+    }
+    return s_buffer;
+}
+
+/**
+ * Copy n bytes of src to dest. Pointers can't overlap.
+ */
+EXPORTABLE void *memcpy(
+    void *restrict dest, const void *restrict src, size_t n
+) {
+    for (size_t i = 0; i < n; i++) {
+        ((uint8_t *)dest)[i] = ((uint8_t *)src)[i];
+    }
+    return dest;
+}
 
 EXPORTABLE size_t strlen(const char *data) {
     if (data == NULL) {
@@ -206,8 +243,7 @@ static void fprintf_internal(
         }
         case 'c': {
             char data = va_arg(var_args, char);
-            // @todo: not a real char pointer
-            print(file_handle, &data);
+            print_len(file_handle, &data, 1);
             break;
         }
         case 'p':
@@ -349,7 +385,6 @@ EXPORTABLE void *malloc(size_t n) {
     return address;
 }
 
-// @todo: wchar_t vs uint16_t since windows only
 /* Wide C-string length */
 EXPORTABLE size_t wcslen(const wchar_t *s) {
     size_t length = 0;
@@ -362,8 +397,7 @@ EXPORTABLE size_t wcslen(const wchar_t *s) {
     return length;
 }
 
-// @todo: duped
-char *to_char_pointer(wchar_t *data) {
+static char *to_char_pointer(wchar_t *data) {
     size_t length = wcslen(data);
     char *buffer = malloc(length + 1);
     size_t i;
@@ -385,6 +419,8 @@ EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
     UNICODE_STRING *command_line =
         &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
     _acmdln = to_char_pointer((wchar_t *)command_line->Buffer);
+    LOG("_initterm\n");
+    LOG("_acmdln: %p, %s \n", _acmdln, _acmdln);
 
     size_t len = (size_t)(last - first);
     for (size_t i = 0; i < len; i++) {
@@ -392,13 +428,14 @@ EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
         if (func == NULL) {
             continue;
         }
-        fprintf(stderr, "DEBUG: _initterm func %zd\n", i);
+        LOG("_initterm func %zd\n", i);
         func();
     }
 }
 
 /**
- * Locate character in string
+ * Locate character in string.
+ * @return pointer to char or pointer to string's null terminator if not found.
  */
 char *strchrnul(const char *string, int c) {
     size_t string_len = strlen(string);
@@ -418,23 +455,26 @@ char *strchrnul(const char *string, int c) {
 EXPORTABLE int __getmainargs(
     int *pargc,
     char ***pargv,
-    [[maybe_unused]] char ***penvp,
+    char ***penvp,
     [[maybe_unused]] int do_wild_card,
     [[maybe_unused]] void *start_info
 ) {
-    char *current_cmd = _acmdln;
-    while (true) {
-        size_t start = (size_t)current_cmd;
-        current_cmd = strchrnul(current_cmd, ' ');
-        size_t end = (size_t)current_cmd;
+    LOG("__getmainargs\n");
 
-        fprintf(
-            stderr,
-            "\nDEBUG: current_word: %zd, %zd, %s\n",
-            start - (size_t)_acmdln,
-            end - (size_t)_acmdln,
-            (char *)start
-        );
+    char *current_cmd = _acmdln;
+
+    int arg_count = 0;
+    while (true) {
+        char *start = current_cmd;
+        current_cmd = strchrnul(current_cmd, ' ');
+        size_t str_len = (size_t)current_cmd - (size_t)start;
+        char *cmd_part = malloc(str_len + 1);
+        memcpy(cmd_part, start, str_len);
+        cmd_part[str_len] = 0x00;
+        command_line_array[arg_count] = cmd_part;
+        arg_count += 1;
+
+        LOG("current_word: '%s'\n", cmd_part);
 
         if (*current_cmd == 0x00) {
             break;
@@ -442,8 +482,9 @@ EXPORTABLE int __getmainargs(
         current_cmd += 1;
     }
 
-    *pargc = 1;
-    *pargv = &_acmdln;
+    *pargc = arg_count;
+    *pargv = command_line_array;
+    *penvp = NULL;
     return 0;
 }
 
@@ -464,15 +505,6 @@ EXPORTABLE void free() {
     exit(42);
 }
 
-EXPORTABLE void *memcpy(
-    void *restrict dest, const void *restrict src, size_t n
-) {
-    for (size_t i = 0; i < n; i++) {
-        ((uint8_t *)dest)[i] = ((uint8_t *)src)[i];
-    }
-    return dest;
-}
-
 EXPORTABLE void signal() {
     fprintf(stderr, "signal unimplemented\n");
     exit(42);
@@ -490,7 +522,7 @@ EXPORTABLE int32_t vfprintf(
 ) {
     int32_t file_no = _fileno(stream);
     fprintf_internal(file_no, format, arg);
-    fprintf(stderr, "\nDEBUG: inserted newline manually\n");
+    LOG("inserted newline manually\n");
     return 0;
 }
 
@@ -553,13 +585,6 @@ EXPORTABLE size_t fwrite(
 EXPORTABLE void localeconv() {
     fprintf(stderr, "localeconv unimplemented\n");
     exit(42);
-}
-
-EXPORTABLE void *memset(void *s_buffer, int32_t c_value, size_t n_count) {
-    for (size_t i = 0; i < n_count; i++) {
-        ((uint8_t *)s_buffer)[i] = (uint8_t)c_value;
-    }
-    return s_buffer;
 }
 
 EXPORTABLE void strerror() {

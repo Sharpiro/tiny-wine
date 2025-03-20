@@ -1,99 +1,62 @@
-// #include "win_dynamic_lib_full.h"
 #include "../../../dlls/win_type.h"
-// #include <stddef.h>
-// #include <stdint.h>
+#include "win_dynamic_lib_full.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <wchar.h>
 
-// int32_t exe_global_var_bss = 0;
-// int32_t exe_global_var_data = 42;
+int32_t exe_global_var_bss = 0;
+int32_t exe_global_var_data = 42;
 
-// @todo: args don't work
-
-// @todo: duped
-char *to_char_pointer(wchar_t *data) {
-    size_t length = wcslen(data);
-    char *buffer = malloc(length + 1);
-    size_t i;
-    for (i = 0; i < length; i++) {
-        buffer[i] = (char)data[i];
-    }
-    buffer[i] = 0x00;
-    return buffer;
-}
-
-extern char *_acmdln;
-
-int main(int argc, char **argv, [[maybe_unused]] char **envp) {
-    printf("args: %d, %zx: ", argc, (size_t)argv);
+int main(int argc, char **argv) {
     for (int i = 0; i < argc; i++) {
-        printf("'%s', ", argv[i]);
+        if (i + 1 == argc) {
+            printf("'%s'", argv[i]);
+        } else {
+            printf("'%s', ", argv[i]);
+        }
     }
     printf("\n");
 
-    printf("_acmdln: %p, '%s'\n", _acmdln, _acmdln);
-
-    TEB *teb = NULL;
-    __asm__("mov %0, gs:[0x30]\n" : "=r"(teb));
-    PEB *peb = NULL;
-    __asm__("mov %0, gs:[0x60]\n" : "=r"(peb));
-    // UNICODE_STRING *command_line =
-    //     &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
-    UNICODE_STRING *command_line = &peb->ProcessParameters->CommandLine;
-    // printf(
-    //     "teb: %p, %d, %d\n",
-    //     teb,
-    //     command_line->Length,
-    //     command_line->MaximumLength
-    // );
     printf(
-        "command_line: %p, '%s'\n",
-        command_line->Buffer,
-        to_char_pointer((wchar_t *)command_line->Buffer)
+        "large params: 1, %x, %x, %x, %x, %x, %x, %x\n", 2, 3, 4, 5, 6, 7, 8
+    );
+    printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
+    printf("pow: %d\n", (int32_t)pow(2, 4));
+
+    uint32_t *buffer = malloc(0x1000);
+    buffer[0] = 0xffffffff;
+    printf("malloc: %x\n", buffer[0]);
+
+    printf(
+        "stdin: %d, stdout: %d, stderr: %d\n",
+        fileno(stdin),
+        fileno(stdout),
+        fileno(stderr)
     );
 
-    // printf("%d, %s\n", argc, *argv);
-    // printf("look how far we've come\n");
-    // printf(
-    //     "large params: 1, %x, %x, %x, %x, %x, %x, %x\n", 2, 3, 4, 5, 6, 7, 8
-    // );
-    // printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
+    /** .bss and .data init */
 
-    // uint32_t *buffer = malloc(0x1000);
-    // buffer[0] = 0xffffffff;
-    // printf("malloc: %x\n", buffer[0]);
+    printf("exe_global_var_bss: %d\n", exe_global_var_bss);
+    exe_global_var_bss = 1;
+    printf("exe_global_var_bss: %d\n", exe_global_var_bss);
 
-    // printf(
-    //     "stdin: %d, stdout: %d, stderr: %d\n",
-    //     fileno(stdin),
-    //     fileno(stdout),
-    //     fileno(stderr)
-    // );
+    printf("exe_global_var_data: %d\n", exe_global_var_data);
+    exe_global_var_data = 24;
+    printf("exe_global_var_data: %d\n", exe_global_var_data);
 
-    // /** .bss and .data init */
+    printf("*get_lib_var_bss(): %zd\n", *get_lib_var_bss());
+    printf("lib_var_bss: %zd\n", lib_var_bss);
+    lib_var_bss += 1;
+    printf("lib_var_bss: %zd\n", lib_var_bss);
+    lib_var_bss = 44;
+    printf("lib_var_bss: %zd\n", lib_var_bss);
+    printf("*get_lib_var_bss(): %zd\n", *get_lib_var_bss());
 
-    // printf("exe_global_var_bss: %d\n", exe_global_var_bss);
-    // exe_global_var_bss = 1;
-    // printf("exe_global_var_bss: %d\n", exe_global_var_bss);
-
-    // printf("exe_global_var_data: %d\n", exe_global_var_data);
-    // exe_global_var_data = 24;
-    // printf("exe_global_var_data: %d\n", exe_global_var_data);
-
-    // printf("*get_lib_var_bss(): %zd\n", *get_lib_var_bss());
-    // printf("lib_var_bss: %zd\n", lib_var_bss);
-    // lib_var_bss += 1;
-    // printf("lib_var_bss: %zd\n", lib_var_bss);
-    // lib_var_bss = 44;
-    // printf("lib_var_bss: %zd\n", lib_var_bss);
-    // printf("*get_lib_var_bss(): %zd\n", *get_lib_var_bss());
-
-    // printf("*get_lib_var_data(): %zd\n", *get_lib_var_data());
-    // printf("lib_var_data: %zd\n", lib_var_data);
-    // lib_var_data += 1;
-    // printf("lib_var_data: %zd\n", lib_var_data);
-    // lib_var_data = 44;
-    // printf("lib_var_data: %zd\n", lib_var_data);
-    // printf("*get_lib_var_data(): %zd\n", *get_lib_var_data());
+    printf("*get_lib_var_data(): %zd\n", *get_lib_var_data());
+    printf("lib_var_data: %zd\n", lib_var_data);
+    lib_var_data += 1;
+    printf("lib_var_data: %zd\n", lib_var_data);
+    lib_var_data = 44;
+    printf("lib_var_data: %zd\n", lib_var_data);
+    printf("*get_lib_var_data(): %zd\n", *get_lib_var_data());
 }

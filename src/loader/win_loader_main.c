@@ -118,18 +118,21 @@ static void dynamic_callback_linux(void) {
 
 /*
  * Dynamic callback from Windows to Windows, or from Windows to Linux
- * libntdll.so
+ * libntdll.so.
+ * rbp[0] - old rbp.
+ * rbp[2] - return address.
+ * rbp[3-6] - shadow.
  */
 static void dynamic_callback_windows(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
     GET_PRESERVED_REGISTERS();
 
+    size_t dyn_trampoline_end = rbp[1];
     size_t p5_win_stack1 = rbp[7];
     size_t p6_win_stack2 = rbp[8];
     size_t p7_win_stack3 = rbp[9];
     size_t p8_win_stack4 = rbp[10];
 
-    size_t dyn_trampoline_end = *(rbp + 1);
     size_t dyn_trampoline_start =
         dyn_trampoline_end - DYNAMIC_CALLBACK_TRAMPOLINE_SIZE;
     size_t runtime_iat_section_base = dyn_trampoline_start /

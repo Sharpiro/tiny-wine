@@ -11,6 +11,7 @@ A basic dynamic loader for Linux and Windows.
 - Import Address Table limit is 512 entries
 - Windows header size limit is 4 KiB
 - x64 only
+- No environment variables
 
 ## Prerequisites
 
