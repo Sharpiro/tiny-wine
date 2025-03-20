@@ -1,4 +1,5 @@
-#include "ntdll.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #define STDOUT 1
 #define STDERR 2

@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
         tiny_c_printf("PID: %d\n", pid);
 
         /* CWD */
-        char *cwd_buffer = tinyc_malloc_arena(0x100);
+        char *cwd_buffer = malloc(0x100);
         if (cwd_buffer == NULL) {
             EXIT("malloc failed");
         }
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
         tiny_c_printf("CWD: %s\n", cwd);
 
         /* Memory regions */
-        char *maps_buffer = tinyc_malloc_arena(0x1000);
+        char *maps_buffer = malloc(0x1000);
         if (!read_to_string("/proc/self/maps", &maps_buffer)) {
             EXIT("read failed");
         }
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     }
 
     /* User */
-    uid_t uid = tinyc_getuid();
+    uid_t uid = getuid();
     struct passwd *user_info = getpwuid(uid);
     if (user_info == NULL) {
         EXIT("getpwuid failed: %d\n", tinyc_errno);
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     tiny_c_printf("--------------\n");
 
     /* OS */
-    char *os_release_buffer = tinyc_malloc_arena(0x1000);
+    char *os_release_buffer = malloc(0x1000);
     if (!read_to_string("/etc/os-release", &os_release_buffer)) {
         EXIT("read failed");
     }
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
         strstr(os_release_buffer, PRETTY_NAME_KEY) + PRETTY_NAME_KEY_LEN + 2;
     ;
     const char *pretty_name_end = strchr(pretty_name_start, '"');
-    char *pretty_name = tinyc_malloc_arena(0x100);
+    char *pretty_name = malloc(0x100);
     if (pretty_name == NULL) {
         EXIT("malloc failed");
     }
@@ -94,6 +94,4 @@ int main(int argc, char **argv) {
 
     /* Shell */
     tiny_c_printf("Shell: %s\n", user_info->pw_shell);
-
-    tinyc_free_arena();
 }

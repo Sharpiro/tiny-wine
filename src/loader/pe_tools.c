@@ -36,6 +36,17 @@ static bool find_import_entry(
     return false;
 }
 
+static bool tiny_c_mem_is_empty(const void *buffer, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        u_int8_t byte = ((u_int8_t *)buffer)[i];
+        if (byte != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (pe_data == NULL) {
         BAIL("pe_data was null\n");

@@ -17,9 +17,7 @@ extern int32_t tinyc_errno;
 
 size_t tiny_c_pow(size_t x, size_t y);
 
-void tiny_c_print_len(int32_t file_handle, const char *data, size_t size);
-
-void tiny_c_fputs(int32_t file_handle, const char *data);
+void tinyc_fputs(const char *data, int32_t file_handle);
 
 void tiny_c_fprintf(int32_t file_handle, const char *format, ...);
 
@@ -43,18 +41,15 @@ void tiny_c_close(int32_t fd);
 ssize_t tiny_c_read(int32_t fd, void *buf, size_t count);
 int32_t tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
 
-bool tiny_c_mem_is_empty(const void *buffer, size_t n);
-
 int32_t tiny_c_strcmp(const char *__s1, const char *__s2);
 int32_t tiny_c_get_pid(void);
 char *tiny_c_get_cwd(char *buffer, size_t size);
 const char *tinyc_strerror(int32_t err_number);
-void *tinyc_malloc_arena(size_t n);
-void tinyc_free_arena(void);
+void *malloc(size_t n);
 off_t tinyc_lseek(int32_t fd, off_t offset, int whence);
 uint32_t divmod(uint32_t numerator, uint32_t denominator);
 int32_t tinyc_uname(struct utsname *uname);
-uid_t tinyc_getuid(void);
+uid_t getuid(void);
 
 off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence);
 
@@ -88,4 +83,4 @@ off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence);
 
 #endif
 
-size_t tinyc_strlen(const char *data);
+size_t strlen(const char *data);

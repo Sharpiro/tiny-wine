@@ -480,6 +480,7 @@ readwin: \
 	@echo "readwin"
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
+		-masm=intel \
 		-nostdlib -static \
 		$(WARNINGS) \
 		-o readwin \

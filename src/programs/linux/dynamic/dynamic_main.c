@@ -17,8 +17,8 @@ int main(void) {
     size_t num2 = tiny_c_pow(2, 4);
 
     /* Call dynamic function tree */
-    tiny_c_print_len(STDOUT, "1st call\n", 9);
-    tiny_c_print_len(STDOUT, "2nd call\n", 9);
+    tinyc_fputs("1st call\n", STDOUT);
+    tinyc_fputs("2nd call\n", STDOUT);
     tiny_c_printf("%d + %d = %d\n", num1, num2, num1 + num2);
 
     /* 2nd shared lib dynamic leaf */
@@ -45,7 +45,7 @@ int main(void) {
     );
 
     /* Dynamic variable relocation from shared object */
-    char *os_release_buffer = tinyc_malloc_arena(0x1000);
+    char *os_release_buffer = malloc(0x1000);
     tiny_c_printf("malloc: %s\n", os_release_buffer == NULL ? "err" : "ok");
 
     /** Many parameter function */

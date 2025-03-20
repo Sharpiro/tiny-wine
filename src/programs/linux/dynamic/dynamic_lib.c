@@ -127,7 +127,7 @@ char *getenv(const char *name) {
 }
 
 bool read_to_string(const char *path, char **content) {
-    char *buffer = tinyc_malloc_arena(READ_SIZE);
+    char *buffer = malloc(READ_SIZE);
     if (buffer == NULL) {
         BAIL("malloc failed\n");
     }
@@ -154,8 +154,7 @@ bool string_split(
 ) {
     const int MAX_SPLIT_ENTRIES = 100;
 
-    *split_entries =
-        tinyc_malloc_arena(sizeof(struct Split) * MAX_SPLIT_ENTRIES);
+    *split_entries = malloc(sizeof(struct Split) * MAX_SPLIT_ENTRIES);
     size_t split_index = 0;
     size_t split_start = 0;
     for (size_t i = 0; i < str_len; i++) {
@@ -221,16 +220,16 @@ struct passwd *getpwuid(uid_t uid) {
             (size_t)atol_len(uid_split->split, uid_split->split_len);
         if (parsed_uid == uid) {
             struct Split *username_split = &user_details_split[0];
-            char *username = tinyc_malloc_arena(username_split->split_len + 1);
+            char *username = malloc(username_split->split_len + 1);
             memcpy(username, username_split->split, username_split->split_len);
             memset(username + user_line->split_len, 0, 1);
 
             struct Split *shell_split = &user_details_split[6];
-            char *shell = tinyc_malloc_arena(shell_split->split_len + 1);
+            char *shell = malloc(shell_split->split_len + 1);
             memcpy(shell, shell_split->split, shell_split->split_len);
             memset(shell + shell_split->split_len, 0, 1);
 
-            struct passwd *passwd = tinyc_malloc_arena(sizeof(struct passwd));
+            struct passwd *passwd = malloc(sizeof(struct passwd));
             *passwd = (struct passwd){
                 .pw_name = username,
                 .pw_shell = shell,

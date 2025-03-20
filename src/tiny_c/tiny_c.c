@@ -30,7 +30,9 @@ size_t tinyc_heap_index = 0;
 
 #endif
 
-void tiny_c_print_len(int32_t file_handle, const char *data, size_t length) {
+static void tinyc_print_len(
+    int32_t file_handle, const char *data, size_t length
+) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
         .param_two = (size_t)data,
@@ -39,36 +41,26 @@ void tiny_c_print_len(int32_t file_handle, const char *data, size_t length) {
     tiny_c_syscall(SYS_write, &args);
 }
 
-static void tiny_c_print(int32_t file_handle, const char *data) {
+size_t strlen(const char *data) {
+    size_t len = 0;
+    for (size_t i = 0; true; i++) {
+        if (data[i] == 0) {
+            break;
+        }
+        len++;
+    }
+    return len;
+}
+
+void tinyc_fputs(const char *data, int32_t file_handle) {
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
-        tiny_c_print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
+        tinyc_print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
         return;
     }
 
-    size_t size = 0;
-    for (size_t i = 0; true; i++) {
-        if (data[i] == 0x00) {
-            size = i;
-            break;
-        }
-    }
-
-    tiny_c_print_len(file_handle, data, size);
-}
-
-static void tiny_c_newline(int32_t file_handle) {
-    struct SysArgs args = (struct SysArgs){
-        .param_one = (size_t)file_handle,
-        .param_two = (size_t)"\n",
-        .param_three = 1,
-    };
-    tiny_c_syscall(SYS_write, &args);
-}
-
-void tiny_c_fputs(int32_t file_handle, const char *data) {
-    tiny_c_print(file_handle, data);
-    tiny_c_newline(file_handle);
+    size_t str_len = strlen(data);
+    tinyc_print_len(file_handle, data, str_len);
 }
 
 size_t tiny_c_pow(size_t x, size_t y) {
@@ -80,7 +72,7 @@ size_t tiny_c_pow(size_t x, size_t y) {
     return product;
 }
 
-static void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
+static void print_number_hex(int32_t file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789abcdef";
 
@@ -110,7 +102,7 @@ static void tiny_c_print_number_hex(int32_t file_handle, size_t num) {
     tiny_c_syscall(SYS_write, &args);
 }
 
-static void tiny_c_print_number_decimal(int32_t file_handle, size_t num) {
+static void print_number_decimal(int32_t file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789";
 
@@ -145,7 +137,7 @@ struct PrintItem {
     char formatter;
 };
 
-static void tiny_c_fprintf_internal(
+static void fprintf_internal(
     int32_t file_handle, const char *format, va_list var_args
 ) {
     size_t print_items_index = 0;
@@ -186,28 +178,34 @@ static void tiny_c_fprintf_internal(
     for (size_t i = 0; i < print_items_count; i++) {
         struct PrintItem print_item = print_items[i];
         switch (print_item.formatter) {
-        case 's': {
-            char *data = va_arg(var_args, char *);
-            tiny_c_print(file_handle, data);
+        case 0x00: {
+            const char *data = format + print_item.start;
+            tinyc_print_len(file_handle, data, print_item.length);
             break;
         }
+        case 's': {
+            char *data = va_arg(var_args, char *);
+            tinyc_fputs(data, file_handle);
+            break;
+        }
+        case 'c': {
+            char data = va_arg(var_args, char);
+            tinyc_print_len(file_handle, &data, 1);
+            break;
+        }
+        case 'p':
         case 'x': {
             size_t data = va_arg(var_args, size_t);
-            tiny_c_print_number_hex(file_handle, data);
+            print_number_hex(file_handle, data);
             break;
         }
         case 'd': {
             size_t data = va_arg(var_args, size_t);
-            tiny_c_print_number_decimal(file_handle, data);
-            break;
-        }
-        case 0x00: {
-            const char *data = format + print_item.start;
-            tiny_c_print_len(file_handle, data, print_item.length);
+            print_number_decimal(file_handle, data);
             break;
         }
         default: {
-            tiny_c_print(file_handle, "<unknown>");
+            tinyc_fputs("<unknown>", file_handle);
             break;
         }
         }
@@ -219,14 +217,14 @@ static void tiny_c_fprintf_internal(
 void tiny_c_printf(const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
-    tiny_c_fprintf_internal(STDOUT, format, var_args);
+    fprintf_internal(STDOUT, format, var_args);
     va_end(var_args);
 }
 
 void tiny_c_fprintf(int32_t file_handle, const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
-    tiny_c_fprintf_internal(file_handle, format, var_args);
+    fprintf_internal(file_handle, format, var_args);
     va_end(var_args);
 }
 
@@ -341,17 +339,6 @@ int tiny_c_memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
     return 0;
 }
 
-bool tiny_c_mem_is_empty(const void *buffer, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        u_int8_t byte = ((u_int8_t *)buffer)[i];
-        if (byte != 0) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 int tiny_c_strcmp(const char *buffer_a, const char *buffer_b) {
     for (size_t i = 0; true; i++) {
         char a = buffer_a[i];
@@ -404,7 +391,7 @@ const char *tinyc_strerror(int32_t err_number) {
     }
 }
 
-void *tinyc_malloc_arena(size_t n) {
+void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
     if (tinyc_heap_start == 0) {
@@ -427,10 +414,6 @@ void *tinyc_malloc_arena(size_t n) {
     return address;
 }
 
-void tinyc_free_arena(void) {
-    tinyc_heap_index = tinyc_heap_start;
-}
-
 off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence) {
     return tinyc_sys_lseek((uint32_t)fd, offset, (uint32_t)whence);
 }
@@ -445,7 +428,7 @@ int32_t tinyc_uname(struct utsname *uname) {
     return result;
 }
 
-uid_t tinyc_getuid(void) {
+uid_t getuid(void) {
     struct SysArgs args = {0};
     uid_t result = (uid_t)tiny_c_syscall(SYS_getuid, &args);
     return result;
@@ -504,7 +487,7 @@ uint32_t __aeabi_uidivmod(uint32_t numerator, uint32_t denominator) {
 
 #ifdef AMD64
 
-struct stat tiny_c_stat(const char *path) {
+struct stat stat(const char *path) {
     struct stat file_stat;
     struct SysArgs args = {
         .param_one = (size_t)path,
@@ -516,28 +499,3 @@ struct stat tiny_c_stat(const char *path) {
 }
 
 #endif
-
-void print_buffer(uint8_t *buffer, size_t length) {
-    for (size_t i = 0; i < length; i++) {
-        if (i > 0 && i % 2 == 0) {
-            tiny_c_printf("\n", buffer[i]);
-        }
-        tiny_c_printf("%x, ", buffer[i]);
-    }
-    tiny_c_printf("\n");
-}
-
-size_t tinyc_strlen(const char *data) {
-    if (data == NULL) {
-        return 0;
-    }
-
-    size_t len = 0;
-    for (size_t i = 0; true; i++) {
-        if (data[i] == 0) {
-            break;
-        }
-        len++;
-    }
-    return len;
-}

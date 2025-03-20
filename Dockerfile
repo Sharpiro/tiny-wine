@@ -1,5 +1,3 @@
-# @todo: run as current user to avoid file errors on rebuild?
-
 FROM ubuntu:22.04
 
 ENV CC="clang"
@@ -17,4 +15,7 @@ RUN apt-get update && apt-get -y install \
     mingw-w64-tools \
     binutils-mingw-w64
 
-WORKDIR /root/tiny_wine
+RUN useradd -m tiny_wine
+USER tiny_wine
+
+WORKDIR /home/tiny_wine

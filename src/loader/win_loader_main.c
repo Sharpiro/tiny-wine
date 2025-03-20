@@ -13,7 +13,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 
@@ -850,7 +849,7 @@ int main(int argc, char **argv) {
     size_t inferior_argc = (size_t)argc - 1;
     for (size_t i = 0; i < inferior_argc; i++) {
         char *string = argv[i + 1];
-        size_t string_len = tinyc_strlen(string);
+        size_t string_len = strlen(string);
         LOADER_LOG("stack arg %d: %s\n", i, string);
         for (size_t i = 0; i < string_len; i++) {
             cmd[cmd_len] = (WCHAR)string[i];

@@ -32,7 +32,7 @@ int main(void) {
     tiny_c_printf("bss_int %d\n", bss_int);
     tiny_c_printf("bss_string %s\n", bss_string);
 
-    char *malloc_string = tinyc_malloc_arena(0x1000);
+    char *malloc_string = malloc(0x1000);
     if (malloc_string == NULL) {
         tiny_c_fprintf(STDERR, "malloc failed\n");
         tiny_c_exit(-1);

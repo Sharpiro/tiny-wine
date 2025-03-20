@@ -1,5 +1,6 @@
 #include "msvcrt.h"
 #include "./macros.h"
+#include "ntdll.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -36,12 +37,12 @@ static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
     {.fileno_lazy_maybe = 2, .fileno = 2},
 };
 
-void DllMainCRTStartup(void) {
-}
-
 EXPORTABLE char *_acmdln = NULL;
 
 char *command_line_array[0x100] = {};
+
+void DllMainCRTStartup(void) {
+}
 
 /**
  * Set n bytes of s to c.
@@ -66,10 +67,6 @@ EXPORTABLE void *memcpy(
 }
 
 EXPORTABLE size_t strlen(const char *data) {
-    if (data == NULL) {
-        return 0;
-    }
-
     size_t len = 0;
     for (size_t i = 0; true; i++) {
         if (data[i] == 0) {
@@ -107,7 +104,7 @@ static bool print_len(int32_t file_handle, const char *data, size_t length) {
     return true;
 }
 
-static void print(int32_t file_handle, const char *data) {
+static void fputs(const char *data, int32_t file_handle) {
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
         print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
@@ -119,8 +116,8 @@ static void print(int32_t file_handle, const char *data) {
 }
 
 EXPORTABLE int32_t puts(const char *data) {
-    print(STDOUT, data);
-    print(STDOUT, "\n");
+    fputs(data, STDOUT);
+    fputs("\n", STDOUT);
     return 0;
 }
 
@@ -238,7 +235,7 @@ static void fprintf_internal(
         }
         case 's': {
             char *data = va_arg(var_args, char *);
-            print(file_handle, data);
+            fputs(data, file_handle);
             break;
         }
         case 'c': {
@@ -262,7 +259,7 @@ static void fprintf_internal(
             break;
         }
         default: {
-            print(file_handle, "<unknown>");
+            fputs("<unknown>", file_handle);
             break;
         }
         }
@@ -313,10 +310,6 @@ EXPORTABLE void __C_specific_handler() {
     fprintf(stderr, "__C_specific_handler unimplemented\n");
     exit(42);
 }
-
-// char *arg1 = "broski";
-// char *arg2 = "nopeski";
-char *arg_vector[] = {"always", "be", "closing"};
 
 EXPORTABLE void __initenv() {
     fprintf(stderr, "__initenv unimplemented\n");
