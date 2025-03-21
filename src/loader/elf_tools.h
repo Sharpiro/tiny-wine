@@ -5,22 +5,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#ifdef ARM32
-
-#define ELF_HEADER Elf32_Ehdr
-#define PROGRAM_HEADER Elf32_Phdr
-#define SECTION_HEADER Elf32_Shdr
-#define SYMBOL Elf32_Sym
-#define RELOCATION Elf32_Rel
-#define DYNAMIC_ENTRY Elf32_Dyn
-#define RELOCATION_SYMBOL_SHIFT_LENGTH 8
-#define FUNCTION_RELOCATION_HEADER ".rel.plt"
-#define VARIABLE_RELOCATION_HEADER ".rel.dyn"
-
-#endif
-
-#ifdef AMD64
-
 #define ELF_HEADER Elf64_Ehdr
 #define PROGRAM_HEADER Elf64_Phdr
 #define SECTION_HEADER Elf64_Shdr
@@ -30,8 +14,6 @@
 #define RELOCATION_SYMBOL_SHIFT_LENGTH 32
 #define FUNCTION_RELOCATION_HEADER ".rela.plt"
 #define VARIABLE_RELOCATION_HEADER ".rela.dyn"
-
-#endif
 
 struct GotEntry {
     size_t index;

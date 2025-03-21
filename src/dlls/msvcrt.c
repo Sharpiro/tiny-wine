@@ -280,8 +280,6 @@ EXPORTABLE int32_t printf(const char *format, ...) {
     return 0;
 }
 
-#if UINTPTR_MAX == 0xFFFFFFFFFFFFFFFF
-
 EXPORTABLE void *__iob_func(void) {
     return WIN_FILE_INTERNAL_LIST;
 }
@@ -290,8 +288,6 @@ EXPORTABLE int32_t _fileno(FILE *stream) {
     _WinFileInternal *internal_file = (_WinFileInternal *)stream;
     return internal_file->fileno_lazy_maybe;
 }
-
-#endif
 
 EXPORTABLE int32_t fprintf(
     [[maybe_unused]] FILE *__restrict stream,

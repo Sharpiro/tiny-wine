@@ -298,24 +298,6 @@ static void get_runtime_function_shared_lib_test(void) {
     tw_assert(runtime_symbol->value == 0x209d8);
 }
 
-#ifdef ARM32
-
-/* Tests divmod which can be called indriectly via modulo operator */
-static void aeabi_uidivmod_test(
-    size_t numerator,
-    size_t denominator,
-    size_t expected_quotient,
-    size_t expected_remainder
-) {
-    size_t quotient = divmod(numerator, denominator);
-    size_t remainder = numerator % denominator;
-
-    tw_assert(quotient == expected_quotient);
-    tw_assert(remainder == expected_remainder);
-}
-
-#endif
-
 int main(void) {
     LOADER_LOG("get_memory_regions_basic_test\n");
     get_memory_regions_basic_test();
@@ -333,9 +315,4 @@ int main(void) {
     get_runtime_function_local_lib_test();
     LOADER_LOG("get_runtime_function_shared_lib_test\n");
     get_runtime_function_shared_lib_test();
-
-#ifdef ARM32
-    aeabi_uidivmod_test(13, 2, 6, 1);
-    aeabi_uidivmod_test(12, 2, 6, 0);
-#endif
 }

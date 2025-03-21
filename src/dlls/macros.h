@@ -9,7 +9,7 @@
  * 'export' marks the symbol as exported in the dll.
  * 'import' tells the executable to reference it in its IAT.
  */
-#if defined(_WIN32)
+#ifdef _WIN32
 #ifdef DLL
 #define EXPORTABLE __declspec(dllexport)
 #else

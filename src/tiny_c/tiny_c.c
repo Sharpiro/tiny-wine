@@ -18,18 +18,6 @@ size_t tinyc_heap_start = 0;
 size_t tinyc_heap_end = 0;
 size_t tinyc_heap_index = 0;
 
-#ifdef AMD64
-
-#define MMAP SYS_mmap
-
-#endif
-
-#ifdef ARM32
-
-#define MMAP SYS_mmap2
-
-#endif
-
 static void tinyc_print_len(
     int32_t file_handle, const char *data, size_t length
 ) {
@@ -272,16 +260,6 @@ void *tiny_c_mmap(
     int32_t fd,
     size_t offset
 ) {
-#ifdef ARM32
-    struct SysArgs args = {
-        .param_one = address,
-        .param_two = length,
-        .param_three = prot,
-        .param_four = flags,
-        .param_five = (size_t)fd,
-        .param_six = offset / 0x1000,
-    };
-#elif defined AMD64
     struct SysArgs args = {
         .param_one = address,
         .param_two = length,
@@ -290,9 +268,7 @@ void *tiny_c_mmap(
         .param_five = (size_t)fd,
         .param_six = offset,
     };
-#endif
-
-    size_t result = tiny_c_syscall(MMAP, &args);
+    size_t result = tiny_c_syscall(SYS_mmap, &args);
     ssize_t err = (ssize_t)result;
     if (err < 1) {
         tinyc_errno = (int32_t)-err;
@@ -448,45 +424,6 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
     return dest;
 }
 
-#ifdef ARM32
-
-uint32_t __aeabi_uidiv(uint32_t numerator, uint32_t denominator) {
-    if (denominator == 0) {
-        return 0xffffffff;
-    }
-    if (denominator == numerator) {
-        return 1;
-    }
-    if (denominator >= numerator) {
-        return 0;
-    }
-
-    size_t denominator_increment = denominator;
-    size_t count = 0;
-    while (denominator_increment <= numerator &&
-           denominator_increment >= denominator) {
-        count++;
-        denominator_increment += denominator;
-    }
-
-    return count;
-}
-
-inline uint32_t divmod(uint32_t numerator, uint32_t denominator) {
-    uint32_t quotient = __aeabi_uidiv(numerator, denominator);
-    uint32_t remainder = numerator - quotient * denominator;
-    __asm__("mov r1, %0\n" : : "r"(remainder));
-    return quotient;
-}
-
-uint32_t __aeabi_uidivmod(uint32_t numerator, uint32_t denominator) {
-    return divmod(numerator, denominator);
-}
-
-#endif
-
-#ifdef AMD64
-
 struct stat stat(const char *path) {
     struct stat file_stat;
     struct SysArgs args = {
@@ -497,5 +434,3 @@ struct stat stat(const char *path) {
 
     return file_stat;
 }
-
-#endif

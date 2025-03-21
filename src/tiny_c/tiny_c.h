@@ -22,7 +22,9 @@ void tinyc_fputs(const char *data, int32_t file_handle);
 void tiny_c_fprintf(int32_t file_handle, const char *format, ...);
 
 void tiny_c_printf(const char *format, ...);
+
 void tiny_c_exit(int32_t code);
+
 void *tiny_c_mmap(
     size_t address,
     size_t length,
@@ -37,18 +39,29 @@ size_t tiny_c_munmap(size_t address, size_t length);
 int32_t tiny_c_mprotect(void *address, size_t length, int32_t protection);
 
 int32_t tiny_c_open(const char *path, int flags);
+
 void tiny_c_close(int32_t fd);
+
 ssize_t tiny_c_read(int32_t fd, void *buf, size_t count);
+
 int32_t tiny_c_memcmp(const void *__s1, const void *__s2, size_t __n);
 
 int32_t tiny_c_strcmp(const char *__s1, const char *__s2);
+
 int32_t tiny_c_get_pid(void);
+
 char *tiny_c_get_cwd(char *buffer, size_t size);
+
 const char *tinyc_strerror(int32_t err_number);
+
 void *malloc(size_t n);
+
 off_t tinyc_lseek(int32_t fd, off_t offset, int whence);
+
 uint32_t divmod(uint32_t numerator, uint32_t denominator);
+
 int32_t tinyc_uname(struct utsname *uname);
+
 uid_t getuid(void);
 
 off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence);
@@ -60,27 +73,5 @@ off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence);
 #define EXIT(fmt, ...)                                                         \
     tiny_c_fprintf(STDERR, fmt, ##__VA_ARGS__);                                \
     tiny_c_exit(1)
-
-#ifdef ARM32
-
-#define GET_REGISTER(reg)                                                      \
-    ({                                                                         \
-        size_t result = 0;                                                     \
-        __asm__("mov %0, " reg : "=r"(result));                                \
-        result;                                                                \
-    })
-
-#endif
-
-#ifdef AMD64
-
-#define GET_FRAME_POINTER()                                                    \
-    ({                                                                         \
-        size_t result = 0;                                                     \
-        __asm__("mov rax, rbp" : "=r"(result) : :);                            \
-        result;                                                                \
-    })
-
-#endif
 
 size_t strlen(const char *data);
