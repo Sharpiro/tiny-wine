@@ -439,7 +439,7 @@ char *strchrnul(const char *string, int c) {
 /**
  * @param do_wild_card If nonzero, enables wildcard expansion for
  command-line arguments (only relevant in certain CRT implementations).
- * @param start_info Reserved for interanl use.
+ * @param start_info Reserved for internal use.
  */
 EXPORTABLE int __getmainargs(
     int *pargc,

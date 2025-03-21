@@ -21,7 +21,6 @@ void *loader_malloc_arena(size_t n) {
             0
         );
         if (loader_buffer == MAP_FAILED) {
-            LOADER_LOG("map failed\n");
             return NULL;
         }
     }
@@ -31,7 +30,7 @@ void *loader_malloc_arena(size_t n) {
     size_t aligned_end =
         alignment_mod == 0 ? n : n + POINTER_SIZE - alignment_mod;
     if (loader_heap_index + aligned_end > LOADER_BUFFER_LEN) {
-        LOADER_LOG("size exceeded\n");
+        LOGERROR("size exceeded\n");
         return NULL;
     }
 
@@ -148,7 +147,7 @@ bool log_memory_regions(void) {
         BAIL("read failed\n");
     }
 
-    LOADER_LOG("Mapped address regions:\n%s\n", maps_buffer);
+    LOGINFO("Mapped address regions:\n%s\n", maps_buffer);
     return true;
 }
 
@@ -216,7 +215,7 @@ bool get_runtime_got(
         size_t lib_dynamic_offset = 0;
         if (elf_got_entry->is_loader_callback) {
             runtime_value = (size_t)dynamic_linker_callback_address;
-        } else if (elf_got_entry->is_library_virutal_base_address) {
+        } else if (elf_got_entry->is_library_virtual_base_address) {
             runtime_value = (size_t)got_lib_dyn_offset_table;
             lib_dynamic_offset = lib_dyn_offset;
         } else if (elf_got_entry->value == 0) {

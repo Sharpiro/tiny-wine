@@ -34,7 +34,7 @@ void *tiny_c_mmap(
     size_t offset
 );
 
-size_t tiny_c_munmap(size_t address, size_t length);
+int32_t tiny_c_munmap(void *address, size_t length);
 
 int32_t tiny_c_mprotect(void *address, size_t length, int32_t protection);
 

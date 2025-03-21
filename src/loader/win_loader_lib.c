@@ -147,14 +147,14 @@ bool map_import_address_table(
         const struct RuntimeImportAddressEntry *current_import =
             &import_address_table->data[i];
         if (current_import->value == 0) {
-            LOADER_LOG("WARNING: IAT %x is 0\n", current_import->key);
+            LOGINFO("IAT %x is 0\n", current_import->key);
             continue;
         }
 
         size_t *runtime_import_key = (size_t *)current_import->key;
         *runtime_import_key = current_import->value;
 
-        LOADER_LOG(
+        LOGINFO(
             "IAT: %x, %x, %s\n",
             current_import->key,
             current_import->value,

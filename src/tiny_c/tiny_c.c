@@ -278,14 +278,14 @@ void *tiny_c_mmap(
     return (void *)result;
 }
 
-size_t tiny_c_munmap(size_t address, size_t length) {
+int32_t tiny_c_munmap(void *address, size_t length) {
     struct SysArgs args = {
-        .param_one = address,
+        .param_one = (size_t)address,
         .param_two = length,
     };
     size_t result = tiny_c_syscall(SYS_munmap, &args);
 
-    return result;
+    return (int32_t)result;
 }
 
 int32_t tiny_c_mprotect(void *address, size_t length, int32_t protection) {

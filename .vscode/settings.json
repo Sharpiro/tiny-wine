@@ -1,3 +1,11 @@
 {
-  "cSpell.words": ["acmdln", "libntdll", "ntdll", "tinyc"]
+  "cSpell.words": [
+    "acmdln",
+    "libntdll",
+    "msvcrt",
+    "ntdll",
+    "strchrnul",
+    "tinyc",
+    "winpe"
+  ]
 }

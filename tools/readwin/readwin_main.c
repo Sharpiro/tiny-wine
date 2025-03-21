@@ -3,6 +3,9 @@
 #include <fcntl.h>
 #include <stddef.h>
 
+// @todo: merge tinyc and msvcrt?
+// @todo: get working via winloader?
+
 int main(int argc, char **argv) {
     if (argc < 2 || tiny_c_memcmp(argv[1], "--", 2) == 0) {
         EXIT("Usage: readwin <file> [-s]\n");

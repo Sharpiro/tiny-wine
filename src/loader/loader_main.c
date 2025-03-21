@@ -25,7 +25,7 @@ void dynamic_callback_linux(void) {
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
 
-    LOADER_LOG("starting dynamic linking at %x\n", dynamic_callback_linux);
+    LOGTRACE("starting dynamic linking at %x\n", dynamic_callback_linux);
 
     size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
     size_t relocation_index = *(rbp + 2);
@@ -33,9 +33,7 @@ void dynamic_callback_linux(void) {
         EXIT("lib_dyn_offset was null\n");
     }
 
-    LOADER_LOG(
-        "relocation params: %x, %x\n", *lib_dyn_offset, relocation_index
-    );
+    LOGTRACE("relocation params: %x, %x\n", *lib_dyn_offset, relocation_index);
     struct RuntimeRelocation *runtime_relocation;
     if (*lib_dyn_offset == 0) {
         runtime_relocation =
@@ -60,7 +58,7 @@ void dynamic_callback_linux(void) {
     }
 
     size_t *got_entry = (size_t *)runtime_relocation->offset;
-    LOADER_LOG("got_entry: %x: %x\n", got_entry, *got_entry);
+    LOGTRACE("got_entry: %x: %x\n", got_entry, *got_entry);
 
     const struct RuntimeSymbol *runtime_symbol;
     if (!find_runtime_symbol(
@@ -74,7 +72,7 @@ void dynamic_callback_linux(void) {
     }
 
     *got_entry = runtime_symbol->value;
-    LOADER_LOG(
+    LOGTRACE(
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
@@ -87,7 +85,7 @@ void dynamic_callback_linux(void) {
         p7_stack1,
         p8_stack2
     );
-    LOADER_LOG("completed dynamic linking\n");
+    LOGTRACE("completed dynamic linking\n");
 
     __asm__(
 
@@ -131,7 +129,7 @@ static bool initialize_dynamic_data(
     struct RuntimeObject **shared_libraries,
     size_t *shared_libraries_len
 ) {
-    LOADER_LOG("initializing dynamic data\n");
+    LOGINFO("initializing dynamic data\n");
     if (shared_libraries == NULL) {
         BAIL("shared_libraries was null\n");
     }
@@ -153,7 +151,7 @@ static bool initialize_dynamic_data(
     size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
         char *shared_lib_name = inferior_dyn_data->shared_libraries[i];
-        LOADER_LOG("mapping shared library '%s'\n", shared_lib_name);
+        LOGINFO("mapping shared library '%s'\n", shared_lib_name);
         int32_t shared_lib_file = tiny_c_open(shared_lib_name, O_RDONLY);
         if (shared_lib_file == -1) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
@@ -169,21 +167,21 @@ static bool initialize_dynamic_data(
             BAIL("Expected shared library to have dynamic data\n");
         }
 
-        struct MemoryRegionsInfo memory_regions_info;
-        if (!get_memory_regions_info_x86(
+        MemoryRegionList memory_regions = {
+            .allocator = loader_malloc_arena,
+        };
+        if (!get_memory_regions_info(
                 shared_lib_elf.program_headers,
                 shared_lib_elf.header.e_phnum,
                 dynamic_lib_offset,
-                &memory_regions_info
+                &memory_regions
             )) {
             BAIL("failed getting memory regions\n");
         }
 
-        LOADER_LOG("Mapping library memory regions\n");
+        LOGINFO("Mapping library memory regions\n");
         if (!map_memory_regions(
-                shared_lib_file,
-                memory_regions_info.regions,
-                memory_regions_info.regions_len
+                shared_lib_file, memory_regions.data, memory_regions.length
             )) {
             BAIL("loader lib map memory regions failed\n");
         }
@@ -238,7 +236,7 @@ static bool initialize_dynamic_data(
             .name = shared_lib_name,
             .dynamic_offset = dynamic_lib_offset,
             .elf_data = shared_lib_elf,
-            .memory_regions_info = memory_regions_info,
+            .memory_regions_info = memory_regions,
             .runtime_func_relocations = runtime_func_relocations,
             .runtime_func_relocations_len = runtime_func_relocations_len,
             .bss = bss,
@@ -246,10 +244,9 @@ static bool initialize_dynamic_data(
             .runtime_symbols = runtime_lib_symbols,
         };
         (*shared_libraries)[i] = shared_library;
-        dynamic_lib_offset = memory_regions_info.regions_len == 0
-            ? 0
-            : memory_regions_info.regions[memory_regions_info.regions_len - 1]
-                  .end;
+        struct MemoryRegion *last_region =
+            &memory_regions.data[memory_regions.length - 1];
+        dynamic_lib_offset = memory_regions.data == 0 ? 0 : last_region->end;
     }
 
     /** Get runtime symbols */
@@ -281,7 +278,7 @@ static bool initialize_dynamic_data(
             .name = curr_relocation->symbol.name,
             .type = curr_relocation->type,
         };
-        LOADER_LOG(
+        LOGINFO(
             "variable relocation %d: %s %x:%x, type %d\n",
             i + 1,
             runtime_relocation.name,
@@ -308,7 +305,7 @@ static bool initialize_dynamic_data(
                 .name = curr_relocation->symbol.name,
                 .type = curr_relocation->type,
             };
-            LOADER_LOG(
+            LOGINFO(
                 "Varaible relocation: %d: %s %x:%x\n",
                 i + 1,
                 runtime_relocation.name,
@@ -393,18 +390,18 @@ static bool initialize_dynamic_data(
     for (size_t i = 0; i < *shared_libraries_len; i++) {
         struct RuntimeObject *shared_lib = &(*shared_libraries)[i];
         if (shared_lib->bss != NULL) {
-            LOADER_LOG("initializing shared lib .bss\n");
+            LOGINFO("initializing shared lib .bss\n");
             memset(shared_lib->bss, 0, shared_lib->bss_len);
         }
     }
 
     /** Init GOT */
 
-    LOADER_LOG("GOT entries: %d\n", runtime_got_entries.length);
+    LOGINFO("GOT entries: %d\n", runtime_got_entries.length);
     for (size_t i = 0; i < runtime_got_entries.length; i++) {
         struct RuntimeGotEntry *runtime_got_entry =
             &runtime_got_entries.data[i];
-        LOADER_LOG(
+        LOGINFO(
             "GOT entry %d: %x == %x, variable: %s\n",
             i + 1,
             runtime_got_entry->index,
@@ -454,14 +451,14 @@ int main(int32_t argc, char **argv) {
     }
 
     char *filename = argv[1];
-    LOADER_LOG("Starting loader, %s, %d\n", filename, argc);
+    LOGINFO("Starting loader, %s, %d\n", filename, argc);
 
     /* Init heap */
 
     size_t brk_start = tinyc_sys_brk(0);
-    LOADER_LOG("BRK:, %x\n", brk_start);
+    LOGINFO("BRK:, %x\n", brk_start);
     size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
-    LOADER_LOG("BRK:, %x\n", brk_end);
+    LOGINFO("BRK:, %x\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");
     }
@@ -469,14 +466,14 @@ int main(int32_t argc, char **argv) {
     log_memory_regions();
 
     int32_t pid = tiny_c_get_pid();
-    LOADER_LOG("pid: %d\n", pid);
+    LOGINFO("pid: %d\n", pid);
 
     /* Unmap default locations */
 
-    if (tiny_c_munmap(0x10000, 0x1000)) {
+    if (tiny_c_munmap((void *)0x10000, 0x1000)) {
         EXIT("munmap of self failed\n");
     }
-    if (tiny_c_munmap(0x400000, 0x1000)) {
+    if (tiny_c_munmap((void *)0x400000, 0x1000)) {
         EXIT("munmap of self failed\n");
     }
 
@@ -494,10 +491,12 @@ int main(int32_t argc, char **argv) {
         EXIT("Program type '%d' not supported\n", inferior_elf.header.e_type);
     }
 
-    LOADER_LOG("program entry: %x\n", inferior_elf.header.e_entry);
+    LOGINFO("program entry: %x\n", inferior_elf.header.e_entry);
 
-    struct MemoryRegionsInfo memory_regions_info;
-    if (!get_memory_regions_info_x86(
+    MemoryRegionList memory_regions_info = {
+        .allocator = loader_malloc_arena,
+    };
+    if (!get_memory_regions_info(
             inferior_elf.program_headers,
             inferior_elf.header.e_phnum,
             0,
@@ -507,7 +506,7 @@ int main(int32_t argc, char **argv) {
     }
 
     if (!map_memory_regions(
-            fd, memory_regions_info.regions, memory_regions_info.regions_len
+            fd, memory_regions_info.data, memory_regions_info.length
         )) {
         EXIT("loader map memory regions failed\n");
     }
@@ -520,7 +519,7 @@ int main(int32_t argc, char **argv) {
     uint8_t *bss = NULL;
     size_t bss_len = 0;
     if (bss_section_header != NULL) {
-        LOADER_LOG("initializing .bss\n");
+        LOGINFO("initializing .bss\n");
         bss = (uint8_t *)bss_section_header->addr;
         bss_len = bss_section_header->size;
         memset(bss, 0, bss_len);
@@ -578,9 +577,9 @@ int main(int32_t argc, char **argv) {
     size_t *inferior_stack = (size_t *)argv;
     *inferior_stack = (size_t)(argc - 1);
 
-    LOADER_LOG("inferior_entry: %x\n", inferior_elf.header.e_entry);
-    LOADER_LOG("inferior_stack: %x\n", inferior_stack);
-    LOADER_LOG("------------running program------------\n");
+    LOGINFO("inferior_entry: %x\n", inferior_elf.header.e_entry);
+    LOGINFO("inferior_stack: %x\n", inferior_stack);
+    LOGINFO("------------running program------------\n");
 
     __asm__(
 

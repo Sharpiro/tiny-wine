@@ -12,14 +12,71 @@
 
 extern int32_t loader_log_handle;
 
-#ifdef VERBOSE
+#define TRACE 1
+#define DEBUG 2
+#define INFO 3
+#define WARNING 4
+#define ERROR 5
+#define CRITICAL 6
 
-#define LOADER_LOG(fmt, ...)                                                   \
-    tiny_c_fprintf(loader_log_handle, fmt, ##__VA_ARGS__);
+#ifndef LOGLEVEL
+#define LOGLEVEL ERROR
+#endif
+
+#if LOGLEVEL <= TRACE
+
+#define LOGTRACE(fmt, ...)                                                     \
+    tiny_c_fprintf(2, "TRACE: ", ##__VA_ARGS__);                               \
+    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
 
-#define LOADER_LOG(fmt, ...)                                                   \
+#define LOGTRACE(fmt, ...)                                                     \
+    if (0) {                                                                   \
+        (void)0, ##__VA_ARGS__;                                                \
+    }
+
+#endif
+
+#if LOGLEVEL <= INFO
+
+#define LOGINFO(fmt, ...)                                                      \
+    tiny_c_fprintf(2, "INFO: ", ##__VA_ARGS__);                                \
+    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+
+#else
+
+#define LOGINFO(fmt, ...)                                                      \
+    if (0) {                                                                   \
+        (void)0, ##__VA_ARGS__;                                                \
+    }
+
+#endif
+
+#if LOGLEVEL <= WARNING
+
+#define LOGWARNING(fmt, ...)                                                   \
+    tiny_c_fprintf(2, "WARNING: ", ##__VA_ARGS__);                             \
+    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+
+#else
+
+#define LOGWARNING(fmt, ...)                                                   \
+    if (0) {                                                                   \
+        (void)0, ##__VA_ARGS__;                                                \
+    }
+
+#endif
+
+#if LOGLEVEL <= ERROR
+
+#define LOGERROR(fmt, ...)                                                     \
+    tiny_c_fprintf(2, "ERROR: ", ##__VA_ARGS__);                               \
+    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+
+#else
+
+#define LOGERROR(fmt, ...)                                                     \
     if (0) {                                                                   \
         (void)0, ##__VA_ARGS__;                                                \
     }
@@ -54,7 +111,7 @@ typedef struct RuntimeObject {
     const char *name;
     size_t dynamic_offset;
     struct ElfData elf_data;
-    struct MemoryRegionsInfo memory_regions_info;
+    MemoryRegionList memory_regions_info;
     struct RuntimeRelocation *runtime_func_relocations;
     size_t runtime_func_relocations_len;
     uint8_t *bss;

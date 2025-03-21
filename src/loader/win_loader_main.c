@@ -33,7 +33,7 @@ static void dynamic_callback_linux(void) {
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
 
-    LOADER_LOG("---Starting Linux dyn callback---\n");
+    LOGTRACE("---Starting Linux dyn callback---\n");
 
     size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
     size_t relocation_index = *(rbp + 2);
@@ -41,15 +41,13 @@ static void dynamic_callback_linux(void) {
         EXIT("lib_dyn_offset was null\n");
     }
 
-    LOADER_LOG(
-        "relocation params: %x, %x\n", *lib_dyn_offset, relocation_index
-    );
+    LOGTRACE("relocation params: %x, %x\n", *lib_dyn_offset, relocation_index);
 
     struct RuntimeRelocation *runtime_relocation =
         &lib_ntdll->runtime_func_relocations[relocation_index];
 
     size_t *got_entry = (size_t *)runtime_relocation->offset;
-    LOADER_LOG("got_entry: %x: %x\n", got_entry, *got_entry);
+    LOGTRACE("got_entry: %x: %x\n", got_entry, *got_entry);
 
     const struct RuntimeSymbol *runtime_symbol;
     if (!find_runtime_symbol(
@@ -63,7 +61,7 @@ static void dynamic_callback_linux(void) {
     }
 
     *got_entry = runtime_symbol->value;
-    LOADER_LOG(
+    LOGTRACE(
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
@@ -76,7 +74,7 @@ static void dynamic_callback_linux(void) {
         p7_stack1,
         p8_stack2
     );
-    LOADER_LOG("Completed dynamic linking to %x\n", runtime_symbol->value);
+    LOGTRACE("Completed dynamic linking to %x\n", runtime_symbol->value);
 
     __asm__(
 
@@ -139,7 +137,7 @@ static void dynamic_callback_windows(void) {
     size_t func_iat_value_raw =
         dyn_trampoline_start - initial_global_runtime_iat_region_base;
 
-    LOADER_LOG("---Starting Windows dyn callback---\n");
+    LOGTRACE("---Starting Windows dyn callback---\n");
 
     /** Find entry in Import Address Table */
 
@@ -190,7 +188,7 @@ static void dynamic_callback_windows(void) {
         EXIT("func_iat_value_raw '%x' not found\n", func_iat_value_raw);
     }
 
-    LOADER_LOG(
+    LOGTRACE(
         "%s IAT: %x:%x\n", source_iat_object->name, func_iat_key, func_iat_value
     );
 
@@ -218,7 +216,7 @@ static void dynamic_callback_windows(void) {
         );
     };
 
-    LOADER_LOG(
+    LOGTRACE(
         "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         lib_name,
         import_entry->name,
@@ -267,7 +265,7 @@ static void dynamic_callback_windows(void) {
         EXIT("expected runtime function\n");
     }
 
-    LOADER_LOG("Completed dynamic linking to %x\n", function_export.address);
+    LOGTRACE("Completed dynamic linking to %x\n", function_export.address);
 
     if (is_lib_ntdll) {
         /* Converts from Windows state to Linux state, and back */
@@ -382,8 +380,10 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     }
 
     size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
-    struct MemoryRegionsInfo memory_regions_info;
-    if (!get_memory_regions_info_x86(
+    MemoryRegionList memory_regions_info = {
+        .allocator = loader_malloc_arena,
+    };
+    if (!get_memory_regions_info(
             ntdll_elf.program_headers,
             ntdll_elf.header.e_phnum,
             dynamic_lib_offset,
@@ -392,11 +392,9 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         BAIL("failed getting memory regions\n");
     }
 
-    LOADER_LOG("Mapping shared library 'lib_ntdll.so'\n");
+    LOGINFO("Mapping shared library 'lib_ntdll.so'\n");
     if (!map_memory_regions(
-            ntdll_file,
-            memory_regions_info.regions,
-            memory_regions_info.regions_len
+            ntdll_file, memory_regions_info.data, memory_regions_info.length
         )) {
         BAIL("loader lib map memory regions failed\n");
     }
@@ -448,11 +446,11 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
 
     /** Init GOT */
 
-    LOADER_LOG("GOT entries: %d\n", runtime_got_entries.length);
+    LOGINFO("GOT entries: %d\n", runtime_got_entries.length);
     for (size_t i = 0; i < runtime_got_entries.length; i++) {
         struct RuntimeGotEntry *runtime_got_entry =
             &runtime_got_entries.data[i];
-        LOADER_LOG(
+        LOGINFO(
             "GOT entry %d: %x == %x, variable: %s\n",
             i + 1,
             runtime_got_entry->index,
@@ -494,7 +492,7 @@ static bool load_dlls(
         struct ImportDirectoryEntry *dir_entry =
             &inferior_executable->import_dir_entries[i];
         const char *shared_lib_name = dir_entry->lib_name;
-        LOADER_LOG("mapping shared library '%s'\n", shared_lib_name);
+        LOGINFO("mapping shared library '%s'\n", shared_lib_name);
         int32_t shared_lib_file = tiny_c_open(shared_lib_name, O_RDONLY);
         if (shared_lib_file == -1) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
@@ -647,27 +645,27 @@ int main(int argc, char **argv) {
     }
 
     char *filename = argv[1];
-    LOADER_LOG("Starting winloader, %s, %d\n", filename, argc);
+    LOGINFO("Starting winloader, %s, %d\n", filename, argc);
 
     /* Init heap */
 
     size_t brk_start = tinyc_sys_brk(0);
-    LOADER_LOG("BRK:, %x\n", brk_start);
+    LOGINFO("BRK:, %x\n", brk_start);
     size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
-    LOADER_LOG("BRK:, %x\n", brk_end);
+    LOGINFO("BRK:, %x\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");
     }
 
     int32_t pid = tiny_c_get_pid();
-    LOADER_LOG("pid: %d\n", pid);
+    LOGINFO("pid: %d\n", pid);
 
     /* Unmap default locations */
 
-    if (tiny_c_munmap(0x10000, 0x1000)) {
+    if (tiny_c_munmap((void *)0x10000, 0x1000)) {
         EXIT("munmap of self failed\n");
     }
-    if (tiny_c_munmap(0x400000, 0x1000)) {
+    if (tiny_c_munmap((void *)0x400000, 0x1000)) {
         tiny_c_fprintf(STDERR, "munmap of self failed\n");
         return -1;
     }
@@ -720,7 +718,7 @@ int main(int argc, char **argv) {
         EXIT("failed getting memory regions\n");
     }
 
-    LOADER_LOG("Mapping executable memory\n");
+    LOGINFO("Mapping executable memory\n");
     if (!map_memory_regions_win(
             fd, memory_regions.data, memory_regions.length
         )) {
@@ -790,12 +788,13 @@ int main(int argc, char **argv) {
     /* Map Import Address Tables */
 
     if (tiny_c_munmap(
-            initial_global_runtime_iat_region_base, TRAMPOLINE_IAT_RESERVED_SIZE
+            (void *)initial_global_runtime_iat_region_base,
+            TRAMPOLINE_IAT_RESERVED_SIZE
         )) {
         EXIT("munmap initial_global_runtime_iat_base failed\n");
     }
 
-    LOADER_LOG("Initializing executable IAT\n");
+    LOGINFO("Initializing executable IAT\n");
     if (!initialize_import_address_table(&runtime_exe)) {
         log_memory_regions();
         EXIT("initialize_import_address_table failed\n");
@@ -803,7 +802,7 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < shared_libraries.length; i++) {
         const struct WinRuntimeObject *shared_library =
             &shared_libraries.data[i];
-        LOADER_LOG("Initializing '%s' IAT\n", shared_library->name);
+        LOGINFO("Initializing '%s' IAT\n", shared_library->name);
         if (!initialize_import_address_table(shared_library)) {
             log_memory_regions();
             EXIT("initialize_import_address_table failed\n");
@@ -850,7 +849,7 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < inferior_argc; i++) {
         char *string = argv[i + 1];
         size_t string_len = strlen(string);
-        LOADER_LOG("stack arg %d: %s\n", i, string);
+        LOGINFO("stack arg %d: %s\n", i, string);
         for (size_t i = 0; i < string_len; i++) {
             cmd[cmd_len] = (WCHAR)string[i];
             cmd_len += 1;
@@ -887,9 +886,9 @@ int main(int argc, char **argv) {
 
     *inferior_stack = (size_t)win_loader_implicit_end;
 
-    LOADER_LOG("inferior_entry: %x\n", pe_exe.entrypoint);
-    LOADER_LOG("inferior_stack: %x\n", inferior_stack);
-    LOADER_LOG("------------running program------------\n");
+    LOGINFO("inferior_entry: %x\n", pe_exe.entrypoint);
+    LOGINFO("inferior_stack: %x\n", inferior_stack);
+    LOGINFO("------------running program------------\n");
 
     __asm__(
 
