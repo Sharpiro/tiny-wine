@@ -7,8 +7,6 @@
 #include <stdint.h>
 
 #define LOADER_BUFFER_LEN 0x210'000
-// @todo: hard-coding this may cause random program failures due to ASLR etc.
-#define LOADER_SHARED_LIB_START 0x500000
 
 extern int32_t loader_log_handle;
 
@@ -19,11 +17,11 @@ extern int32_t loader_log_handle;
 #define ERROR 5
 #define CRITICAL 6
 
-#ifndef LOGLEVEL
-#define LOGLEVEL ERROR
+#ifndef LOG_LEVEL
+#define LOG_LEVEL WARNING
 #endif
 
-#if LOGLEVEL <= TRACE
+#if LOG_LEVEL <= TRACE
 
 #define LOGTRACE(fmt, ...)                                                     \
     tiny_c_fprintf(2, "TRACE: ", ##__VA_ARGS__);                               \
@@ -38,7 +36,7 @@ extern int32_t loader_log_handle;
 
 #endif
 
-#if LOGLEVEL <= INFO
+#if LOG_LEVEL <= INFO
 
 #define LOGINFO(fmt, ...)                                                      \
     tiny_c_fprintf(2, "INFO: ", ##__VA_ARGS__);                                \
@@ -53,7 +51,7 @@ extern int32_t loader_log_handle;
 
 #endif
 
-#if LOGLEVEL <= WARNING
+#if LOG_LEVEL <= WARNING
 
 #define LOGWARNING(fmt, ...)                                                   \
     tiny_c_fprintf(2, "WARNING: ", ##__VA_ARGS__);                             \
@@ -68,7 +66,7 @@ extern int32_t loader_log_handle;
 
 #endif
 
-#if LOGLEVEL <= ERROR
+#if LOG_LEVEL <= ERROR
 
 #define LOGERROR(fmt, ...)                                                     \
     tiny_c_fprintf(2, "ERROR: ", ##__VA_ARGS__);                               \

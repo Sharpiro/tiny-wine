@@ -13,9 +13,10 @@ bool get_memory_regions_arm(
 bool get_memory_regions(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
-    size_t address_offset,
     MemoryRegionList *memory_regions
 );
+
+bool reserve_region_space(MemoryRegionList *regions, size_t *reserved_address);
 
 bool map_memory_regions(
     int32_t fd, const struct MemoryRegion *regions, size_t regions_len

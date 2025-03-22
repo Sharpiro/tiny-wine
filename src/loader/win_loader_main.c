@@ -379,17 +379,18 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         BAIL("Expected shared library to have dynamic data\n");
     }
 
-    size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
     MemoryRegionList memory_regions = {
         .allocator = loader_malloc_arena,
     };
     if (!get_memory_regions(
-            ntdll_elf.program_headers,
-            ntdll_elf.header.e_phnum,
-            dynamic_lib_offset,
-            &memory_regions
+            ntdll_elf.program_headers, ntdll_elf.header.e_phnum, &memory_regions
         )) {
         BAIL("failed getting memory regions\n");
+    }
+
+    size_t reserved_address;
+    if (!reserve_region_space(&memory_regions, &reserved_address)) {
+        BAIL("get_reserved_region_space failed\n");
     }
 
     LOGINFO("Mapping shared library 'lib_ntdll.so'\n");
@@ -407,7 +408,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         ntdll_elf.section_headers, ntdll_elf.section_headers_len, ".bss"
     );
     if (bss_section_header != NULL) {
-        bss = (uint8_t *)(dynamic_lib_offset + bss_section_header->addr);
+        bss = (uint8_t *)(reserved_address + bss_section_header->addr);
         bss_len = bss_section_header->size;
     }
 
@@ -415,7 +416,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     size_t runtime_func_relocations_len;
     if (!get_function_relocations(
             ntdll_elf.dynamic_data,
-            dynamic_lib_offset,
+            reserved_address,
             &runtime_func_relocations,
             &runtime_func_relocations_len
         )) {
@@ -426,7 +427,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         .allocator = loader_malloc_arena,
     };
     if (!find_win_symbols(
-            ntdll_elf.dynamic_data, dynamic_lib_offset, &runtime_symbols
+            ntdll_elf.dynamic_data, reserved_address, &runtime_symbols
         )) {
         BAIL("failed getting symbols\n");
     }
@@ -436,7 +437,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     };
     if (!get_runtime_got(
             ntdll_elf.dynamic_data,
-            dynamic_lib_offset,
+            reserved_address,
             (size_t)dynamic_callback_linux,
             got_lib_dyn_offset_table + 1,
             &runtime_got_entries
@@ -467,7 +468,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
 
     *lib_ntdll_object = (struct RuntimeObject){
         .name = LIB_NTDLL_SO_NAME,
-        .dynamic_offset = dynamic_lib_offset,
+        .dynamic_offset = reserved_address,
         .elf_data = ntdll_elf,
         .memory_regions = memory_regions,
         .runtime_func_relocations = runtime_func_relocations,

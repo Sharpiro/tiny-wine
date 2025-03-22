@@ -8,7 +8,6 @@
 bool get_memory_regions(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
-    size_t address_offset,
     MemoryRegionList *memory_regions
 ) {
     if (program_headers == NULL) {
@@ -24,7 +23,7 @@ bool get_memory_regions(
             continue;
         }
         if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
-            LOGINFO(
+            LOGWARNING(
                 "PH %d: zero filesize w/ non-zero offset may not be "
                 "unsupported\n",
                 i + 1
@@ -49,9 +48,6 @@ bool get_memory_regions(
             end += 0x1000;
         }
 
-        start += address_offset;
-        end += address_offset;
-
         struct MemoryRegion memory_region = (struct MemoryRegion){
             .start = start,
             .end = end,
@@ -65,14 +61,10 @@ bool get_memory_regions(
     return true;
 }
 
-bool get_reserved_region_space(
-    const struct MemoryRegion *regions,
-    size_t regions_len,
-    uint8_t **reserved_address
-) {
+bool reserve_region_space(MemoryRegionList *regions, size_t *reserved_address) {
     size_t reserved_len = 0;
-    for (size_t i = 0; i < regions_len; i++) {
-        const struct MemoryRegion *region = &regions[i];
+    for (size_t i = 0; i < regions->length; i++) {
+        const struct MemoryRegion *region = &regions->data[i];
         reserved_len += region->end - region->start;
     }
 
@@ -99,7 +91,13 @@ bool get_reserved_region_space(
         );
     }
 
-    *reserved_address = addr;
+    *reserved_address = (size_t)addr;
+    for (size_t i = 0; i < regions->length; i++) {
+        struct MemoryRegion *memory_region = &regions->data[i];
+        memory_region->start += *reserved_address;
+        memory_region->end += *reserved_address;
+    }
+
     return true;
 }
 

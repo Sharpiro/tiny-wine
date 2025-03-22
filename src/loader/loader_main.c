@@ -148,7 +148,6 @@ static bool initialize_dynamic_data(
         BAIL("loader_malloc_arena failed\n");
     }
 
-    size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
         char *shared_lib_name = inferior_dyn_data->shared_libraries[i];
         LOGINFO("mapping shared library '%s'\n", shared_lib_name);
@@ -173,10 +172,14 @@ static bool initialize_dynamic_data(
         if (!get_memory_regions(
                 shared_lib_elf.program_headers,
                 shared_lib_elf.header.e_phnum,
-                dynamic_lib_offset,
                 &memory_regions
             )) {
             BAIL("failed getting memory regions\n");
+        }
+
+        size_t reserved_address;
+        if (!reserve_region_space(&memory_regions, &reserved_address)) {
+            BAIL("get_reserved_region_space failed\n");
         }
 
         LOGINFO("Mapping library memory regions\n");
@@ -202,7 +205,7 @@ static bool initialize_dynamic_data(
             ".bss"
         );
         if (bss_section_header != NULL) {
-            bss = (uint8_t *)(dynamic_lib_offset + bss_section_header->addr);
+            bss = (uint8_t *)(reserved_address + bss_section_header->addr);
             bss_len = bss_section_header->size;
         }
 
@@ -212,7 +215,7 @@ static bool initialize_dynamic_data(
         size_t runtime_func_relocations_len;
         if (!get_function_relocations(
                 shared_lib_elf.dynamic_data,
-                dynamic_lib_offset,
+                reserved_address,
                 &runtime_func_relocations,
                 &runtime_func_relocations_len
             )) {
@@ -226,7 +229,7 @@ static bool initialize_dynamic_data(
         };
         if (!find_win_symbols(
                 shared_lib_elf.dynamic_data,
-                dynamic_lib_offset,
+                reserved_address,
                 &runtime_lib_symbols
             )) {
             BAIL("failed getting symbols\n");
@@ -234,7 +237,7 @@ static bool initialize_dynamic_data(
 
         struct RuntimeObject shared_library = {
             .name = shared_lib_name,
-            .dynamic_offset = dynamic_lib_offset,
+            .dynamic_offset = reserved_address,
             .elf_data = shared_lib_elf,
             .memory_regions = memory_regions,
             .runtime_func_relocations = runtime_func_relocations,
@@ -244,9 +247,6 @@ static bool initialize_dynamic_data(
             .runtime_symbols = runtime_lib_symbols,
         };
         (*shared_libraries)[i] = shared_library;
-        struct MemoryRegion *last_region =
-            &memory_regions.data[memory_regions.length - 1];
-        dynamic_lib_offset = memory_regions.data == 0 ? 0 : last_region->end;
     }
 
     /** Get runtime symbols */
@@ -499,7 +499,6 @@ int main(int32_t argc, char **argv) {
     if (!get_memory_regions(
             inferior_elf.program_headers,
             inferior_elf.header.e_phnum,
-            0,
             &memory_regions
         )) {
         EXIT("failed getting memory regions\n");

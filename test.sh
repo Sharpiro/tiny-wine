@@ -1,14 +1,20 @@
 #! /bin/bash
 
+loop_count=${1:-1}
+log_level=0
+if [[ loop_count -gt 1 ]]; then
+    log_level=5
+    export CFLAGS="-DLOG_LEVEL=5"
+fi
+
 echo "cleaning"
 make clean
-echo "building"
+echo "building w/ LOG_LEVEL $log_level"
 make
 if [[ $? -ne 0 ]]; then
     exit
 fi
 
-loop_count=${1:-1}
 for ((i = 0; i < loop_count; i++)); do
     if [[ loop_count -gt 1 ]]; then
         echo "Testing round $((i + 1))"

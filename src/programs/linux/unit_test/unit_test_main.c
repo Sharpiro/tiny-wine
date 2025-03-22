@@ -39,7 +39,6 @@ static void get_memory_regions_basic_test(void) {
     bool result = get_memory_regions(
         program_headers,
         sizeof(program_headers) / sizeof(PROGRAM_HEADER),
-        0,
         &memory_regions
     );
 
@@ -81,7 +80,6 @@ static void get_memory_regions_offset_test(void) {
     bool result = get_memory_regions(
         program_headers,
         sizeof(program_headers) / sizeof(PROGRAM_HEADER),
-        0,
         &memory_regions
     );
 
@@ -121,7 +119,6 @@ static void get_memory_regions_big_align_test(void) {
     bool result = get_memory_regions(
         program_headers,
         sizeof(program_headers) / sizeof(PROGRAM_HEADER),
-        0,
         &memory_regions
     );
 
@@ -181,7 +178,6 @@ static void get_memory_regions_x86_test(void) {
     bool result = get_memory_regions(
         program_headers,
         sizeof(program_headers) / sizeof(PROGRAM_HEADER),
-        0,
         &memory_regions
     );
 
