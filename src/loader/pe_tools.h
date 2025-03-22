@@ -1,7 +1,6 @@
 #pragma once
 
-#include "elf_tools.h"
-#include <assert.h>
+#include "memory_map.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -5,6 +5,7 @@
 #include "./pe_tools.h"
 #include "elf_tools.h"
 #include "loader_lib.h"
+#include "log.h"
 #include "memory_map.h"
 #include "win_loader_lib.h"
 #include <asm/prctl.h>
@@ -426,7 +427,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     RuntimeSymbolList runtime_symbols = {
         .allocator = loader_malloc_arena,
     };
-    if (!find_win_symbols(
+    if (!find_symbols(
             ntdll_elf.dynamic_data, reserved_address, &runtime_symbols
         )) {
         BAIL("failed getting symbols\n");

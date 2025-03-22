@@ -1,14 +1,9 @@
 #include "elf_tools.h"
 #include "../tiny_c/tiny_c.h"
-#include "loader_lib.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "memory_map.h"
 #include <stdio.h>
-#include <string.h>
 
 #define ELF_HEADER_LEN sizeof(ELF_HEADER)
-
-const uint8_t ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
 
 static bool get_section_headers(
     const ELF_HEADER *elf_header,
@@ -423,6 +418,7 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
     if (header_read_len != ELF_HEADER_LEN) {
         BAIL("read failed\n");
     }
+    const uint8_t ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
     if (tiny_c_memcmp(elf_header.e_ident, ELF_MAGIC, 4)) {
         BAIL("Program type not supported\n");
     }

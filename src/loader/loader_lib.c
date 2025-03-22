@@ -1,48 +1,10 @@
 #include "loader_lib.h"
 #include "../tiny_c/tiny_c.h"
-#include "elf_tools.h"
+#include "log.h"
+#include "memory_map.h"
 #include <fcntl.h>
 #include <stddef.h>
 #include <sys/mman.h>
-
-int32_t loader_log_handle = STDERR;
-
-static uint8_t *loader_buffer = NULL;
-static size_t loader_heap_index = 0;
-
-void *loader_malloc_arena(size_t n) {
-    if (loader_buffer == NULL) {
-        loader_buffer = tiny_c_mmap(
-            0,
-            LOADER_BUFFER_LEN,
-            PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-        if (loader_buffer == MAP_FAILED) {
-            return NULL;
-        }
-    }
-
-    const size_t POINTER_SIZE = sizeof(size_t);
-    size_t alignment_mod = n % POINTER_SIZE;
-    size_t aligned_end =
-        alignment_mod == 0 ? n : n + POINTER_SIZE - alignment_mod;
-    if (loader_heap_index + aligned_end > LOADER_BUFFER_LEN) {
-        LOGERROR("size exceeded\n");
-        return NULL;
-    }
-
-    void *address = (void *)(loader_buffer + loader_heap_index);
-    loader_heap_index += aligned_end;
-
-    return address;
-}
-
-void loader_free_arena(void) {
-    loader_heap_index = 0;
-}
 
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,
@@ -180,7 +142,7 @@ bool get_function_relocations(
     return true;
 }
 
-bool find_win_symbols(
+bool find_symbols(
     const struct DynamicData *dyn_data,
     size_t lib_dyn_offset,
     RuntimeSymbolList *runtime_symbols
@@ -230,6 +192,61 @@ bool get_runtime_got(
             .lib_dynamic_offset = lib_dynamic_offset,
         };
         RuntimeGotEntryList_add(runtime_got_entries, runtime_got_entry);
+    }
+
+    return true;
+}
+bool get_memory_regions(
+    const PROGRAM_HEADER *program_headers,
+    size_t program_headers_len,
+    MemoryRegionList *memory_regions
+) {
+    if (program_headers == NULL) {
+        BAIL("program_headers cannot be null\n");
+    }
+    if (memory_regions == NULL) {
+        BAIL("memory_regions cannot be null\n");
+    }
+
+    for (size_t i = 0; i < program_headers_len; i++) {
+        const PROGRAM_HEADER *program_header = &program_headers[i];
+        if (program_header->p_type != PT_LOAD) {
+            continue;
+        }
+        if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
+            LOGWARNING(
+                "PH %d: zero filesize w/ non-zero offset may not be "
+                "unsupported\n",
+                i + 1
+            );
+        }
+        if (program_header->p_memsz != program_header->p_filesz) {
+            LOGINFO("PH filesize != memsize\n", i + 1);
+        }
+
+        size_t file_offset = program_header->p_offset /
+            program_header->p_align * program_header->p_align;
+        size_t start = program_header->p_vaddr / program_header->p_align *
+            program_header->p_align;
+        size_t end = start +
+            program_header->p_memsz / program_header->p_align *
+                program_header->p_align +
+            program_header->p_align;
+        size_t max_region_address =
+            program_header->p_vaddr + program_header->p_memsz;
+        if (max_region_address > end) {
+            LOGTRACE("Memory region %x extended due to offset\n", start);
+            end += 0x1000;
+        }
+
+        struct MemoryRegion memory_region = (struct MemoryRegion){
+            .start = start,
+            .end = end,
+            .is_direct_file_map = program_header->p_filesz > 0,
+            .file_offset = file_offset,
+            .permissions = program_header->p_flags,
+        };
+        MemoryRegionList_add(memory_regions, memory_region);
     }
 
     return true;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "list.h"
 #include <elf.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -46,17 +45,6 @@ struct Relocation {
     size_t type;
     struct Symbol symbol;
 };
-
-typedef struct MemoryRegion {
-    size_t start;
-    size_t end;
-    bool is_direct_file_map;
-    size_t file_offset;
-    size_t file_size;
-    size_t permissions;
-} MemoryRegion;
-
-CREATE_LIST_STRUCT(MemoryRegion)
 
 struct DynamicData {
     struct Symbol *symbols;

@@ -5,6 +5,7 @@
 
 // @todo: merge tinyc and msvcrt?
 // @todo: get working via winloader?
+// @todo: reduce number of linux test program binaries
 
 int main(int argc, char **argv) {
     if (argc < 2 || tiny_c_memcmp(argv[1], "--", 2) == 0) {

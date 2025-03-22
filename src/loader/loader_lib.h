@@ -1,85 +1,7 @@
 #pragma once
 
 #include "elf_tools.h"
-#include "list.h"
-#include "pe_tools.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#define LOADER_BUFFER_LEN 0x210'000
-
-extern int32_t loader_log_handle;
-
-#define TRACE 1
-#define DEBUG 2
-#define INFO 3
-#define WARNING 4
-#define ERROR 5
-#define CRITICAL 6
-
-#ifndef LOG_LEVEL
-#define LOG_LEVEL WARNING
-#endif
-
-#if LOG_LEVEL <= TRACE
-
-#define LOGTRACE(fmt, ...)                                                     \
-    tiny_c_fprintf(2, "TRACE: ", ##__VA_ARGS__);                               \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
-
-#else
-
-#define LOGTRACE(fmt, ...)                                                     \
-    if (0) {                                                                   \
-        (void)0, ##__VA_ARGS__;                                                \
-    }
-
-#endif
-
-#if LOG_LEVEL <= INFO
-
-#define LOGINFO(fmt, ...)                                                      \
-    tiny_c_fprintf(2, "INFO: ", ##__VA_ARGS__);                                \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
-
-#else
-
-#define LOGINFO(fmt, ...)                                                      \
-    if (0) {                                                                   \
-        (void)0, ##__VA_ARGS__;                                                \
-    }
-
-#endif
-
-#if LOG_LEVEL <= WARNING
-
-#define LOGWARNING(fmt, ...)                                                   \
-    tiny_c_fprintf(2, "WARNING: ", ##__VA_ARGS__);                             \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
-
-#else
-
-#define LOGWARNING(fmt, ...)                                                   \
-    if (0) {                                                                   \
-        (void)0, ##__VA_ARGS__;                                                \
-    }
-
-#endif
-
-#if LOG_LEVEL <= ERROR
-
-#define LOGERROR(fmt, ...)                                                     \
-    tiny_c_fprintf(2, "ERROR: ", ##__VA_ARGS__);                               \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
-
-#else
-
-#define LOGERROR(fmt, ...)                                                     \
-    if (0) {                                                                   \
-        (void)0, ##__VA_ARGS__;                                                \
-    }
-
-#endif
+#include "memory_map.h"
 
 typedef struct RuntimeGotEntry {
     size_t index;
@@ -117,26 +39,6 @@ typedef struct RuntimeObject {
     RuntimeSymbolList runtime_symbols;
 } RuntimeObject;
 
-typedef struct WinRuntimeExport {
-    size_t address;
-    const char *name;
-} WinRuntimeExport;
-
-CREATE_LIST_STRUCT(WinRuntimeExport)
-
-typedef struct WinRuntimeObject {
-    const char *name;
-    struct PeData pe_data;
-    MemoryRegionList memory_regions;
-    WinRuntimeExportList function_exports;
-    // Runtime object's section base IAT trampoline region
-    size_t runtime_iat_section_base;
-} WinRuntimeObject;
-
-CREATE_LIST_STRUCT(WinRuntimeObject)
-
-CREATE_LIST_STRUCT(WinSymbol)
-
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,
     size_t runtime_relocations_len,
@@ -169,10 +71,6 @@ bool find_got_entry(
     struct RuntimeGotEntry **got_entry
 );
 
-void *loader_malloc_arena(size_t n);
-
-void loader_free_arena(void);
-
 bool read_to_string(const char *path, char **content, size_t size);
 
 bool log_memory_regions(void);
@@ -184,7 +82,7 @@ bool get_function_relocations(
     size_t *runtime_func_relocations_len
 );
 
-bool find_win_symbols(
+bool find_symbols(
     const struct DynamicData *dyn_data,
     size_t dyn_offset,
     RuntimeSymbolList *runtime_symbols
@@ -196,4 +94,10 @@ bool get_runtime_got(
     size_t dynamic_linker_callback_address,
     size_t *got_lib_dyn_offset_table,
     RuntimeGotEntryList *runtime_symbols
+);
+
+bool get_memory_regions(
+    const PROGRAM_HEADER *program_headers,
+    size_t program_headers_len,
+    MemoryRegionList *memory_regions
 );

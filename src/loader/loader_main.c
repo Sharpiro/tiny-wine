@@ -1,14 +1,9 @@
 #include "../dlls/macros.h"
 #include "../tiny_c/tiny_c.h"
 #include "../tiny_c/tinyc_sys.h"
-#include "elf_tools.h"
 #include "loader_lib.h"
-#include "memory_map.h"
+#include "log.h"
 #include <fcntl.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-#include <sys/mman.h>
 
 struct RuntimeObject *executable_object;
 struct RuntimeObject *shared_objects;
@@ -227,7 +222,7 @@ static bool initialize_dynamic_data(
         RuntimeSymbolList runtime_lib_symbols = (RuntimeSymbolList){
             .allocator = loader_malloc_arena,
         };
-        if (!find_win_symbols(
+        if (!find_symbols(
                 shared_lib_elf.dynamic_data,
                 reserved_address,
                 &runtime_lib_symbols
@@ -540,9 +535,7 @@ int main(int32_t argc, char **argv) {
             EXIT("get_function_relocations failed\n");
         }
 
-        if (!find_win_symbols(
-                inferior_elf.dynamic_data, 0, &exe_runtime_symbols
-            )) {
+        if (!find_symbols(inferior_elf.dynamic_data, 0, &exe_runtime_symbols)) {
             EXIT("failed getting symbols\n");
         }
         RuntimeSymbolList_clone(&runtime_symbols, &exe_runtime_symbols);

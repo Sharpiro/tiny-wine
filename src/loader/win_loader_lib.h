@@ -17,6 +17,24 @@ struct PreservedSwapState {
     size_t rsi;
 };
 
+typedef struct WinRuntimeExport {
+    size_t address;
+    const char *name;
+} WinRuntimeExport;
+
+CREATE_LIST_STRUCT(WinRuntimeExport)
+
+typedef struct WinRuntimeObject {
+    const char *name;
+    struct PeData pe_data;
+    MemoryRegionList memory_regions;
+    WinRuntimeExportList function_exports;
+    // Runtime object's section base IAT trampoline region
+    size_t runtime_iat_section_base;
+} WinRuntimeObject;
+
+CREATE_LIST_STRUCT(WinRuntimeObject)
+
 extern inline Converter convert(size_t x);
 
 const struct WinRuntimeObject *find_runtime_object(

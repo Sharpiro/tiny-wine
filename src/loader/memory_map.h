@@ -1,20 +1,20 @@
 #pragma once
 
-#include "elf_tools.h"
+#include "list.h"
 #include <stdint.h>
 
-bool get_memory_regions_arm(
-    const PROGRAM_HEADER *program_headers,
-    size_t program_headers_len,
-    size_t address_offset,
-    MemoryRegionList *memory_regions
-);
+typedef struct MemoryRegion {
+    size_t start;
+    size_t end;
+    bool is_direct_file_map;
+    size_t file_offset;
+    size_t file_size;
+    size_t permissions;
+} MemoryRegion;
 
-bool get_memory_regions(
-    const PROGRAM_HEADER *program_headers,
-    size_t program_headers_len,
-    MemoryRegionList *memory_regions
-);
+CREATE_LIST_STRUCT(MemoryRegion)
+
+void *loader_malloc_arena(size_t n);
 
 bool reserve_region_space(MemoryRegionList *regions, size_t *reserved_address);
 

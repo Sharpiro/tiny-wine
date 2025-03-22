@@ -267,6 +267,7 @@ loader: \
 	src/loader/list.h \
 	src/loader/loader_lib.h \
 	src/loader/loader_lib.c \
+	src/loader/memory_map.h \
 	src/loader/memory_map.c \
 	src/loader/elf_tools.c \
 	tinyc_start.o \
@@ -298,6 +299,7 @@ winloader: \
 		src/loader/list.h \
 		src/loader/loader_lib.h \
 		src/loader/loader_lib.c \
+		src/loader/memory_map.h \
 		src/loader/memory_map.c \
 		src/loader/pe_tools.h \
 		src/loader/pe_tools.c \
@@ -327,6 +329,7 @@ winloader: \
 
 unit_test: \
 		src/programs/linux/unit_test/unit_test_main.c \
+		src/loader/memory_map.h \
 		src/loader/memory_map.c \
 		src/loader/list.h \
 		src/loader/loader_lib.h \
@@ -470,10 +473,9 @@ windynamicfull.exe: \
 readwin: \
 		tools/readwin/readwin_main.c \
 		src/loader/list.h \
-		src/loader/loader_lib.h \
-		src/loader/loader_lib.c \
 		src/loader/pe_tools.h \
 		src/loader/pe_tools.c \
+		src/loader/memory_map.h \
 		src/loader/memory_map.c \
 		tinyc_start.o \
 		libtinyc.a
@@ -485,7 +487,6 @@ readwin: \
 		$(WARNINGS) \
 		-o readwin \
 		tools/readwin/readwin_main.c \
-		src/loader/loader_lib.c \
 		src/loader/pe_tools.c \
 		src/loader/memory_map.c \
 		tinyc_start.o \

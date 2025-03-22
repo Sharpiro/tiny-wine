@@ -1,15 +1,9 @@
 
 #include "./pe_tools.h"
 #include "../tiny_c/tiny_c.h"
-#include "elf_tools.h"
-#include "loader_lib.h"
-#include "memory_map.h"
-#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
 
 // @todo: do we need mmap functions here and in memory_map.c?
 
