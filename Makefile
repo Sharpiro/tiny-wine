@@ -263,7 +263,7 @@ windynamiclibfull.dll: \
 	@$(OBJDUMP) -M intel -D windynamiclibfull.dll > windynamiclibfull.dll.dump
 
 loader: \
-	src/loader/list.h \
+	src/list.h \
 	src/loader/memory_map.h \
 	src/loader/memory_map.c \
 	src/loader/linux/loader_main.c\
@@ -294,7 +294,7 @@ loader: \
 	@$(OBJDUMP) -M intel -D loader > loader.dump
 
 winloader: \
-		src/loader/list.h \
+		src/list.h \
 		src/loader/memory_map.h \
 		src/loader/memory_map.c \
 		src/loader/windows/win_loader_main.c \
@@ -334,7 +334,7 @@ unit_test: \
 		src/programs/linux/unit_test/unit_test_main.c \
 		src/loader/memory_map.h \
 		src/loader/memory_map.c \
-		src/loader/list.h \
+		src/list.h \
 		src/loader/linux/loader_lib.h \
 		src/loader/linux/loader_lib.c \
 		src/loader/windows/pe_tools.h \
@@ -476,7 +476,7 @@ windynamicfull.exe: \
 
 readwin: \
 		tools/readwin/readwin_main.c \
-		src/loader/list.h \
+		src/list.h \
 		src/loader/memory_map.h \
 		src/loader/memory_map.c \
 		src/loader/windows/pe_tools.h \

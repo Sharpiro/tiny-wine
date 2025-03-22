@@ -3,8 +3,6 @@
 #include <stddef.h>
 #include <string.h>
 
-// @todo: move global?
-
 #define CREATE_LIST_STRUCT(type)                                               \
     typedef struct {                                                           \
         type *data;                                                            \

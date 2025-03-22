@@ -26,6 +26,9 @@ docker build -t tinywine $PWD
 
 ## Building
 
+> [!WARNING]
+> A large number of files are dumped to the root directory
+
 ```sh
 docker run --rm -v $PWD:/root/tiny_wine tinywine make
 ```

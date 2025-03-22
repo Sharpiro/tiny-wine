@@ -1,6 +1,6 @@
 #pragma once
 
-#include "list.h"
+#include "../list.h"
 #include <stdbool.h>
 #include <stdint.h>
 
