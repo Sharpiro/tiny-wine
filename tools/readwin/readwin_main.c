@@ -1,4 +1,4 @@
-#include "../../src/loader/pe_tools.h"
+#include "../../src/loader/windows/pe_tools.h"
 #include "../../src/tiny_c/tiny_c.h"
 #include <fcntl.h>
 #include <stddef.h>
@@ -6,6 +6,7 @@
 // @todo: merge tinyc and msvcrt?
 // @todo: get working via winloader?
 // @todo: reduce number of linux test program binaries
+// @todo: dedicated include directory?
 
 int main(int argc, char **argv) {
     if (argc < 2 || tiny_c_memcmp(argv[1], "--", 2) == 0) {

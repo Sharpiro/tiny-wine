@@ -1,6 +1,7 @@
 #pragma once
 
 #include "list.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct MemoryRegion {

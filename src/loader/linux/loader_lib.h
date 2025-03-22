@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../memory_map.h"
 #include "elf_tools.h"
-#include "memory_map.h"
 
 typedef struct RuntimeGotEntry {
     size_t index;
@@ -45,16 +45,6 @@ bool find_runtime_relocation(
     size_t relocation_offset,
     const struct RuntimeRelocation **runtime_relocation
 );
-
-typedef struct RuntimeImportAddressEntry {
-    size_t key;
-    size_t value;
-    const char *lib_name;
-    const char *import_name;
-    bool is_variable;
-} RuntimeImportAddressEntry;
-
-CREATE_LIST_STRUCT(RuntimeImportAddressEntry)
 
 bool find_runtime_symbol(
     const char *name,

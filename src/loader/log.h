@@ -1,5 +1,6 @@
-// #include "../tiny_c/tiny_c.h"
 #include <stddef.h>
+
+// @todo: use globally if we refactor "tiny_c_fprintf" to "fprintf"
 
 #pragma once
 

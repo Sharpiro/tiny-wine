@@ -1,6 +1,7 @@
 #pragma once
 
-#include "memory_map.h"
+#include "../memory_map.h"
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

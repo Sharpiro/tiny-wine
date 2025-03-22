@@ -1,6 +1,5 @@
 #pragma once
 
-#include "loader_lib.h"
 #include "pe_tools.h"
 #include <stddef.h>
 
@@ -44,6 +43,16 @@ const struct WinRuntimeObject *find_runtime_object(
 const struct WinSymbol *find_win_symbol(
     const struct WinSymbol *symbols, size_t symbols_len, const char *name
 );
+
+typedef struct RuntimeImportAddressEntry {
+    size_t key;
+    size_t value;
+    const char *lib_name;
+    const char *import_name;
+    bool is_variable;
+} RuntimeImportAddressEntry;
+
+CREATE_LIST_STRUCT(RuntimeImportAddressEntry)
 
 bool get_runtime_import_address_table(
     const struct ImportAddressEntry *import_address_table,

@@ -1,8 +1,8 @@
-#include "../dlls/macros.h"
-#include "../tiny_c/tiny_c.h"
-#include "../tiny_c/tinyc_sys.h"
+#include "../../dlls/macros.h"
+#include "../../tiny_c/tiny_c.h"
+#include "../../tiny_c/tinyc_sys.h"
+#include "../log.h"
 #include "loader_lib.h"
-#include "log.h"
 #include <fcntl.h>
 
 struct RuntimeObject *executable_object;

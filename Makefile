@@ -263,13 +263,14 @@ windynamiclibfull.dll: \
 	@$(OBJDUMP) -M intel -D windynamiclibfull.dll > windynamiclibfull.dll.dump
 
 loader: \
-	src/loader/loader_main.c\
 	src/loader/list.h \
-	src/loader/loader_lib.h \
-	src/loader/loader_lib.c \
 	src/loader/memory_map.h \
 	src/loader/memory_map.c \
-	src/loader/elf_tools.c \
+	src/loader/linux/loader_main.c\
+	src/loader/linux/loader_lib.h \
+	src/loader/linux/loader_lib.c \
+	src/loader/linux/elf_tools.h \
+	src/loader/linux/elf_tools.c \
 	tinyc_start.o \
 	libtinyc.a
 	@echo "loader"
@@ -284,25 +285,27 @@ loader: \
 		-masm=intel \
 		-mno-sse \
 		-o loader \
-		src/loader/loader_main.c \
-		src/loader/loader_lib.c \
 		src/loader/memory_map.c \
-		src/loader/elf_tools.c \
+		src/loader/linux/loader_main.c \
+		src/loader/linux/loader_lib.c \
+		src/loader/linux/elf_tools.c \
 		tinyc_start.o \
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D loader > loader.dump
 
 winloader: \
-		src/loader/win_loader_main.c \
-		src/loader/win_loader_lib.h \
-		src/loader/win_loader_lib.c \
 		src/loader/list.h \
-		src/loader/loader_lib.h \
-		src/loader/loader_lib.c \
 		src/loader/memory_map.h \
 		src/loader/memory_map.c \
-		src/loader/pe_tools.h \
-		src/loader/pe_tools.c \
+		src/loader/windows/win_loader_main.c \
+		src/loader/windows/win_loader_lib.h \
+		src/loader/windows/win_loader_lib.c \
+		src/loader/windows/pe_tools.h \
+		src/loader/windows/pe_tools.c \
+		src/loader/linux/loader_lib.h \
+		src/loader/linux/loader_lib.c \
+		src/loader/linux/elf_tools.h \
+		src/loader/linux/elf_tools.c \
 		tinyc_start.o \
 		libtinyc.a 
 	@echo "winloader"
@@ -317,12 +320,12 @@ winloader: \
 		-masm=intel \
 		-mno-sse \
 		-o winloader \
-		src/loader/win_loader_main.c \
-		src/loader/win_loader_lib.c \
-		src/loader/loader_lib.c \
 		src/loader/memory_map.c \
-		src/loader/pe_tools.c \
-		src/loader/elf_tools.c \
+		src/loader/windows/win_loader_main.c \
+		src/loader/windows/win_loader_lib.c \
+		src/loader/windows/pe_tools.c \
+		src/loader/linux/loader_lib.c \
+		src/loader/linux/elf_tools.c \
 		tinyc_start.o \
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D winloader > winloader.dump
@@ -332,9 +335,10 @@ unit_test: \
 		src/loader/memory_map.h \
 		src/loader/memory_map.c \
 		src/loader/list.h \
-		src/loader/loader_lib.h \
-		src/loader/loader_lib.c \
-		src/loader/pe_tools.c \
+		src/loader/linux/loader_lib.h \
+		src/loader/linux/loader_lib.c \
+		src/loader/windows/pe_tools.h \
+		src/loader/windows/pe_tools.c \
 		tinyc_start.o \
 		libtinyc.a
 	@$(CC) $(CFLAGS) -g \
@@ -344,8 +348,8 @@ unit_test: \
 		-o unit_test \
 		src/programs/linux/unit_test/unit_test_main.c \
 		src/loader/memory_map.c \
-		src/loader/loader_lib.c \
-		src/loader/pe_tools.c \
+		src/loader/linux/loader_lib.c \
+		src/loader/windows/pe_tools.c \
 		tinyc_start.o \
 		libtinyc.a
 
@@ -473,10 +477,10 @@ windynamicfull.exe: \
 readwin: \
 		tools/readwin/readwin_main.c \
 		src/loader/list.h \
-		src/loader/pe_tools.h \
-		src/loader/pe_tools.c \
 		src/loader/memory_map.h \
 		src/loader/memory_map.c \
+		src/loader/windows/pe_tools.h \
+		src/loader/windows/pe_tools.c \
 		tinyc_start.o \
 		libtinyc.a
 	@echo "readwin"
@@ -487,7 +491,7 @@ readwin: \
 		$(WARNINGS) \
 		-o readwin \
 		tools/readwin/readwin_main.c \
-		src/loader/pe_tools.c \
+		src/loader/windows/pe_tools.c \
 		src/loader/memory_map.c \
 		tinyc_start.o \
 		libtinyc.a

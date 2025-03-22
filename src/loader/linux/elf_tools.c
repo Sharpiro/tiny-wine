@@ -1,6 +1,6 @@
 #include "elf_tools.h"
-#include "../tiny_c/tiny_c.h"
-#include "memory_map.h"
+#include "../../tiny_c/tiny_c.h"
+#include "../memory_map.h"
 #include <stdio.h>
 
 #define ELF_HEADER_LEN sizeof(ELF_HEADER)

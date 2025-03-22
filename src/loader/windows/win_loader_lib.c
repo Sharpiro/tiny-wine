@@ -1,9 +1,6 @@
 #include "./win_loader_lib.h"
-#include "../tiny_c/tiny_c.h"
-#include "loader_lib.h"
-#include "log.h"
-#include "memory_map.h"
-#include "pe_tools.h"
+#include "../../tiny_c/tiny_c.h"
+#include "../log.h"
 #include <stddef.h>
 
 #define ASM_X64_MOV32_IMMEDIATE_INTO_EAX 0xb8

@@ -1,7 +1,7 @@
 #include "loader_lib.h"
-#include "../tiny_c/tiny_c.h"
-#include "log.h"
-#include "memory_map.h"
+#include "../../tiny_c/tiny_c.h"
+#include "../log.h"
+#include "../memory_map.h"
 #include <fcntl.h>
 #include <stddef.h>
 #include <sys/mman.h>
