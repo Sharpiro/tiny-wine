@@ -11,6 +11,8 @@
 #include <string.h>
 #include <sys/types.h>
 
+// @todo: do we need mmap functions here and in memory_map.c?
+
 #define MAX_ARRAY_LENGTH 1000
 
 static bool find_import_entry(
@@ -480,7 +482,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     return true;
 }
 
-bool get_memory_regions_info_win(
+bool get_memory_regions_win(
     const struct WinSectionHeader *program_headers,
     size_t program_headers_len,
     size_t address_offset,

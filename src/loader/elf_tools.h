@@ -56,11 +56,6 @@ typedef struct MemoryRegion {
     size_t permissions;
 } MemoryRegion;
 
-struct MemoryRegionsInfo {
-    struct MemoryRegion *regions;
-    size_t regions_len;
-};
-
 CREATE_LIST_STRUCT(MemoryRegion)
 
 struct DynamicData {

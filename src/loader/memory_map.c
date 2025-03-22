@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-bool get_memory_regions_info(
+bool get_memory_regions(
     const PROGRAM_HEADER *program_headers,
     size_t program_headers_len,
     size_t address_offset,
@@ -15,7 +15,7 @@ bool get_memory_regions_info(
         BAIL("program_headers cannot be null\n");
     }
     if (memory_regions == NULL) {
-        BAIL("memory_regions_info cannot be null\n");
+        BAIL("memory_regions cannot be null\n");
     }
 
     for (size_t i = 0; i < program_headers_len; i++) {
@@ -24,8 +24,8 @@ bool get_memory_regions_info(
             continue;
         }
         if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
-            LOGWARNING(
-                "PH %d: zero filesize w/ non-zero offset "
+            LOGINFO(
+                "PH %d: zero filesize w/ non-zero offset may not be "
                 "unsupported\n",
                 i + 1
             );

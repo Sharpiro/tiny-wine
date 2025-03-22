@@ -380,21 +380,21 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     }
 
     size_t dynamic_lib_offset = LOADER_SHARED_LIB_START;
-    MemoryRegionList memory_regions_info = {
+    MemoryRegionList memory_regions = {
         .allocator = loader_malloc_arena,
     };
-    if (!get_memory_regions_info(
+    if (!get_memory_regions(
             ntdll_elf.program_headers,
             ntdll_elf.header.e_phnum,
             dynamic_lib_offset,
-            &memory_regions_info
+            &memory_regions
         )) {
         BAIL("failed getting memory regions\n");
     }
 
     LOGINFO("Mapping shared library 'lib_ntdll.so'\n");
     if (!map_memory_regions(
-            ntdll_file, memory_regions_info.data, memory_regions_info.length
+            ntdll_file, memory_regions.data, memory_regions.length
         )) {
         BAIL("loader lib map memory regions failed\n");
     }
@@ -469,7 +469,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         .name = LIB_NTDLL_SO_NAME,
         .dynamic_offset = dynamic_lib_offset,
         .elf_data = ntdll_elf,
-        .memory_regions_info = memory_regions_info,
+        .memory_regions = memory_regions,
         .runtime_func_relocations = runtime_func_relocations,
         .runtime_func_relocations_len = runtime_func_relocations_len,
         .bss = bss,
@@ -508,7 +508,7 @@ static bool load_dlls(
         MemoryRegionList memory_regions = (MemoryRegionList){
             .allocator = loader_malloc_arena,
         };
-        if (!get_memory_regions_info_win(
+        if (!get_memory_regions_win(
                 shared_lib_pe.section_headers,
                 shared_lib_pe.section_headers_len,
                 shared_lib_image_base,
@@ -709,7 +709,7 @@ int main(int argc, char **argv) {
             .permissions = 4 | 0 | 0,
         }
     );
-    if (!get_memory_regions_info_win(
+    if (!get_memory_regions_win(
             pe_exe.section_headers,
             pe_exe.section_headers_len,
             image_base,

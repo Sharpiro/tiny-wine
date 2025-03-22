@@ -270,7 +270,7 @@ struct PeData {
 
 bool get_pe_data(int32_t fd, struct PeData *pe_data);
 
-bool get_memory_regions_info_win(
+bool get_memory_regions_win(
     const struct WinSectionHeader *program_headers,
     size_t program_headers_len,
     size_t address_offset,

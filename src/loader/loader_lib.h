@@ -111,7 +111,7 @@ typedef struct RuntimeObject {
     const char *name;
     size_t dynamic_offset;
     struct ElfData elf_data;
-    MemoryRegionList memory_regions_info;
+    MemoryRegionList memory_regions;
     struct RuntimeRelocation *runtime_func_relocations;
     size_t runtime_func_relocations_len;
     uint8_t *bss;

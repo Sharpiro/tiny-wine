@@ -170,7 +170,7 @@ static bool initialize_dynamic_data(
         MemoryRegionList memory_regions = {
             .allocator = loader_malloc_arena,
         };
-        if (!get_memory_regions_info(
+        if (!get_memory_regions(
                 shared_lib_elf.program_headers,
                 shared_lib_elf.header.e_phnum,
                 dynamic_lib_offset,
@@ -236,7 +236,7 @@ static bool initialize_dynamic_data(
             .name = shared_lib_name,
             .dynamic_offset = dynamic_lib_offset,
             .elf_data = shared_lib_elf,
-            .memory_regions_info = memory_regions,
+            .memory_regions = memory_regions,
             .runtime_func_relocations = runtime_func_relocations,
             .runtime_func_relocations_len = runtime_func_relocations_len,
             .bss = bss,
@@ -493,21 +493,19 @@ int main(int32_t argc, char **argv) {
 
     LOGINFO("program entry: %x\n", inferior_elf.header.e_entry);
 
-    MemoryRegionList memory_regions_info = {
+    MemoryRegionList memory_regions = {
         .allocator = loader_malloc_arena,
     };
-    if (!get_memory_regions_info(
+    if (!get_memory_regions(
             inferior_elf.program_headers,
             inferior_elf.header.e_phnum,
             0,
-            &memory_regions_info
+            &memory_regions
         )) {
         EXIT("failed getting memory regions\n");
     }
 
-    if (!map_memory_regions(
-            fd, memory_regions_info.data, memory_regions_info.length
-        )) {
+    if (!map_memory_regions(fd, memory_regions.data, memory_regions.length)) {
         EXIT("loader map memory regions failed\n");
     }
 
@@ -564,7 +562,7 @@ int main(int32_t argc, char **argv) {
         .name = filename,
         .dynamic_offset = 0,
         .elf_data = inferior_elf,
-        .memory_regions_info = memory_regions_info,
+        .memory_regions = memory_regions,
         .runtime_func_relocations = runtime_func_relocations,
         .runtime_func_relocations_len = runtime_func_relocations_len,
         .bss = bss,
