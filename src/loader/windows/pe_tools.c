@@ -48,7 +48,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         BAIL("pe_data was null\n");
     }
 
-    int8_t *pe_header_buffer = loader_malloc_arena(1000);
+    int8_t *pe_header_buffer = malloc(1000);
     if (!pe_header_buffer) {
         BAIL("malloc failed\n");
     }
@@ -128,8 +128,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         winpe_header->image_file_header.number_of_sections;
     size_t section_headers_size =
         sizeof(struct WinSectionHeader) * section_headers_len;
-    struct WinSectionHeader *section_headers =
-        loader_malloc_arena(section_headers_size);
+    struct WinSectionHeader *section_headers = malloc(section_headers_size);
     tinyc_lseek(fd, (off_t)section_headers_start, SEEK_SET);
     tiny_c_read(fd, section_headers, section_headers_size);
 
@@ -151,8 +150,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     struct ImportAddressEntry *import_address_table = NULL;
     size_t import_address_table_len = 0;
     if (import_section != NULL) {
-        uint8_t *import_section_buffer =
-            loader_malloc_arena(import_section->file_size);
+        uint8_t *import_section_buffer = malloc(import_section->file_size);
 
         tinyc_lseek(fd, import_section->file_offset, SEEK_SET);
         tiny_c_read(fd, import_section_buffer, import_section->file_size);
@@ -161,9 +159,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             import_dir->virtual_address - import_section->virtual_base_address;
         struct ImportDirectoryRawEntry *raw_dir_entries =
             (void *)(import_section_buffer + import_dir_section_offset);
-        import_dir_entries = loader_malloc_arena(
-            sizeof(struct ImportDirectoryEntry) * MAX_ARRAY_LENGTH
-        );
+        import_dir_entries =
+            malloc(sizeof(struct ImportDirectoryEntry) * MAX_ARRAY_LENGTH);
 
         const size_t import_dir_base = import_section->virtual_base_address;
         for (size_t i = 0; true; i++) {
@@ -184,9 +181,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             const char *lib_name =
                 (char *)import_section_buffer + name_idata_offset;
 
-            struct ImportEntry *import_entries = loader_malloc_arena(
-                sizeof(struct ImportEntry) * MAX_ARRAY_LENGTH
-            );
+            struct ImportEntry *import_entries =
+                malloc(sizeof(struct ImportEntry) * MAX_ARRAY_LENGTH);
             size_t import_entries_len = 0;
             uint8_t *import_lookup_entries = import_section_buffer +
                 raw_dir_entry->characteristics - import_dir_base;
@@ -256,7 +252,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             import_address_table_dir->virtual_address;
 
         if (import_address_table_len > 0) {
-            import_address_table = loader_malloc_arena(
+            import_address_table = malloc(
                 sizeof(struct ImportAddressEntry) * import_address_table_len
             );
             uint8_t *iat_base = (import_section_buffer + iat_file_offset);
@@ -305,8 +301,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t export_entries_len = 0;
     if (export_section != NULL) {
         export_section_name = (const char *)export_section->name;
-        uint8_t *export_section_buffer =
-            loader_malloc_arena(export_section->file_size);
+        uint8_t *export_section_buffer = malloc(export_section->file_size);
         if (!export_section_buffer) {
             BAIL("export_section_buffer malloc failed\n");
         }
@@ -332,9 +327,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
                          export_dir_entry->name_pointer_offset -
                          export_section_base);
         export_entries_len = export_dir_entry->address_table_len;
-        export_entries = loader_malloc_arena(
-            sizeof(struct ExportEntry) * export_entries_len
-        );
+        export_entries =
+            malloc(sizeof(struct ExportEntry) * export_entries_len);
         if (!export_entries) {
             BAIL("export_entries malloc failed\n");
         }
@@ -373,16 +367,14 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         tiny_c_read(fd, &string_table_size, 4);
 
         tinyc_lseek(fd, (off_t)string_table_offset, SEEK_SET);
-        uint8_t *string_table = loader_malloc_arena(string_table_size);
+        uint8_t *string_table = malloc(string_table_size);
         tiny_c_read(fd, string_table, string_table_size);
 
-        struct RawWinSymbol *raw_symbols =
-            loader_malloc_arena(raw_symbols_size);
+        struct RawWinSymbol *raw_symbols = malloc(raw_symbols_size);
         tinyc_lseek(fd, (off_t)symbol_table_offset, SEEK_SET);
         tiny_c_read(fd, raw_symbols, raw_symbols_size);
 
-        symbols =
-            loader_malloc_arena(sizeof(struct WinSymbol) * raw_symbols_len);
+        symbols = malloc(sizeof(struct WinSymbol) * raw_symbols_len);
         for (size_t i = 0; i < raw_symbols_len; i++) {
             struct RawWinSymbol *raw_symbol = &raw_symbols[i];
             char *name;
@@ -390,7 +382,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
                 uint32_t str_table_offset = *(uint32_t *)(raw_symbol->name + 4);
                 name = (char *)string_table + str_table_offset;
             } else {
-                name = loader_malloc_arena(sizeof(raw_symbol->name) + 1);
+                name = malloc(sizeof(raw_symbol->name) + 1);
                 memcpy(name, raw_symbol->name, sizeof(raw_symbol->name));
             }
             symbols[symbols_len++] = (struct WinSymbol){
@@ -411,13 +403,13 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     struct ImageDataDirectory *relocation_dir =
         &image_optional_header.data_directory[DATA_DIR_RELOC_INDEX];
     RelocationEntryList relocations = {
-        .allocator = loader_malloc_arena,
+        .allocator = malloc,
     };
     const struct WinSectionHeader *relocation_section =
         find_win_section_header(section_headers, section_headers_len, ".reloc");
     if (relocation_section) {
         uint8_t *relocation_section_buffer =
-            loader_malloc_arena(relocation_section->file_size);
+            malloc(relocation_section->file_size);
         tinyc_lseek(fd, (off_t)relocation_section->file_offset, SEEK_SET);
         tiny_c_read(
             fd, relocation_section_buffer, relocation_section->file_size
@@ -476,41 +468,6 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     return true;
 }
 
-bool get_memory_regions_win(
-    const struct WinSectionHeader *program_headers,
-    size_t program_headers_len,
-    size_t address_offset,
-    MemoryRegionList *memory_regions
-) {
-    for (size_t i = 0; i < program_headers_len; i++) {
-        const struct WinSectionHeader *program_header = &program_headers[i];
-        const int REGION_ALIGN = 0x1000;
-        size_t virt_size = program_header->virtual_size;
-        size_t region_size =
-            (virt_size + REGION_ALIGN - 1) / REGION_ALIGN * REGION_ALIGN;
-        size_t win_permissions = program_header->characteristics >> 28;
-        size_t read = win_permissions & 4;
-        size_t write = win_permissions & 8 ? 2 : 0;
-        size_t execute = win_permissions & 2 ? 1 : 0;
-        size_t permissions = read | write | execute;
-
-        MemoryRegionList_add(
-            memory_regions,
-            (struct MemoryRegion){
-                .start = address_offset + program_header->virtual_base_address,
-                .end = address_offset + program_header->virtual_base_address +
-                    region_size,
-                .is_direct_file_map = false,
-                .file_offset = program_header->file_offset,
-                .file_size = program_header->virtual_size,
-                .permissions = permissions,
-            }
-        );
-    }
-
-    return true;
-}
-
 const struct WinSectionHeader *find_win_section_header(
     const struct WinSectionHeader *section_headers,
     size_t section_headers_len,
@@ -524,47 +481,4 @@ const struct WinSectionHeader *find_win_section_header(
     }
 
     return NULL;
-}
-
-bool map_memory_regions_win(
-    int32_t fd, const struct MemoryRegion *regions, size_t regions_len
-) {
-    size_t regions_size = sizeof(struct MemoryRegion) * regions_len;
-    struct MemoryRegion *editable_regions = loader_malloc_arena(regions_size);
-    memcpy(editable_regions, regions, regions_size);
-
-    for (size_t i = 0; i < regions_len; i++) {
-        struct MemoryRegion *memory_region = &editable_regions[i];
-        memory_region->permissions = 4 | 2 | 1;
-    }
-
-    if (!map_memory_regions(fd, editable_regions, regions_len)) {
-        BAIL("map_memory_regions failed\n");
-    }
-
-    for (size_t i = 0; i < regions_len; i++) {
-        const struct MemoryRegion *memory_region = &regions[i];
-        uint8_t *region_start = (uint8_t *)memory_region->start;
-        tinyc_lseek(fd, (off_t)memory_region->file_offset, SEEK_SET);
-        if ((int32_t)tiny_c_read(fd, region_start, memory_region->file_size) <
-            0) {
-            BAIL("read failed\n");
-        }
-
-        int32_t prot_read = (memory_region->permissions & 4) >> 2;
-        int32_t prot_write = memory_region->permissions & 2;
-        int32_t prot_execute = ((int32_t)memory_region->permissions & 1) << 2;
-        int32_t map_protection = prot_read | prot_write | prot_execute;
-        size_t memory_region_len = memory_region->end - memory_region->start;
-        if (tiny_c_mprotect(region_start, memory_region_len, map_protection) <
-            0) {
-            BAIL(
-                "tiny_c_mprotect failed, %d, %s\n",
-                tinyc_errno,
-                tinyc_strerror(tinyc_errno)
-            );
-        }
-    }
-
-    return true;
 }

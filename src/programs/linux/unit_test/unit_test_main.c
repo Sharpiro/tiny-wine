@@ -1,6 +1,6 @@
 #include "../../../loader/linux/loader_lib.h"
 #include "../../../loader/log.h"
-#include "../../../loader/windows/pe_tools.h"
+#include "../../../loader/windows/win_loader_lib.h"
 #include "../../../tiny_c/tiny_c.h"
 
 #define tw_assert(expr)                                                        \

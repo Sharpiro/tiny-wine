@@ -1,4 +1,5 @@
 #include "tiny_c.h"
+#include "../loader/log.h"
 #include "tinyc_sys.h"
 #include <asm-generic/errno.h>
 #include <fcntl.h>
@@ -51,13 +52,13 @@ void tinyc_fputs(const char *data, int32_t file_handle) {
     tinyc_print_len(file_handle, data, str_len);
 }
 
-size_t tiny_c_pow(size_t x, size_t y) {
-    size_t product = 1;
-    for (size_t i = 0; i < y; i++) {
+// @tod: SSE bug when returning double
+size_t tiny_c_pow(double x, double y) {
+    double product = 1;
+    for (size_t i = 0; i < (size_t)y; i++) {
         product *= x;
     }
-
-    return product;
+    return (size_t)product;
 }
 
 static void print_number_hex(int32_t file_handle, size_t num) {
@@ -65,11 +66,9 @@ static void print_number_hex(int32_t file_handle, size_t num) {
     const char *NUMBER_CHARS = "0123456789abcdef";
 
     char num_buffer[32] = {0};
-    num_buffer[0] = '0';
-    num_buffer[1] = 'x';
 
-    size_t current_base = tiny_c_pow(0x10, MAX_DIGITS - 1);
-    size_t buffer_index = 2;
+    size_t current_base = (size_t)tiny_c_pow(0x10, MAX_DIGITS - 1);
+    size_t buffer_index = 0;
     bool num_start = false;
     for (size_t i = 0; i < MAX_DIGITS; i++) {
         size_t digit = num / current_base;
@@ -82,12 +81,7 @@ static void print_number_hex(int32_t file_handle, size_t num) {
         }
     }
 
-    struct SysArgs args = {
-        .param_one = (size_t)file_handle,
-        .param_two = (size_t)num_buffer,
-        .param_three = buffer_index,
-    };
-    tiny_c_syscall(SYS_write, &args);
+    tinyc_print_len(file_handle, (char *)num_buffer, buffer_index);
 }
 
 static void print_number_decimal(int32_t file_handle, size_t num) {
@@ -95,7 +89,7 @@ static void print_number_decimal(int32_t file_handle, size_t num) {
     const char *NUMBER_CHARS = "0123456789";
 
     char num_buffer[32] = {0};
-    size_t current_base = tiny_c_pow(10, MAX_DIGITS - 1);
+    size_t current_base = (size_t)tiny_c_pow(10, MAX_DIGITS - 1);
     size_t num_start = 0;
     size_t i;
     for (i = 0; i < MAX_DIGITS; i++) {
@@ -123,14 +117,14 @@ struct PrintItem {
     size_t start;
     size_t length;
     char formatter;
+    bool is_large_formatter;
 };
 
 static void fprintf_internal(
     int32_t file_handle, const char *format, va_list var_args
 ) {
-    size_t print_items_index = 0;
-    size_t print_items_count = 0;
-    struct PrintItem print_items[256] = {0};
+    size_t print_items_len = 0;
+    struct PrintItem print_items[128] = {0};
 
     size_t last_print_index = 0;
     size_t i;
@@ -144,14 +138,19 @@ static void fprintf_internal(
                 .start = last_print_index,
                 .length = i - last_print_index,
             };
-            print_items[print_items_index++] = print_item;
+            print_items[print_items_len++] = print_item;
 
-            struct PrintItem print_item_str = {
+            bool is_large_formatter = false;
+            if (format[i + 1] == 'z') {
+                is_large_formatter = true;
+                i += 1;
+            }
+            struct PrintItem print_item_formater = {
                 .formatter = format[i + 1],
+                .is_large_formatter = is_large_formatter,
             };
-            print_items[print_items_index++] = print_item_str;
-            print_items_count += 2;
-            i++;
+            print_items[print_items_len++] = print_item_formater;
+            i += 1;
             last_print_index = i + 1;
         }
     }
@@ -160,10 +159,9 @@ static void fprintf_internal(
         .start = last_print_index,
         .length = i - last_print_index,
     };
-    print_items[print_items_index++] = print_item;
-    print_items_count++;
+    print_items[print_items_len++] = print_item;
 
-    for (size_t i = 0; i < print_items_count; i++) {
+    for (size_t i = 0; i < print_items_len; i++) {
         struct PrintItem print_item = print_items[i];
         switch (print_item.formatter) {
         case 0x00: {
@@ -183,12 +181,16 @@ static void fprintf_internal(
         }
         case 'p':
         case 'x': {
-            size_t data = va_arg(var_args, size_t);
+            size_t data = print_item.is_large_formatter
+                ? va_arg(var_args, uint64_t)
+                : va_arg(var_args, uint32_t);
             print_number_hex(file_handle, data);
             break;
         }
         case 'd': {
-            size_t data = va_arg(var_args, size_t);
+            size_t data = print_item.is_large_formatter
+                ? va_arg(var_args, uint64_t)
+                : va_arg(var_args, uint32_t);
             print_number_decimal(file_handle, data);
             break;
         }
@@ -378,6 +380,7 @@ void *malloc(size_t n) {
     if (tinyc_heap_index + n > tinyc_heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
         tinyc_heap_end = tinyc_sys_brk(tinyc_heap_end + extend_size);
+        LOGINFO("tinyc malloc heap extended to 0x%zx\n", tinyc_heap_end);
     }
 
     if (tinyc_heap_end <= tinyc_heap_start) {

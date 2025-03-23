@@ -450,7 +450,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     for (size_t i = 0; i < runtime_got_entries.length; i++) {
         struct RuntimeGotEntry *runtime_got_entry =
             &runtime_got_entries.data[i];
-        LOGINFO(
+        LOGDEBUG(
             "GOT entry %d: %x == %x, variable: %s\n",
             i + 1,
             runtime_got_entry->index,

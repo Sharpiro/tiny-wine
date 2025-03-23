@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../memory_map.h"
 #include "pe_tools.h"
 #include <stddef.h>
 
@@ -67,4 +68,15 @@ bool map_import_address_table(
     const RuntimeImportAddressEntryList *import_address_table,
     size_t dynamic_callback_windows,
     size_t iat_runtime_base
+);
+
+bool get_memory_regions_win(
+    const struct WinSectionHeader *program_headers,
+    size_t program_headers_len,
+    size_t address_offset,
+    MemoryRegionList *memory_regions
+);
+
+bool map_memory_regions_win(
+    int32_t fd, const struct MemoryRegion *regions, size_t regions_len
 );

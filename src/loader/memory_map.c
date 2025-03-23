@@ -88,7 +88,7 @@ bool map_memory_regions(
         size_t prot_write = memory_region->permissions & 2;
         size_t prot_execute = (memory_region->permissions & 1) << 2;
         size_t map_protection = prot_read | prot_write | prot_execute;
-        LOGINFO(
+        LOGDEBUG(
             "mapping address: %x:%x, offset: %x, permissions: %d\n",
             memory_region->start,
             memory_region->end,

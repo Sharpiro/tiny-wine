@@ -1,4 +1,5 @@
 #include "msvcrt.h"
+#include "../loader//log.h"
 #include "./macros.h"
 #include "ntdll.h"
 #include <stdarg.h>
@@ -7,9 +8,11 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#ifdef VERBOSE
+#if LOG_LEVEL <= INFO
 
-#define LOG(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
+#define LOG(fmt, ...)                                                          \
+    fprintf(stderr, "INFO: ");                                                 \
+    fprintf(stderr, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -126,7 +129,6 @@ EXPORTABLE double pow(double x, double y) {
     for (size_t i = 0; i < (size_t)y; i++) {
         product *= x;
     }
-
     return product;
 }
 
@@ -362,6 +364,7 @@ EXPORTABLE void *malloc(size_t n) {
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
         heap_end = sys_brk(heap_end + extend_size);
+        LOG("msvcrt malloc Heap extended, 0x%zx:0x%zx\n", heap_start, heap_end);
     }
 
     if (heap_end <= heap_start) {
@@ -408,8 +411,7 @@ EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
     UNICODE_STRING *command_line =
         &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
     _acmdln = to_char_pointer((wchar_t *)command_line->Buffer);
-    LOG("_initterm\n");
-    LOG("_acmdln: %p, %s \n", _acmdln, _acmdln);
+    LOG("_initterm _acmdln: %p, %s \n", _acmdln, _acmdln);
 
     size_t len = (size_t)(last - first);
     for (size_t i = 0; i < len; i++) {
@@ -462,8 +464,6 @@ EXPORTABLE int __getmainargs(
         cmd_part[str_len] = 0x00;
         command_line_array[arg_count] = cmd_part;
         arg_count += 1;
-
-        LOG("current_word: '%s'\n", cmd_part);
 
         if (*current_cmd == 0x00) {
             break;

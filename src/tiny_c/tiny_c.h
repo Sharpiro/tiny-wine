@@ -15,7 +15,7 @@
 
 extern int32_t tinyc_errno;
 
-size_t tiny_c_pow(size_t x, size_t y);
+size_t tiny_c_pow(double x, double y);
 
 void tinyc_fputs(const char *data, int32_t file_handle);
 

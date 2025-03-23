@@ -176,6 +176,8 @@ ntdll.dll: \
 		src/dlls/ntdll.c
 	@$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 
+# @todo: no-see bug
+# -mno-sse
 msvcrt.dll: \
 		src/dlls/msvcrt.h \
 		src/dlls/msvcrt.c \
@@ -337,8 +339,8 @@ unit_test: \
 		src/list.h \
 		src/loader/linux/loader_lib.h \
 		src/loader/linux/loader_lib.c \
-		src/loader/windows/pe_tools.h \
-		src/loader/windows/pe_tools.c \
+		src/loader/windows/win_loader_lib.h \
+		src/loader/windows/win_loader_lib.c \
 		tinyc_start.o \
 		libtinyc.a
 	@$(CC) $(CFLAGS) -g \
@@ -349,7 +351,7 @@ unit_test: \
 		src/programs/linux/unit_test/unit_test_main.c \
 		src/loader/memory_map.c \
 		src/loader/linux/loader_lib.c \
-		src/loader/windows/pe_tools.c \
+		src/loader/windows/win_loader_lib.c \
 		tinyc_start.o \
 		libtinyc.a
 
@@ -477,8 +479,6 @@ windynamicfull.exe: \
 readwin: \
 		tools/readwin/readwin_main.c \
 		src/list.h \
-		src/loader/memory_map.h \
-		src/loader/memory_map.c \
 		src/loader/windows/pe_tools.h \
 		src/loader/windows/pe_tools.c \
 		tinyc_start.o \
@@ -492,7 +492,6 @@ readwin: \
 		-o readwin \
 		tools/readwin/readwin_main.c \
 		src/loader/windows/pe_tools.c \
-		src/loader/memory_map.c \
 		tinyc_start.o \
 		libtinyc.a
 

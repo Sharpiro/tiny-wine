@@ -18,7 +18,7 @@
 #if LOG_LEVEL <= TRACE
 
 #define LOGTRACE(fmt, ...)                                                     \
-    tiny_c_fprintf(2, "TRACE: ", ##__VA_ARGS__);                               \
+    tiny_c_fprintf(2, "TRACE: ");                                              \
     tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
@@ -30,10 +30,25 @@
 
 #endif
 
+#if LOG_LEVEL <= DEBUG
+
+#define LOGDEBUG(fmt, ...)                                                     \
+    tiny_c_fprintf(2, "DEBUG: ");                                              \
+    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+
+#else
+
+#define LOGDEBUG(fmt, ...)                                                     \
+    if (0) {                                                                   \
+        (void)0, ##__VA_ARGS__;                                                \
+    }
+
+#endif
+
 #if LOG_LEVEL <= INFO
 
 #define LOGINFO(fmt, ...)                                                      \
-    tiny_c_fprintf(2, "INFO: ", ##__VA_ARGS__);                                \
+    tiny_c_fprintf(2, "INFO: ");                                               \
     tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
@@ -48,7 +63,7 @@
 #if LOG_LEVEL <= WARNING
 
 #define LOGWARNING(fmt, ...)                                                   \
-    tiny_c_fprintf(2, "WARNING: ", ##__VA_ARGS__);                             \
+    tiny_c_fprintf(2, "WARNING: ");                                            \
     tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
@@ -63,7 +78,7 @@
 #if LOG_LEVEL <= ERROR
 
 #define LOGERROR(fmt, ...)                                                     \
-    tiny_c_fprintf(2, "ERROR: ", ##__VA_ARGS__);                               \
+    tiny_c_fprintf(2, "ERROR: ");                                              \
     tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
