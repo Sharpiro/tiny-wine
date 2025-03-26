@@ -35,6 +35,6 @@ int main(int argc, char *argv[]) {
         if (aux.key == 0 && aux.value == 0) {
             break;
         }
-        tiny_c_printf("{%x, %x}\n", aux.key, aux.value);
+        tiny_c_printf("%zd: {%zx, %zx}\n", i, aux.key, aux.value);
     }
 }
