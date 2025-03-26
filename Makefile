@@ -54,7 +54,6 @@ tinyc_start.o: src/tiny_c/tinyc_start.c
 		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
-		-mno-sse \
 		-o tinyc_start.o \
 		src/tiny_c/tinyc_start.c
 
@@ -69,7 +68,6 @@ tinyc_sys.o: src/tiny_c/tiny_c.c
 		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
-		-mno-sse \
 		-o tinyc_sys.o \
 		src/tiny_c/tinyc_sys.c
 
@@ -84,7 +82,6 @@ tiny_c.o: src/tiny_c/tiny_c.c
 		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
-		-mno-sse \
 		-o tiny_c.o \
 		src/tiny_c/tiny_c.c
 
@@ -104,7 +101,6 @@ libstatic.a: src/programs/linux/string/static_lib.c
 		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
-		-mno-sse \
 		-o static_lib.o src/programs/linux/string/static_lib.c
 	@ar rcs libstatic.a static_lib.o
 	@$(OBJDUMP) -M intel -D libstatic.a > libstatic.a.dump
@@ -283,7 +279,6 @@ loader: \
 		-g \
 		-DAMD64 \
 		-masm=intel \
-		-mno-sse \
 		-o loader \
 		src/loader/memory_map.c \
 		src/loader/linux/loader_main.c \
@@ -318,7 +313,6 @@ winloader: \
 		-g \
 		-DAMD64 \
 		-masm=intel \
-		-mno-sse \
 		-o winloader \
 		src/loader/memory_map.c \
 		src/loader/windows/win_loader_main.c \
@@ -414,7 +408,6 @@ dynamic: libtinyc.so libdynamic.so
 		src/programs/linux/dynamic/dynamic_main.c
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
-		-mno-sse \
 		-nostdlib \
 		-no-pie \
 		$(WARNINGS) \

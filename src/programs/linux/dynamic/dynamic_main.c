@@ -13,8 +13,8 @@ size_t add_many(size_t, size_t, size_t, size_t, size_t, size_t, size_t, size_t);
 
 int main(void) {
     /* Call dynamic function leaf */
-    size_t num1 = tiny_c_pow(2, 4);
-    size_t num2 = tiny_c_pow(2, 4);
+    size_t num1 = (size_t)tiny_c_pow(2, 4);
+    size_t num2 = (size_t)tiny_c_pow(2, 4);
 
     /* Call dynamic function tree */
     tinyc_fputs("1st call\n", STDOUT);

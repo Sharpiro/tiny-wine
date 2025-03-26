@@ -562,15 +562,27 @@ int main(int32_t argc, char **argv) {
         .runtime_symbols = exe_runtime_symbols,
     };
 
+    /* Setup stack */
+
+    size_t *loader_stack_start = (size_t *)(argv - 1);
+    size_t arg_count = (size_t)argc;
+    size_t argc_padded = arg_count % 2 == 0 ? arg_count + 2 : arg_count + 1;
+    LOGINFO("Args: %zd, Arg padding: %zd\n", arg_count, argc_padded);
+
+    size_t *inferior_stack_start = loader_stack_start - argc_padded;
+    *inferior_stack_start = arg_count - 1;
+    for (size_t i = 1; i < argc_padded; i++) {
+        if (i < arg_count) {
+            inferior_stack_start[i] = loader_stack_start[i + 1];
+        } else {
+            inferior_stack_start[i] = 0x00;
+        }
+    }
+
     /* Jump to program */
 
-    // @todo: stack should be 16-byte aligned for SSE
-    // size_t *inferior_stack = (size_t *)(argv - 1);
-    size_t *inferior_stack = (size_t *)argv;
-    *inferior_stack = (size_t)(argc - 1);
-
     LOGINFO("inferior_entry: %x\n", inferior_elf.header.e_entry);
-    LOGINFO("inferior_stack: %x\n", inferior_stack);
+    LOGINFO("inferior_stack: %x\n", inferior_stack_start);
     LOGINFO("------------running program------------\n");
 
     __asm__(
@@ -581,7 +593,7 @@ int main(int32_t argc, char **argv) {
         :
         :
 
-        [inferior_stack] "m"(inferior_stack),
+        [inferior_stack] "m"(inferior_stack_start),
         [inferior_entry] "m"(inferior_elf.header.e_entry)
     );
 }

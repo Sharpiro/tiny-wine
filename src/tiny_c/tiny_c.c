@@ -52,13 +52,12 @@ void tinyc_fputs(const char *data, int32_t file_handle) {
     tinyc_print_len(file_handle, data, str_len);
 }
 
-// @todo: SSE bug when returning double
-size_t tiny_c_pow(double x, double y) {
+double tiny_c_pow(double x, double y) {
     double product = 1;
     for (size_t i = 0; i < (size_t)y; i++) {
         product *= x;
     }
-    return (size_t)product;
+    return product;
 }
 
 static void print_number_hex(int32_t file_handle, size_t num) {

@@ -48,7 +48,7 @@ long atol_len(const char *data, size_t data_len) {
             return 0;
         }
 
-        size_t exponent = tiny_c_pow(10, (double)(data_len - i - 1));
+        size_t exponent = (size_t)tiny_c_pow(10, (double)(data_len - i - 1));
         result += current_digit * (ssize_t)exponent;
     }
 
