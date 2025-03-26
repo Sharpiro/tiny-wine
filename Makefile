@@ -176,8 +176,6 @@ ntdll.dll: \
 		src/dlls/ntdll.c
 	@$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 
-# @todo: no-see bug
-# -mno-sse
 msvcrt.dll: \
 		src/dlls/msvcrt.h \
 		src/dlls/msvcrt.c \

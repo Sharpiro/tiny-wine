@@ -4,14 +4,16 @@ A basic dynamic loader for Linux and Windows.
 
 ## Limitations
 
+- x64 only
 - Only works for toy programs created with MinGW and specific Clang versions in this repository
 - No recursive dependencies
 - `malloc` leaks memory
-- loaders use a lot of memory and don't release it
+- loaders use a lot of memory
 - Import Address Table limit is 512 entries
 - Windows header size limit is 4 KiB
-- x64 only
 - No environment variables
+- Partial SSE
+- No AVX
 
 ## Prerequisites
 

@@ -564,6 +564,8 @@ int main(int32_t argc, char **argv) {
 
     /* Jump to program */
 
+    // @todo: stack should be 16-byte aligned for SSE
+    // size_t *inferior_stack = (size_t *)(argv - 1);
     size_t *inferior_stack = (size_t *)argv;
     *inferior_stack = (size_t)(argc - 1);
 

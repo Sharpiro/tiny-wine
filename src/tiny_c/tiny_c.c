@@ -52,7 +52,7 @@ void tinyc_fputs(const char *data, int32_t file_handle) {
     tinyc_print_len(file_handle, data, str_len);
 }
 
-// @tod: SSE bug when returning double
+// @todo: SSE bug when returning double
 size_t tiny_c_pow(double x, double y) {
     double product = 1;
     for (size_t i = 0; i < (size_t)y; i++) {
