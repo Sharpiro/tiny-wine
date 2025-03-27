@@ -1,5 +1,4 @@
 #include "../../../tinyc/tinyc.h"
-#include <fcntl.h>
 #include <pwd.h>
 #include <stddef.h>
 #include <stdlib.h>

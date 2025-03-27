@@ -1,11 +1,9 @@
 #include "tinyc.h"
 #include "../loader/log.h"
 #include "tinyc_sys.h"
-#include <fcntl.h>
 #include <stdarg.h>
+#include <string.h>
 #include <sys/syscall.h>
-
-// @todo: naming convention tinyc_xyz vs tinyc_xyz
 
 int32_t errno = 0;
 
@@ -214,11 +212,7 @@ void exit(int32_t code) {
     tinyc_syscall(SYS_exit, &args);
 }
 
-// @todo:
-//          - incorrect signature
-//          - syscall
-//          - defined in <fcntl.h>
-int32_t tinyc_open(const char *path, int flags) {
+int32_t open(const char *path, int32_t flags) {
     struct SysArgs args = {
         .param_one = (size_t)path,
         .param_two = (size_t)flags,
@@ -233,9 +227,6 @@ int32_t tinyc_open(const char *path, int flags) {
     return result;
 }
 
-// @todo:
-//          - syscall
-//          - defined in <unistd.h>
 int32_t close(int32_t fd) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
@@ -426,13 +417,17 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
     return dest;
 }
 
-struct stat stat(const char *path) {
-    struct stat file_stat;
+struct LinuxStat {
+    int8_t padding[48];
+    int32_t st_size;
+};
+
+int32_t stat(const char *path, struct LinuxStat *file_stat) {
     struct SysArgs args = {
         .param_one = (size_t)path,
-        .param_two = (size_t)&file_stat,
+        .param_two = (size_t)file_stat,
     };
-    tinyc_syscall(SYS_stat, &args);
+    int32_t result = tinyc_syscall(SYS_stat, &args) == 0 ? 0 : -1;
 
-    return file_stat;
+    return result;
 }

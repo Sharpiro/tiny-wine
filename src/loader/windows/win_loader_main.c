@@ -8,7 +8,6 @@
 #include "./pe_tools.h"
 #include "win_loader_lib.h"
 #include <asm/prctl.h>
-#include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -362,7 +361,7 @@ static void dynamic_callback_windows(void) {
 static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     const char *LIB_NTDLL_SO_NAME = "libntdll.so";
 
-    int32_t ntdll_file = tinyc_open(LIB_NTDLL_SO_NAME, O_RDONLY);
+    int32_t ntdll_file = open(LIB_NTDLL_SO_NAME, O_RDONLY);
     if (ntdll_file == -1) {
         BAIL("failed opening libntdll.so\n");
     }
@@ -490,7 +489,7 @@ static bool load_dlls(
             &inferior_executable->import_dir_entries[i];
         const char *shared_lib_name = dir_entry->lib_name;
         LOGINFO("mapping shared library '%s'\n", shared_lib_name);
-        int32_t shared_lib_file = tinyc_open(shared_lib_name, O_RDONLY);
+        int32_t shared_lib_file = open(shared_lib_name, O_RDONLY);
         if (shared_lib_file == -1) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
         }
@@ -664,7 +663,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    int32_t fd = tinyc_open(filename, O_RDONLY);
+    int32_t fd = open(filename, O_RDONLY);
     if (fd < 0) {
         EXIT("file error, %d, %s\n", errno, strerror(errno));
         return -1;

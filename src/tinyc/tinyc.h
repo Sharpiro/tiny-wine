@@ -10,6 +10,11 @@
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
 #pragma clang diagnostic ignored "-Wbuiltin-requires-header"
 
+// @todo: make into 'File*'?
+#define stdin 0
+#define stdout 1
+#define stderr 2
+
 #define STDOUT 1
 #define STDERR 2
 
@@ -21,6 +26,7 @@
 #define ERANGE 34 /* Math result not representable */
 
 #define SEEK_SET 0 /* Seek from beginning of file.  */
+#define O_RDONLY 00
 
 #define MAP_FAILED ((void *)-1)
 #define PROT_READ 0x1                /* Page can be read.  */
@@ -56,7 +62,7 @@ int32_t munmap(void *address, size_t length);
 
 int32_t mprotect(void *address, size_t length, int32_t protection);
 
-int32_t tinyc_open(const char *path, int flags);
+int32_t open(const char *path, int flags);
 
 int32_t close(int32_t fd);
 

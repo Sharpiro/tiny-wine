@@ -1,5 +1,5 @@
 #include "msvcrt.h"
-#include "../loader//log.h"
+#include "../loader/log.h"
 #include "./macros.h"
 #include "ntdll.h"
 #include <stdarg.h>
@@ -13,20 +13,6 @@
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
 #pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 #pragma clang diagnostic ignored "-Wbuiltin-requires-header"
-#if LOG_LEVEL <= INFO
-
-#define LOG(fmt, ...)                                                          \
-    fprintf(stderr, "INFO: ");                                                 \
-    fprintf(stderr, fmt, ##__VA_ARGS__);
-
-#else
-
-#define LOG(fmt, ...)                                                          \
-    if (0) {                                                                   \
-        (void)0, ##__VA_ARGS__;                                                \
-    }
-
-#endif
 
 static size_t heap_start = 0;
 static size_t heap_end = 0;
@@ -42,9 +28,6 @@ static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
 EXPORTABLE char *_acmdln = NULL;
 
 char *command_line_array[0x100] = {};
-
-void DllMainCRTStartup(void) {
-}
 
 /**
  * Set n bytes of s to c.
@@ -363,7 +346,9 @@ EXPORTABLE void *malloc(size_t n) {
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
         heap_end = sys_brk(heap_end + extend_size);
-        LOG("msvcrt malloc Heap extended, 0x%zx:0x%zx\n", heap_start, heap_end);
+        LOGINFO(
+            "msvcrt malloc Heap extended, 0x%zx:0x%zx\n", heap_start, heap_end
+        );
     }
 
     if (heap_end <= heap_start) {
@@ -410,7 +395,7 @@ EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
     UNICODE_STRING *command_line =
         &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
     _acmdln = to_char_pointer((wchar_t *)command_line->Buffer);
-    LOG("_initterm _acmdln: %p, %s \n", _acmdln, _acmdln);
+    LOGINFO("_initterm _acmdln: %p, %s \n", _acmdln, _acmdln);
 
     size_t len = (size_t)(last - first);
     for (size_t i = 0; i < len; i++) {
@@ -418,7 +403,7 @@ EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
         if (func == NULL) {
             continue;
         }
-        LOG("_initterm func %zd\n", i);
+        LOGINFO("_initterm func %zd\n", i);
         func();
     }
 }
@@ -449,7 +434,7 @@ EXPORTABLE int __getmainargs(
     [[maybe_unused]] int do_wild_card,
     [[maybe_unused]] void *start_info
 ) {
-    LOG("__getmainargs\n");
+    LOGINFO("__getmainargs\n");
 
     char *current_cmd = _acmdln;
 
@@ -510,7 +495,7 @@ EXPORTABLE int32_t vfprintf(
 ) {
     int32_t file_no = _fileno(stream);
     fprintf_internal(file_no, format, arg);
-    LOG("inserted newline manually\n");
+    LOGINFO("inserted newline manually\n");
     return 0;
 }
 

@@ -2,7 +2,6 @@
 #include "../../tinyc/tinyc.h"
 #include "../log.h"
 #include "../memory_map.h"
-#include <fcntl.h>
 #include <stddef.h>
 
 bool find_runtime_relocation(
@@ -94,7 +93,7 @@ bool read_to_string(const char *path, char **content, size_t size) {
         BAIL("loader_malloc_arena failed\n");
     }
 
-    int32_t fd = tinyc_open(path, O_RDONLY);
+    int32_t fd = open(path, O_RDONLY);
     read(fd, buffer, size);
     close(fd);
     *content = buffer;

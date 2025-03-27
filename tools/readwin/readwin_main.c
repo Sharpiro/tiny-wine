@@ -1,6 +1,5 @@
 #include "../../src/loader/windows/pe_tools.h"
 #include "../../src/tinyc/tinyc.h"
-#include <fcntl.h>
 #include <stddef.h>
 
 // @todo: merge tinyc and msvcrt?
@@ -14,7 +13,7 @@ int main(int argc, char **argv) {
     }
 
     char *filename = argv[1];
-    int32_t fd = tinyc_open(filename, O_RDONLY);
+    int32_t fd = open(filename, O_RDONLY);
     if (fd < 0) {
         EXIT("file not found\n");
     }

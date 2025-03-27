@@ -1,5 +1,4 @@
 #include "../../../tinyc/tinyc.h"
-#include <fcntl.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -132,7 +131,7 @@ bool read_to_string(const char *path, char **content) {
         BAIL("malloc failed\n");
     }
 
-    int32_t fd = tinyc_open(path, O_RDONLY);
+    int32_t fd = open(path, O_RDONLY);
     read(fd, buffer, READ_SIZE);
     close(fd);
     *content = buffer;

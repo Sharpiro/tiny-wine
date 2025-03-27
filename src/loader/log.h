@@ -18,8 +18,8 @@
 #if LOG_LEVEL <= TRACE
 
 #define LOGTRACE(fmt, ...)                                                     \
-    fprintf(2, "TRACE: ");                                                     \
-    fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(stderr, "TRACE: ");                                                \
+    fprintf(stderr, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -33,8 +33,8 @@
 #if LOG_LEVEL <= DEBUG
 
 #define LOGDEBUG(fmt, ...)                                                     \
-    fprintf(2, "DEBUG: ");                                                     \
-    fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(stderr, "DEBUG: ");                                                \
+    fprintf(stderr, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -48,8 +48,8 @@
 #if LOG_LEVEL <= INFO
 
 #define LOGINFO(fmt, ...)                                                      \
-    fprintf(2, "INFO: ");                                                      \
-    fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(stderr, "INFO: ");                                                 \
+    fprintf(stderr, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -63,8 +63,8 @@
 #if LOG_LEVEL <= WARNING
 
 #define LOGWARNING(fmt, ...)                                                   \
-    fprintf(2, "WARNING: ");                                                   \
-    fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(stderr, "WARNING: ");                                              \
+    fprintf(stderr, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -78,8 +78,8 @@
 #if LOG_LEVEL <= ERROR
 
 #define LOGERROR(fmt, ...)                                                     \
-    fprintf(2, "ERROR: ");                                                     \
-    fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(stderr, "ERROR: ");                                                \
+    fprintf(stderr, fmt, ##__VA_ARGS__);
 
 #else
 

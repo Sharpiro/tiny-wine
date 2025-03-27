@@ -3,7 +3,6 @@
 #include "../../tinyc/tinyc_sys.h"
 #include "../log.h"
 #include "loader_lib.h"
-#include <fcntl.h>
 
 struct RuntimeObject *executable_object;
 struct RuntimeObject *shared_objects;
@@ -146,7 +145,7 @@ static bool initialize_dynamic_data(
     for (size_t i = 0; i < inferior_dyn_data->shared_libraries_len; i++) {
         char *shared_lib_name = inferior_dyn_data->shared_libraries[i];
         LOGINFO("mapping shared library '%s'\n", shared_lib_name);
-        int32_t shared_lib_file = tinyc_open(shared_lib_name, O_RDONLY);
+        int32_t shared_lib_file = open(shared_lib_name, O_RDONLY);
         if (shared_lib_file == -1) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
         }
@@ -472,7 +471,7 @@ int main(int32_t argc, char **argv, char **envv) {
         EXIT("munmap of self failed\n");
     }
 
-    int32_t fd = tinyc_open(filename, O_RDONLY);
+    int32_t fd = open(filename, O_RDONLY);
     if (fd < 0) {
         EXIT("file error, %d, %s\n", errno, strerror(errno));
     }
