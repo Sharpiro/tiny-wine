@@ -10,30 +10,30 @@
 bool read_to_string(const char *path, char **content);
 
 int main(int argc, char **argv) {
-    if (argc > 1 && tiny_c_strcmp(argv[1], "--extra") == 0) {
+    if (argc > 1 && strcmp(argv[1], "--extra") == 0) {
         /* PID */
-        int32_t pid = tiny_c_get_pid();
-        tiny_c_printf("PID: %d\n", pid);
+        int32_t pid = getpid();
+        printf("PID: %d\n", pid);
 
         /* CWD */
         char *cwd_buffer = malloc(0x100);
         if (cwd_buffer == NULL) {
             EXIT("malloc failed");
         }
-        const char *cwd = tiny_c_get_cwd(cwd_buffer, 100);
-        tiny_c_printf("CWD: %s\n", cwd);
+        const char *cwd = getcwd(cwd_buffer, 100);
+        printf("CWD: %s\n", cwd);
 
         /* Memory regions */
         char *maps_buffer = malloc(0x1000);
         if (!read_to_string("/proc/self/maps", &maps_buffer)) {
             EXIT("read failed");
         }
-        tiny_c_printf("Mapped address regions:\n%s\n", maps_buffer);
+        printf("Mapped address regions:\n%s\n", maps_buffer);
     }
 
     /* Unix name */
-    struct utsname uname;
-    if (tinyc_uname(&uname) == -1) {
+    struct utsname system_name;
+    if (uname(&system_name) == -1) {
         EXIT("uname failed");
     }
 
@@ -41,10 +41,10 @@ int main(int argc, char **argv) {
     uid_t uid = getuid();
     struct passwd *user_info = getpwuid(uid);
     if (user_info == NULL) {
-        EXIT("getpwuid failed: %d\n", tinyc_errno);
+        EXIT("getpwuid failed: %d\n", errno);
     }
-    tiny_c_printf("%s@%s\n", user_info->pw_name, uname.nodename);
-    tiny_c_printf("--------------\n");
+    printf("%s@%s\n", user_info->pw_name, system_name.nodename);
+    printf("--------------\n");
 
     /* OS */
     char *os_release_buffer = malloc(0x1000);
@@ -68,10 +68,10 @@ int main(int argc, char **argv) {
         pretty_name_start,
         (size_t)(pretty_name_end - pretty_name_start)
     );
-    tiny_c_printf("OS: %s %s\n", pretty_name, uname.machine);
+    printf("OS: %s %s\n", pretty_name, system_name.machine);
 
     /* Kernel */
-    tiny_c_printf("Kernel: %s\n", uname.release);
+    printf("Kernel: %s\n", system_name.release);
 
     /* Uptime */
     char *uptime;
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     double uptime_days = uptime_total_seconds / 60 / 60 / 24;
     double uptime_hours = (uptime_days - (double)(size_t)uptime_days) * 24;
     double uptime_minutes = (uptime_hours - (double)(size_t)uptime_hours) * 60;
-    tiny_c_printf(
+    printf(
         "Uptime: %d days, %d hours, %d minutes\n",
         (size_t)uptime_days,
         (size_t)uptime_hours,
@@ -93,5 +93,5 @@ int main(int argc, char **argv) {
     );
 
     /* Shell */
-    tiny_c_printf("Shell: %s\n", user_info->pw_shell);
+    printf("Shell: %s\n", user_info->pw_shell);
 }

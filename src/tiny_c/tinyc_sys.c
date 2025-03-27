@@ -2,7 +2,9 @@
 #include <asm/prctl.h>
 #include <sys/syscall.h>
 
-size_t tiny_c_syscall(size_t sys_no, struct SysArgs *sys_args) {
+// @todo: review merging this and stdlib
+
+size_t tinyc_syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
 
     __asm__("mov rdi, %0" : : "r"(sys_args->param_one));
@@ -22,7 +24,7 @@ size_t tinyc_sys_brk(size_t brk) {
     struct SysArgs args = {
         .param_one = brk,
     };
-    size_t result = tiny_c_syscall(SYS_brk, &args);
+    size_t result = tinyc_syscall(SYS_brk, &args);
     return result;
 }
 
@@ -32,7 +34,7 @@ off_t tinyc_sys_lseek(uint32_t fd, off_t offset, uint32_t whence) {
         .param_two = (size_t)offset,
         .param_three = whence,
     };
-    size_t result = tiny_c_syscall(SYS_lseek, &args);
+    size_t result = tinyc_syscall(SYS_lseek, &args);
     off_t result_offset = (off_t)result;
     return result_offset;
 }
@@ -41,7 +43,7 @@ size_t tinyc_sys_uname(struct utsname *uname) {
     struct SysArgs args = {
         .param_one = (size_t)uname,
     };
-    size_t result = tiny_c_syscall(SYS_uname, &args);
+    size_t result = tinyc_syscall(SYS_uname, &args);
     return result;
 }
 
@@ -50,7 +52,7 @@ size_t tinyc_sys_arch_prctl(size_t code, size_t address) {
         .param_one = code,
         .param_two = address,
     };
-    size_t result = tiny_c_syscall(SYS_arch_prctl, &args);
+    size_t result = tinyc_syscall(SYS_arch_prctl, &args);
     return result;
 }
 
@@ -64,6 +66,6 @@ size_t tinyc_sys_prctl(
         .param_four = arg4,
         .param_five = arg5,
     };
-    size_t result = tiny_c_syscall(SYS_prctl, &args);
+    size_t result = tinyc_syscall(SYS_prctl, &args);
     return result;
 }

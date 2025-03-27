@@ -1,7 +1,6 @@
 #include "memory_map.h"
 #include "../tiny_c/tiny_c.h"
 #include "log.h"
-#include <sys/mman.h>
 
 #define LOADER_BUFFER_LEN 0x210'000
 
@@ -10,8 +9,8 @@ static size_t loader_heap_index = 0;
 
 void *loader_malloc_arena(size_t n) {
     if (loader_buffer == NULL) {
-        loader_buffer = tiny_c_mmap(
-            0,
+        loader_buffer = mmap(
+            NULL,
             LOADER_BUFFER_LEN,
             PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS,
@@ -45,8 +44,8 @@ bool reserve_region_space(MemoryRegionList *regions, size_t *reserved_address) {
         reserved_len += region->end - region->start;
     }
 
-    uint8_t *addr = tiny_c_mmap(
-        0,
+    uint8_t *addr = mmap(
+        NULL,
         reserved_len,
         PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS,
@@ -56,15 +55,15 @@ bool reserve_region_space(MemoryRegionList *regions, size_t *reserved_address) {
     if (addr == MAP_FAILED) {
         BAIL(
             "failed trying to reserve mapped region, errorno %d: %s\n",
-            tinyc_errno,
-            tinyc_strerror(tinyc_errno)
+            errno,
+            strerror(errno)
         );
     }
-    if (tiny_c_munmap(addr, reserved_len) == -1) {
+    if (munmap(addr, reserved_len) == -1) {
         BAIL(
             "failed trying to reserve mapped region, errorno %d: %s\n",
-            tinyc_errno,
-            tinyc_strerror(tinyc_errno)
+            errno,
+            strerror(errno)
         );
     }
 
@@ -84,10 +83,10 @@ bool map_memory_regions(
     for (size_t i = 0; i < regions_len; i++) {
         const struct MemoryRegion *memory_region = &regions[i];
         size_t memory_region_len = memory_region->end - memory_region->start;
-        size_t prot_read = (memory_region->permissions & 4) >> 2;
-        size_t prot_write = memory_region->permissions & 2;
-        size_t prot_execute = (memory_region->permissions & 1) << 2;
-        size_t map_protection = prot_read | prot_write | prot_execute;
+        int32_t prot_read = (memory_region->permissions & 4) >> 2;
+        int32_t prot_write = memory_region->permissions & 2;
+        int32_t prot_execute = (int32_t)(memory_region->permissions & 1) << 2;
+        int32_t map_protection = prot_read | prot_write | prot_execute;
         LOGDEBUG(
             "mapping address: %x:%x, offset: %x, permissions: %d\n",
             memory_region->start,
@@ -96,18 +95,19 @@ bool map_memory_regions(
             memory_region->permissions
         );
 
-        size_t map_anonymous =
+        int32_t map_anonymous =
             memory_region->is_direct_file_map ? 0 : MAP_ANONYMOUS;
-        size_t file_offset =
-            memory_region->is_direct_file_map ? memory_region->file_offset : 0;
-        size_t flags = MAP_PRIVATE | MAP_FIXED | map_anonymous;
+        off_t file_offset = memory_region->is_direct_file_map
+            ? (off_t)memory_region->file_offset
+            : 0;
+        int32_t flags = MAP_PRIVATE | MAP_FIXED | map_anonymous;
         struct utsname name;
-        tinyc_uname(&name);
+        uname(&name);
         if (*name.release >= '5') {
             flags |= MAP_FIXED_NOREPLACE;
         }
-        uint8_t *addr = tiny_c_mmap(
-            memory_region->start,
+        uint8_t *addr = mmap(
+            (void *)memory_region->start,
             memory_region_len,
             map_protection,
             flags,
@@ -118,8 +118,8 @@ bool map_memory_regions(
             BAIL(
                 "failed trying to map %x, errorno %d: %s\n",
                 memory_region->start,
-                tinyc_errno,
-                tinyc_strerror(tinyc_errno)
+                errno,
+                strerror(errno)
             );
         }
     }

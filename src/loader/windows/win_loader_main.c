@@ -11,8 +11,6 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <sys/mman.h>
 #include <sys/types.h>
 
 struct WinRuntimeObject runtime_exe;
@@ -233,11 +231,11 @@ static void dynamic_callback_windows(void) {
 
     WinRuntimeExport function_export = {};
     bool is_lib_ntdll;
-    if (tiny_c_strcmp(lib_name, "ntdll.dll") == 0) {
+    if (strcmp(lib_name, "ntdll.dll") == 0) {
         is_lib_ntdll = true;
         for (size_t i = 0; i < lib_ntdll->runtime_symbols.length; i++) {
             RuntimeSymbol *curr_symbol = &lib_ntdll->runtime_symbols.data[i];
-            if (tiny_c_strcmp(curr_symbol->name, import_entry->name) == 0) {
+            if (strcmp(curr_symbol->name, import_entry->name) == 0) {
                 function_export = (WinRuntimeExport){
                     .address = curr_symbol->value,
                     .name = curr_symbol->name,
@@ -252,8 +250,7 @@ static void dynamic_callback_windows(void) {
             for (size_t i = 0; i < shared_lib->function_exports.length; i++) {
                 WinRuntimeExport *curr_func_export =
                     &shared_lib->function_exports.data[i];
-                if (tiny_c_strcmp(curr_func_export->name, import_entry->name) ==
-                    0) {
+                if (strcmp(curr_func_export->name, import_entry->name) == 0) {
                     function_export = *curr_func_export;
                     break;
                 }
@@ -365,7 +362,7 @@ static void dynamic_callback_windows(void) {
 static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
     const char *LIB_NTDLL_SO_NAME = "libntdll.so";
 
-    int32_t ntdll_file = tiny_c_open(LIB_NTDLL_SO_NAME, O_RDONLY);
+    int32_t ntdll_file = tinyc_open(LIB_NTDLL_SO_NAME, O_RDONLY);
     if (ntdll_file == -1) {
         BAIL("failed opening libntdll.so\n");
     }
@@ -399,7 +396,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         BAIL("loader lib map memory regions failed\n");
     }
 
-    tiny_c_close(ntdll_file);
+    close(ntdll_file);
 
     uint8_t *bss = 0;
     size_t bss_len = 0;
@@ -493,7 +490,7 @@ static bool load_dlls(
             &inferior_executable->import_dir_entries[i];
         const char *shared_lib_name = dir_entry->lib_name;
         LOGINFO("mapping shared library '%s'\n", shared_lib_name);
-        int32_t shared_lib_file = tiny_c_open(shared_lib_name, O_RDONLY);
+        int32_t shared_lib_file = tinyc_open(shared_lib_name, O_RDONLY);
         if (shared_lib_file == -1) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
         }
@@ -523,7 +520,7 @@ static bool load_dlls(
             BAIL("loader lib map memory regions failed\n");
         }
 
-        tiny_c_close(shared_lib_file);
+        close(shared_lib_file);
         if (!log_memory_regions()) {
             BAIL("print_memory_regions failed\n");
         }
@@ -553,9 +550,7 @@ static bool load_dlls(
             for (size_t i = 0; i < shared_lib_pe.export_entries_len; i++) {
                 const struct ExportEntry *curr_export_entry =
                     &shared_lib_pe.export_entries[i];
-                if (tiny_c_strcmp(
-                        import_entry->name, curr_export_entry->name
-                    ) == 0) {
+                if (strcmp(import_entry->name, curr_export_entry->name) == 0) {
                     export_entry = curr_export_entry;
                 }
             }
@@ -640,8 +635,7 @@ __attribute__((naked)) void win_loader_implicit_end(void) {
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        tiny_c_fprintf(STDERR, "Filename required\n", argc);
-        return -1;
+        EXIT("Filename required\n", argc);
     }
 
     char *filename = argv[1];
@@ -657,34 +651,28 @@ int main(int argc, char **argv) {
         EXIT("program BRK setup failed");
     }
 
-    int32_t pid = tiny_c_get_pid();
+    int32_t pid = getpid();
     LOGINFO("pid: %d\n", pid);
 
     /* Unmap default locations */
 
-    if (tiny_c_munmap((void *)0x10000, 0x1000)) {
+    if (munmap((void *)0x10000, 0x1000)) {
         EXIT("munmap of self failed\n");
     }
-    if (tiny_c_munmap((void *)0x400000, 0x1000)) {
-        tiny_c_fprintf(STDERR, "munmap of self failed\n");
+    if (munmap((void *)0x400000, 0x1000)) {
+        EXIT("munmap of self failed\n");
         return -1;
     }
 
-    int32_t fd = tiny_c_open(filename, O_RDONLY);
+    int32_t fd = tinyc_open(filename, O_RDONLY);
     if (fd < 0) {
-        tiny_c_fprintf(
-            STDERR,
-            "file error, %d, %s\n",
-            tinyc_errno,
-            tinyc_strerror(tinyc_errno)
-        );
+        EXIT("file error, %d, %s\n", errno, strerror(errno));
         return -1;
     }
 
     struct PeData pe_exe;
     if (!get_pe_data(fd, &pe_exe)) {
-        tiny_c_fprintf(STDERR, "error parsing pe data\n");
-        return -1;
+        EXIT("error parsing pe data\n");
     }
 
     size_t image_base = pe_exe.winpe_header->image_optional_header.image_base;
@@ -746,8 +734,8 @@ int main(int argc, char **argv) {
     /* Get IAT offsets */
 
     const size_t TRAMPOLINE_IAT_RESERVED_SIZE = MAX_TRAMPOLINE_IAT_SIZE * 50;
-    initial_global_runtime_iat_region_base = (size_t)tiny_c_mmap(
-        0,
+    initial_global_runtime_iat_region_base = (size_t)mmap(
+        NULL,
         TRAMPOLINE_IAT_RESERVED_SIZE,
         PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS,
@@ -787,7 +775,7 @@ int main(int argc, char **argv) {
 
     /* Map Import Address Tables */
 
-    if (tiny_c_munmap(
+    if (munmap(
             (void *)initial_global_runtime_iat_region_base,
             TRAMPOLINE_IAT_RESERVED_SIZE
         )) {

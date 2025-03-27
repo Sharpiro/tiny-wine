@@ -1,7 +1,6 @@
 #include "elf_tools.h"
 #include "../../tiny_c/tiny_c.h"
 #include "../memory_map.h"
-#include <stdio.h>
 
 #define ELF_HEADER_LEN sizeof(ELF_HEADER)
 
@@ -17,7 +16,7 @@ static bool get_section_headers(
     if (section_headers_len == NULL) {
         BAIL("section_headers_len cannot be null\n");
     }
-    off_t seeked = tinyc_lseek(fd, (off_t)elf_header->e_shoff, SEEK_SET);
+    off_t seeked = lseek(fd, (off_t)elf_header->e_shoff, SEEK_SET);
     if (seeked != (off_t)elf_header->e_shoff) {
         BAIL("seek failed\n");
     }
@@ -27,14 +26,14 @@ static bool get_section_headers(
     if (elf_section_headers == NULL) {
         BAIL("malloc failed\n");
     }
-    ssize_t read = tiny_c_read(fd, elf_section_headers, section_headers_size);
-    if ((size_t)read != section_headers_size) {
+    ssize_t bytes_read = read(fd, elf_section_headers, section_headers_size);
+    if ((size_t)bytes_read != section_headers_size) {
         BAIL("read failed\n");
     }
 
     SECTION_HEADER *shstr_table_header =
         &elf_section_headers[elf_header->e_shstrndx];
-    seeked = tinyc_lseek(fd, (off_t)shstr_table_header->sh_offset, SEEK_SET);
+    seeked = lseek(fd, (off_t)shstr_table_header->sh_offset, SEEK_SET);
     if (seeked != (off_t)shstr_table_header->sh_offset) {
         BAIL("seek failed\n");
     }
@@ -42,8 +41,8 @@ static bool get_section_headers(
     if (shstr_table == NULL) {
         BAIL("malloc failed\n");
     }
-    read = tiny_c_read(fd, shstr_table, shstr_table_header->sh_size);
-    if ((size_t)read != shstr_table_header->sh_size) {
+    bytes_read = read(fd, shstr_table, shstr_table_header->sh_size);
+    if ((size_t)bytes_read != shstr_table_header->sh_size) {
         BAIL("read failed\n");
     }
 
@@ -78,7 +77,7 @@ const struct SectionHeader *find_section_header(
     const struct SectionHeader *section_header = NULL;
     for (size_t i = 0; i < len; i++) {
         const struct SectionHeader *curr_header = &section_headers[i];
-        if (tiny_c_strcmp(curr_header->name, name) == 0) {
+        if (strcmp(curr_header->name, name) == 0) {
             section_header = curr_header;
             break;
         }
@@ -120,13 +119,12 @@ static bool get_dynamic_data(
     if (dyn_elf_symbols == NULL) {
         BAIL("malloc failed\n");
     }
-    off_t seeked =
-        tinyc_lseek(fd, (off_t)dyn_sym_section_header->offset, SEEK_SET);
+    off_t seeked = lseek(fd, (off_t)dyn_sym_section_header->offset, SEEK_SET);
     if (seeked != (off_t)dyn_sym_section_header->offset) {
         BAIL("seek failed\n");
     }
-    ssize_t read = tiny_c_read(fd, dyn_elf_symbols, dyn_sym_section_size);
-    if ((size_t)read != dyn_sym_section_size) {
+    ssize_t bytes_read = read(fd, dyn_elf_symbols, dyn_sym_section_size);
+    if ((size_t)bytes_read != dyn_sym_section_size) {
         BAIL("read failed\n");
     }
 
@@ -134,12 +132,12 @@ static bool get_dynamic_data(
     if (dyn_strings == NULL) {
         BAIL("malloc failed\n");
     }
-    seeked = tinyc_lseek(fd, (off_t)dyn_str_section_header->offset, SEEK_SET);
+    seeked = lseek(fd, (off_t)dyn_str_section_header->offset, SEEK_SET);
     if (seeked != (off_t)dyn_str_section_header->offset) {
         BAIL("seek failed\n");
     }
-    read = tiny_c_read(fd, dyn_strings, dyn_str_section_header->size);
-    if ((size_t)read != dyn_str_section_header->size) {
+    bytes_read = read(fd, dyn_strings, dyn_str_section_header->size);
+    if ((size_t)bytes_read != dyn_str_section_header->size) {
         BAIL("read failed\n");
     }
 
@@ -178,12 +176,12 @@ static bool get_dynamic_data(
         if (global_offset_table == NULL) {
             BAIL("malloc failed\n");
         }
-        seeked = tinyc_lseek(fd, (off_t)got_section_header->offset, SEEK_SET);
+        seeked = lseek(fd, (off_t)got_section_header->offset, SEEK_SET);
         if (seeked != (off_t)got_section_header->offset) {
             BAIL("seek failed\n");
         }
-        read = tiny_c_read(fd, global_offset_table, got_section_header->size);
-        if ((size_t)read != got_section_header->size) {
+        bytes_read = read(fd, global_offset_table, got_section_header->size);
+        if ((size_t)bytes_read != got_section_header->size) {
             BAIL("read failed\n");
         }
 
@@ -216,14 +214,13 @@ static bool get_dynamic_data(
         if (global_offset_table == NULL) {
             BAIL("malloc failed\n");
         }
-        seeked =
-            tinyc_lseek(fd, (off_t)got_plt_section_header->offset, SEEK_SET);
+        seeked = lseek(fd, (off_t)got_plt_section_header->offset, SEEK_SET);
         if (seeked != (off_t)got_plt_section_header->offset) {
             BAIL("seek failed\n");
         }
-        read =
-            tiny_c_read(fd, global_offset_table, got_plt_section_header->size);
-        if ((size_t)read != got_plt_section_header->size) {
+        bytes_read =
+            read(fd, global_offset_table, got_plt_section_header->size);
+        if ((size_t)bytes_read != got_plt_section_header->size) {
             BAIL("read failed\n");
         }
 
@@ -282,12 +279,12 @@ static bool get_dynamic_data(
         if (elf_func_relocations == NULL) {
             BAIL("malloc failed\n");
         }
-        seeked = tinyc_lseek(fd, (off_t)func_reloc_header->offset, SEEK_SET);
+        seeked = lseek(fd, (off_t)func_reloc_header->offset, SEEK_SET);
         if (seeked != (off_t)func_reloc_header->offset) {
             BAIL("seek failed\n");
         }
-        read = tiny_c_read(fd, elf_func_relocations, func_reloc_header->size);
-        if ((size_t)read != func_reloc_header->size) {
+        bytes_read = read(fd, elf_func_relocations, func_reloc_header->size);
+        if ((size_t)bytes_read != func_reloc_header->size) {
             BAIL("read failed\n");
         }
 
@@ -327,12 +324,12 @@ static bool get_dynamic_data(
         if (elf_var_relocations == NULL) {
             BAIL("malloc failed\n");
         }
-        seeked = tinyc_lseek(fd, (off_t)var_reloc_header->offset, SEEK_SET);
+        seeked = lseek(fd, (off_t)var_reloc_header->offset, SEEK_SET);
         if (seeked != (off_t)var_reloc_header->offset) {
             BAIL("seek failed\n");
         }
-        read = tiny_c_read(fd, elf_var_relocations, var_reloc_header->size);
-        if ((size_t)read != var_reloc_header->size) {
+        bytes_read = read(fd, elf_var_relocations, var_reloc_header->size);
+        if ((size_t)bytes_read != var_reloc_header->size) {
             BAIL("read failed\n");
         }
 
@@ -370,12 +367,12 @@ static bool get_dynamic_data(
     if (dynamic_entries == NULL) {
         BAIL("malloc failed\n");
     }
-    seeked = tinyc_lseek(fd, (off_t)dynamic_header->offset, SEEK_SET);
+    seeked = lseek(fd, (off_t)dynamic_header->offset, SEEK_SET);
     if (seeked != (off_t)dynamic_header->offset) {
         BAIL("seek failed\n");
     }
-    read = tiny_c_read(fd, dynamic_entries, dynamic_header->size);
-    if ((size_t)read != dynamic_header->size) {
+    bytes_read = read(fd, dynamic_entries, dynamic_header->size);
+    if ((size_t)bytes_read != dynamic_header->size) {
         BAIL("read failed\n");
     }
 
@@ -414,12 +411,12 @@ static bool get_dynamic_data(
 
 bool get_elf_data(int fd, struct ElfData *elf_data) {
     ELF_HEADER elf_header;
-    ssize_t header_read_len = tiny_c_read(fd, &elf_header, ELF_HEADER_LEN);
+    ssize_t header_read_len = read(fd, &elf_header, ELF_HEADER_LEN);
     if (header_read_len != ELF_HEADER_LEN) {
         BAIL("read failed\n");
     }
     const uint8_t ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
-    if (tiny_c_memcmp(elf_header.e_ident, ELF_MAGIC, 4)) {
+    if (memcmp(elf_header.e_ident, ELF_MAGIC, 4)) {
         BAIL("Program type not supported\n");
     }
     if (elf_header.e_phoff != ELF_HEADER_LEN) {
@@ -431,8 +428,7 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
     if (program_headers == NULL) {
         BAIL("malloc failed\n");
     }
-    ssize_t ph_read_len =
-        tiny_c_read(fd, program_headers, program_headers_size);
+    ssize_t ph_read_len = read(fd, program_headers, program_headers_size);
     if ((size_t)ph_read_len != program_headers_size) {
         BAIL("read failed\n");
     }

@@ -3,7 +3,6 @@
 #include "../../tiny_c/tiny_c.h"
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 
 // @todo: do we need mmap functions here and in memory_map.c?
 
@@ -32,7 +31,7 @@ static bool find_import_entry(
     return false;
 }
 
-static bool tiny_c_mem_is_empty(const void *buffer, size_t n) {
+static bool mem_is_empty(const void *buffer, size_t n) {
     for (size_t i = 0; i < n; i++) {
         u_int8_t byte = ((u_int8_t *)buffer)[i];
         if (byte != 0) {
@@ -52,7 +51,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (!pe_header_buffer) {
         BAIL("malloc failed\n");
     }
-    tiny_c_read(fd, pe_header_buffer, 1000);
+    read(fd, pe_header_buffer, 1000);
     struct ImageDosHeader *dos_header =
         (struct ImageDosHeader *)pe_header_buffer;
     if (dos_header->magic != DOS_MAGIC) {
@@ -129,8 +128,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t section_headers_size =
         sizeof(struct WinSectionHeader) * section_headers_len;
     struct WinSectionHeader *section_headers = malloc(section_headers_size);
-    tinyc_lseek(fd, (off_t)section_headers_start, SEEK_SET);
-    tiny_c_read(fd, section_headers, section_headers_size);
+    lseek(fd, (off_t)section_headers_start, SEEK_SET);
+    read(fd, section_headers, section_headers_size);
 
     /* Import Directory */
 
@@ -152,8 +151,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (import_section != NULL) {
         uint8_t *import_section_buffer = malloc(import_section->file_size);
 
-        tinyc_lseek(fd, import_section->file_offset, SEEK_SET);
-        tiny_c_read(fd, import_section_buffer, import_section->file_size);
+        lseek(fd, import_section->file_offset, SEEK_SET);
+        read(fd, import_section_buffer, import_section->file_size);
 
         size_t import_dir_section_offset =
             import_dir->virtual_address - import_section->virtual_base_address;
@@ -168,9 +167,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             if (i == MAX_ARRAY_LENGTH) {
                 BAIL("unsupported .idata table size\n");
             }
-            if (tiny_c_mem_is_empty(
-                    raw_dir_entry, IMPORT_DIRECTORY_RAW_ENTRY_SIZE
-                )) {
+            if (mem_is_empty(raw_dir_entry, IMPORT_DIRECTORY_RAW_ENTRY_SIZE)) {
                 break;
             }
 
@@ -206,7 +203,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
                     pe_word_size
                 );
 
-                if (tiny_c_mem_is_empty(&import_lookup_entry, pe_word_size)) {
+                if (mem_is_empty(&import_lookup_entry, pe_word_size)) {
                     break;
                 }
 
@@ -305,8 +302,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         if (!export_section_buffer) {
             BAIL("export_section_buffer malloc failed\n");
         }
-        tinyc_lseek(fd, export_section->file_offset, SEEK_SET);
-        tiny_c_read(fd, export_section_buffer, export_section->file_size);
+        lseek(fd, export_section->file_offset, SEEK_SET);
+        read(fd, export_section_buffer, export_section->file_size);
 
         size_t export_dir_section_offset =
             export_dir->virtual_address - export_section->virtual_base_address;
@@ -362,23 +359,23 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         size_t symbol_table_offset =
             winpe_header->image_file_header.pointer_to_symbol_table;
         size_t string_table_offset = symbol_table_offset + raw_symbols_size;
-        tinyc_lseek(fd, (off_t)string_table_offset, SEEK_SET);
+        lseek(fd, (off_t)string_table_offset, SEEK_SET);
         size_t string_table_size = 0;
-        tiny_c_read(fd, &string_table_size, 4);
+        read(fd, &string_table_size, 4);
 
-        tinyc_lseek(fd, (off_t)string_table_offset, SEEK_SET);
+        lseek(fd, (off_t)string_table_offset, SEEK_SET);
         uint8_t *string_table = malloc(string_table_size);
-        tiny_c_read(fd, string_table, string_table_size);
+        read(fd, string_table, string_table_size);
 
         struct RawWinSymbol *raw_symbols = malloc(raw_symbols_size);
-        tinyc_lseek(fd, (off_t)symbol_table_offset, SEEK_SET);
-        tiny_c_read(fd, raw_symbols, raw_symbols_size);
+        lseek(fd, (off_t)symbol_table_offset, SEEK_SET);
+        read(fd, raw_symbols, raw_symbols_size);
 
         symbols = malloc(sizeof(struct WinSymbol) * raw_symbols_len);
         for (size_t i = 0; i < raw_symbols_len; i++) {
             struct RawWinSymbol *raw_symbol = &raw_symbols[i];
             char *name;
-            if (tiny_c_mem_is_empty(raw_symbol->name, 4)) {
+            if (mem_is_empty(raw_symbol->name, 4)) {
                 uint32_t str_table_offset = *(uint32_t *)(raw_symbol->name + 4);
                 name = (char *)string_table + str_table_offset;
             } else {
@@ -410,10 +407,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (relocation_section) {
         uint8_t *relocation_section_buffer =
             malloc(relocation_section->file_size);
-        tinyc_lseek(fd, (off_t)relocation_section->file_offset, SEEK_SET);
-        tiny_c_read(
-            fd, relocation_section_buffer, relocation_section->file_size
-        );
+        lseek(fd, (off_t)relocation_section->file_offset, SEEK_SET);
+        read(fd, relocation_section_buffer, relocation_section->file_size);
 
         const size_t RELOCATION_BLOCK_SIZE = sizeof(struct RelocationBlock);
         size_t block_bytes_parsed = 0;
@@ -475,7 +470,7 @@ const struct WinSectionHeader *find_win_section_header(
 ) {
     for (size_t i = 0; i < section_headers_len; i++) {
         const struct WinSectionHeader *section_header = &section_headers[i];
-        if (tiny_c_strcmp((char *)section_header->name, name) == 0) {
+        if (strcmp((char *)section_header->name, name) == 0) {
             return section_header;
         }
     }

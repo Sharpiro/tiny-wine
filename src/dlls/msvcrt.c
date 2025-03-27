@@ -8,6 +8,11 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
+#pragma clang diagnostic ignored "-Winvalid-noreturn"
+#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
+#pragma clang diagnostic ignored "-Wbuiltin-requires-header"
 #if LOG_LEVEL <= INFO
 
 #define LOG(fmt, ...)                                                          \
@@ -22,12 +27,6 @@
     }
 
 #endif
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
-#pragma clang diagnostic ignored "-Winvalid-noreturn"
-#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
-#pragma clang diagnostic ignored "-Wbuiltin-requires-header"
 
 static size_t heap_start = 0;
 static size_t heap_end = 0;

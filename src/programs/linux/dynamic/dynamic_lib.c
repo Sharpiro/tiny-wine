@@ -48,7 +48,7 @@ long atol_len(const char *data, size_t data_len) {
             return 0;
         }
 
-        size_t exponent = (size_t)tiny_c_pow(10, (double)(data_len - i - 1));
+        size_t exponent = (size_t)pow(10, (double)(data_len - i - 1));
         result += current_digit * (ssize_t)exponent;
     }
 
@@ -132,9 +132,9 @@ bool read_to_string(const char *path, char **content) {
         BAIL("malloc failed\n");
     }
 
-    int32_t fd = tiny_c_open(path, O_RDONLY);
-    tiny_c_read(fd, buffer, READ_SIZE);
-    tiny_c_close(fd);
+    int32_t fd = tinyc_open(path, O_RDONLY);
+    read(fd, buffer, READ_SIZE);
+    close(fd);
     *content = buffer;
 
     return true;
@@ -182,7 +182,7 @@ bool string_split(
 struct passwd *getpwuid(uid_t uid) {
     char *passwd_file;
     if (!read_to_string("/etc/passwd", &passwd_file)) {
-        tinyc_errno = ENOENT;
+        errno = ENOENT;
         return NULL;
     }
 
@@ -192,7 +192,7 @@ struct passwd *getpwuid(uid_t uid) {
     if (!string_split(
             passwd_file, passwd_file_len, '\n', &user_lines, &user_lines_len
         )) {
-        tinyc_errno = ENOENT;
+        errno = ENOENT;
         return NULL;
     }
 
@@ -207,11 +207,11 @@ struct passwd *getpwuid(uid_t uid) {
                 &user_details_split,
                 &user_details_split_len
             )) {
-            tinyc_errno = ENOENT;
+            errno = ENOENT;
             return NULL;
         }
         if (user_details_split_len < 7) {
-            tinyc_errno = ENOENT;
+            errno = ENOENT;
             return NULL;
         }
 

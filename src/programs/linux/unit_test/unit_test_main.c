@@ -5,10 +5,10 @@
 
 #define tw_assert(expr)                                                        \
     if (!(expr)) {                                                             \
-        tiny_c_fprintf(STDERR, "%s:%d\n", __FILE__, __LINE__);                 \
-        tiny_c_fprintf(STDERR, "%s\n", __func__);                              \
-        tiny_c_fprintf(STDERR, "%s\n", #expr);                                 \
-        tiny_c_exit(-1);                                                       \
+        fprintf(STDERR, "%s:%d\n", __FILE__, __LINE__);                        \
+        fprintf(STDERR, "%s\n", __func__);                                     \
+        fprintf(STDERR, "%s\n", #expr);                                        \
+        exit(-1);                                                              \
     }
 
 static void get_memory_regions_basic_test(void) {
@@ -261,12 +261,12 @@ static void loader_malloc_arena_align_test(void) {
 
 static void get_runtime_function_local_lib_test(void) {
     struct RuntimeSymbol runtime_symbols[] = {
-        {.value = 0x9d8, .name = "tiny_c_pow"},
+        {.value = 0x9d8, .name = "pow"},
     };
 
     const struct RuntimeSymbol *runtime_symbol;
     bool result = find_runtime_symbol(
-        "tiny_c_pow",
+        "pow",
         runtime_symbols,
         sizeof(runtime_symbols) / sizeof(struct RuntimeSymbol),
         0,
@@ -281,17 +281,17 @@ static void get_runtime_function_shared_lib_test(void) {
     struct RuntimeSymbol runtime_symbols[] = {
         {
             .value = 0,
-            .name = "tiny_c_pow",
+            .name = "pow",
         },
         {
             .value = 0x209d8,
-            .name = "tiny_c_pow",
+            .name = "pow",
         },
     };
 
     const struct RuntimeSymbol *runtime_symbol;
     bool result = find_runtime_symbol(
-        "tiny_c_pow",
+        "pow",
         runtime_symbols,
         sizeof(runtime_symbols) / sizeof(struct RuntimeSymbol),
         0,

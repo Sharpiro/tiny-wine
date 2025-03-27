@@ -2,7 +2,6 @@
 #include "../../tiny_c/tiny_c.h"
 #include "../log.h"
 #include <stddef.h>
-#include <stdio.h>
 
 #define ASM_X64_MOV32_IMMEDIATE_INTO_EAX 0xb8
 #define ASM_X64_CALL_EAX 0xff, 0xd0
@@ -16,7 +15,7 @@ const struct WinRuntimeObject *find_runtime_object(
 ) {
     for (size_t i = 0; i < runtime_objects->length; i++) {
         const struct WinRuntimeObject *curr_obj = &runtime_objects->data[i];
-        if (tiny_c_strcmp(curr_obj->name, name) == 0) {
+        if (strcmp(curr_obj->name, name) == 0) {
             return curr_obj;
         }
     }
@@ -28,7 +27,7 @@ const struct WinSymbol *find_win_symbol(
 ) {
     for (size_t i = 0; i < symbols_len; i++) {
         const struct WinSymbol *curr_symbol = &symbols[i];
-        if (tiny_c_strcmp(curr_symbol->name, name) == 0) {
+        if (strcmp(curr_symbol->name, name) == 0) {
             return curr_symbol;
         }
     }
@@ -66,7 +65,7 @@ bool get_runtime_import_address_table(
         const struct WinRuntimeObject *import_runtime_obj =
             find_runtime_object(shared_libraries, current_import->lib_name);
         if (import_runtime_obj == NULL &&
-            tiny_c_strcmp(current_import->lib_name, "ntdll.dll") != 0) {
+            strcmp(current_import->lib_name, "ntdll.dll") != 0) {
             BAIL("expected runtime_obj '%s'\n", current_import->lib_name);
         }
 
@@ -237,9 +236,8 @@ bool map_memory_regions_win(
     for (size_t i = 0; i < regions_len; i++) {
         const struct MemoryRegion *memory_region = &regions[i];
         uint8_t *region_start = (uint8_t *)memory_region->start;
-        tinyc_lseek(fd, (off_t)memory_region->file_offset, SEEK_SET);
-        if ((int32_t)tiny_c_read(fd, region_start, memory_region->file_size) <
-            0) {
+        lseek(fd, (off_t)memory_region->file_offset, SEEK_SET);
+        if ((int32_t)read(fd, region_start, memory_region->file_size) < 0) {
             BAIL("read failed\n");
         }
 
@@ -248,13 +246,8 @@ bool map_memory_regions_win(
         int32_t prot_execute = ((int32_t)memory_region->permissions & 1) << 2;
         int32_t map_protection = prot_read | prot_write | prot_execute;
         size_t memory_region_len = memory_region->end - memory_region->start;
-        if (tiny_c_mprotect(region_start, memory_region_len, map_protection) <
-            0) {
-            BAIL(
-                "tiny_c_mprotect failed, %d, %s\n",
-                tinyc_errno,
-                tinyc_strerror(tinyc_errno)
-            );
+        if (mprotect(region_start, memory_region_len, map_protection) < 0) {
+            BAIL("mprotect failed, %d, %s\n", errno, strerror(errno));
         }
     }
 

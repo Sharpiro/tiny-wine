@@ -4,7 +4,6 @@
 #include "../memory_map.h"
 #include <fcntl.h>
 #include <stddef.h>
-#include <sys/mman.h>
 
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,
@@ -56,7 +55,7 @@ bool find_runtime_symbol(
         if (curr_runtime_symbol->value == ignore_val) {
             continue;
         }
-        if (tiny_c_strcmp(curr_runtime_symbol->name, name) == 0) {
+        if (strcmp(curr_runtime_symbol->name, name) == 0) {
             *symbol = curr_runtime_symbol;
             return true;
         }
@@ -95,9 +94,9 @@ bool read_to_string(const char *path, char **content, size_t size) {
         BAIL("loader_malloc_arena failed\n");
     }
 
-    int32_t fd = tiny_c_open(path, O_RDONLY);
-    tiny_c_read(fd, buffer, size);
-    tiny_c_close(fd);
+    int32_t fd = tinyc_open(path, O_RDONLY);
+    read(fd, buffer, size);
+    close(fd);
     *content = buffer;
 
     return true;

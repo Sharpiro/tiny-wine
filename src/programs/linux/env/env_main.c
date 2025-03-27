@@ -6,11 +6,11 @@
 extern char **environ;
 
 int main(int argc, char *argv[]) {
-    tiny_c_printf("%d\n", argc);
+    printf("%d\n", argc);
 
     // Print args
     for (int i = 0; i < argc; i++) {
-        tiny_c_printf("%s\n", argv[i]);
+        printf("%s\n", argv[i]);
     }
 
     if (argc <= 3) {
@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     char **envv = environ;
     char *env;
     while ((env = *envv++) != NULL) {
-        tiny_c_printf("%s\n", env);
+        printf("%s\n", env);
     }
 
     // Print auxiliary vector
@@ -35,6 +35,6 @@ int main(int argc, char *argv[]) {
         if (aux.key == 0 && aux.value == 0) {
             break;
         }
-        tiny_c_printf("%zd: {%zx, %zx}\n", i, aux.key, aux.value);
+        printf("%zd: {%zx, %zx}\n", i, aux.key, aux.value);
     }
 }

@@ -1,33 +1,25 @@
 #include "tiny_c.h"
 #include "../loader/log.h"
 #include "tinyc_sys.h"
-#include <asm-generic/errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-#include <sys/mman.h>
 #include <sys/syscall.h>
-#include <sys/types.h>
 
 // @todo: naming convention tiny_c_xyz vs tinyc_xyz
 
-int32_t tinyc_errno = 0;
-size_t tinyc_heap_start = 0;
-size_t tinyc_heap_end = 0;
-size_t tinyc_heap_index = 0;
+int32_t errno = 0;
 
-static void tinyc_print_len(
-    int32_t file_handle, const char *data, size_t length
-) {
+static size_t heap_start = 0;
+static size_t heap_end = 0;
+static size_t heap_index = 0;
+
+static void print_len(int32_t file_handle, const char *data, size_t length) {
     struct SysArgs args = {
         .param_one = (size_t)file_handle,
         .param_two = (size_t)data,
         .param_three = length,
     };
-    tiny_c_syscall(SYS_write, &args);
+    tinyc_syscall(SYS_write, &args);
 }
 
 size_t strlen(const char *data) {
@@ -41,18 +33,18 @@ size_t strlen(const char *data) {
     return len;
 }
 
-void tinyc_fputs(const char *data, int32_t file_handle) {
+void fputs(const char *data, int32_t file_handle) {
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
-        tinyc_print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
+        print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
         return;
     }
 
     size_t str_len = strlen(data);
-    tinyc_print_len(file_handle, data, str_len);
+    print_len(file_handle, data, str_len);
 }
 
-double tiny_c_pow(double x, double y) {
+double pow(double x, double y) {
     double product = 1;
     for (size_t i = 0; i < (size_t)y; i++) {
         product *= x;
@@ -66,7 +58,7 @@ static void print_number_hex(int32_t file_handle, size_t num) {
 
     char num_buffer[32] = {0};
 
-    size_t current_base = (size_t)tiny_c_pow(0x10, MAX_DIGITS - 1);
+    size_t current_base = (size_t)pow(0x10, MAX_DIGITS - 1);
     size_t buffer_index = 0;
     bool num_start = false;
     for (size_t i = 0; i < MAX_DIGITS; i++) {
@@ -80,7 +72,7 @@ static void print_number_hex(int32_t file_handle, size_t num) {
         }
     }
 
-    tinyc_print_len(file_handle, (char *)num_buffer, buffer_index);
+    print_len(file_handle, (char *)num_buffer, buffer_index);
 }
 
 static void print_number_decimal(int32_t file_handle, size_t num) {
@@ -88,7 +80,7 @@ static void print_number_decimal(int32_t file_handle, size_t num) {
     const char *NUMBER_CHARS = "0123456789";
 
     char num_buffer[32] = {0};
-    size_t current_base = (size_t)tiny_c_pow(10, MAX_DIGITS - 1);
+    size_t current_base = (size_t)pow(10, MAX_DIGITS - 1);
     size_t num_start = 0;
     size_t i;
     for (i = 0; i < MAX_DIGITS; i++) {
@@ -109,7 +101,7 @@ static void print_number_decimal(int32_t file_handle, size_t num) {
         .param_two = print_start,
         .param_three = print_len,
     };
-    tiny_c_syscall(SYS_write, &args);
+    tinyc_syscall(SYS_write, &args);
 }
 
 struct PrintItem {
@@ -165,17 +157,17 @@ static void fprintf_internal(
         switch (print_item.formatter) {
         case 0x00: {
             const char *data = format + print_item.start;
-            tinyc_print_len(file_handle, data, print_item.length);
+            print_len(file_handle, data, print_item.length);
             break;
         }
         case 's': {
             char *data = va_arg(var_args, char *);
-            tinyc_fputs(data, file_handle);
+            fputs(data, file_handle);
             break;
         }
         case 'c': {
             char data = va_arg(var_args, char);
-            tinyc_print_len(file_handle, &data, 1);
+            print_len(file_handle, &data, 1);
             break;
         }
         case 'p':
@@ -194,7 +186,7 @@ static void fprintf_internal(
             break;
         }
         default: {
-            tinyc_fputs("<unknown>", file_handle);
+            fputs("<unknown>", file_handle);
             break;
         }
         }
@@ -203,108 +195,116 @@ static void fprintf_internal(
     va_end(var_args);
 }
 
-void tiny_c_printf(const char *format, ...) {
+void printf(const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
     fprintf_internal(STDOUT, format, var_args);
     va_end(var_args);
 }
 
-void tiny_c_fprintf(int32_t file_handle, const char *format, ...) {
+void fprintf(int32_t file_handle, const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
     fprintf_internal(file_handle, format, var_args);
     va_end(var_args);
 }
 
-void tiny_c_exit(int32_t code) {
+void exit(int32_t code) {
     struct SysArgs args = {.param_one = (size_t)code};
-    tiny_c_syscall(SYS_exit, &args);
+    tinyc_syscall(SYS_exit, &args);
 }
 
-int32_t tiny_c_open(const char *path, int flags) {
+// @todo:
+//          - incorrect signature
+//          - syscall
+//          - defined in <fcntl.h>
+int32_t tinyc_open(const char *path, int flags) {
     struct SysArgs args = {
         .param_one = (size_t)path,
         .param_two = (size_t)flags,
     };
-    int32_t result = (int32_t)tiny_c_syscall(SYS_open, &args);
+    int32_t result = (int32_t)tinyc_syscall(SYS_open, &args);
     int32_t err = (int32_t)result;
     if (err < 1) {
-        tinyc_errno = -err;
+        errno = -err;
         return -1;
     }
 
     return result;
 }
 
-void tiny_c_close(int32_t fd) {
+// @todo:
+//          - syscall
+//          - defined in <unistd.h>
+int32_t close(int32_t fd) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
     };
-    tiny_c_syscall(SYS_close, &args);
+    return (int32_t)tinyc_syscall(SYS_close, &args);
 }
 
-ssize_t tiny_c_read(int32_t fd, void *buf, size_t count) {
+ssize_t read(int32_t fd, void *buf, size_t count) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
         .param_two = (size_t)buf,
         .param_three = count,
     };
-    return (ssize_t)tiny_c_syscall(SYS_read, &args);
+    return (ssize_t)tinyc_syscall(SYS_read, &args);
 }
 
-void *tiny_c_mmap(
-    size_t address,
+void *mmap(
+    void *address,
     size_t length,
-    size_t prot,
-    size_t flags,
+    int32_t prot,
+    int32_t flags,
     int32_t fd,
-    size_t offset
+    off_t offset
 ) {
     struct SysArgs args = {
-        .param_one = address,
+        .param_one = (size_t)address,
         .param_two = length,
-        .param_three = prot,
-        .param_seven = flags, // @note: disrespects x64 calling convention
+        .param_three = (size_t)prot,
+        .param_seven =
+            (size_t)flags, // @note: disrespects x64 calling convention
         .param_five = (size_t)fd,
-        .param_six = offset,
+        .param_six = (size_t)offset,
     };
-    size_t result = tiny_c_syscall(SYS_mmap, &args);
+    size_t result = tinyc_syscall(SYS_mmap, &args);
     ssize_t err = (ssize_t)result;
     if (err < 1) {
-        tinyc_errno = (int32_t)-err;
+        errno = (int32_t)-err;
         return MAP_FAILED;
     }
 
     return (void *)result;
 }
 
-int32_t tiny_c_munmap(void *address, size_t length) {
+int32_t munmap(void *address, size_t length) {
     struct SysArgs args = {
         .param_one = (size_t)address,
         .param_two = length,
     };
-    size_t result = tiny_c_syscall(SYS_munmap, &args);
+    size_t result = tinyc_syscall(SYS_munmap, &args);
 
     return (int32_t)result;
 }
 
-int32_t tiny_c_mprotect(void *address, size_t length, int32_t protection) {
+int32_t mprotect(void *address, size_t length, int32_t protection) {
     struct SysArgs args = {
         .param_one = (size_t)address,
         .param_two = length,
         .param_three = (size_t)protection,
     };
-    size_t result = tiny_c_syscall(SYS_mprotect, &args);
+    size_t result = tinyc_syscall(SYS_mprotect, &args);
     int32_t err = (int32_t)result;
     if (err < 1) {
-        tinyc_errno = -err;
+        errno = -err;
     }
 
     return err;
 }
 
-int tiny_c_memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
+int32_t memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
     for (size_t i = 0; i < n; i++) {
         u_int8_t a = ((u_int8_t *)buffer_a)[i];
         u_int8_t b = ((u_int8_t *)buffer_b)[i];
@@ -316,7 +316,7 @@ int tiny_c_memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
     return 0;
 }
 
-int tiny_c_strcmp(const char *buffer_a, const char *buffer_b) {
+int32_t strcmp(const char *buffer_a, const char *buffer_b) {
     for (size_t i = 0; true; i++) {
         char a = buffer_a[i];
         char b = buffer_b[i];
@@ -331,17 +331,17 @@ int tiny_c_strcmp(const char *buffer_a, const char *buffer_b) {
     return 0;
 }
 
-int32_t tiny_c_get_pid(void) {
+int32_t getpid(void) {
     struct SysArgs args = {0};
-    return (int32_t)tiny_c_syscall(SYS_getpid, &args);
+    return (int32_t)tinyc_syscall(SYS_getpid, &args);
 }
 
-char *tiny_c_get_cwd(char *buffer, size_t size) {
+char *getcwd(char *buffer, size_t size) {
     struct SysArgs args = {
         .param_one = (size_t)buffer,
         .param_two = size,
     };
-    size_t result = tiny_c_syscall(SYS_getcwd, &args);
+    size_t result = tinyc_syscall(SYS_getcwd, &args);
     if (result < 1) {
         return NULL;
     }
@@ -349,7 +349,7 @@ char *tiny_c_get_cwd(char *buffer, size_t size) {
     return buffer;
 }
 
-const char *tinyc_strerror(int32_t err_number) {
+char *strerror(int32_t err_number) {
     switch (err_number) {
     case ENOENT:
         return "No such file or directory";
@@ -371,35 +371,35 @@ const char *tinyc_strerror(int32_t err_number) {
 void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
-    if (tinyc_heap_start == 0) {
-        tinyc_heap_start = tinyc_sys_brk(0);
-        tinyc_heap_end = tinyc_heap_start;
-        tinyc_heap_index = tinyc_heap_start;
+    if (heap_start == 0) {
+        heap_start = tinyc_sys_brk(0);
+        heap_end = heap_start;
+        heap_index = heap_start;
     }
-    if (tinyc_heap_index + n > tinyc_heap_end) {
+    if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        tinyc_heap_end = tinyc_sys_brk(tinyc_heap_end + extend_size);
-        LOGINFO("tinyc malloc heap extended to 0x%zx\n", tinyc_heap_end);
+        heap_end = tinyc_sys_brk(heap_end + extend_size);
+        LOGINFO("tinyc malloc heap extended to 0x%zx\n", heap_end);
     }
 
-    if (tinyc_heap_end <= tinyc_heap_start) {
+    if (heap_end <= heap_start) {
         return NULL;
     }
 
-    void *address = (void *)tinyc_heap_index;
-    tinyc_heap_index += n;
+    void *address = (void *)heap_index;
+    heap_index += n;
 
     return address;
 }
 
-off_t tinyc_lseek(int32_t fd, off_t offset, int32_t whence) {
+off_t lseek(int32_t fd, off_t offset, int32_t whence) {
     return tinyc_sys_lseek((uint32_t)fd, offset, (uint32_t)whence);
 }
 
-int32_t tinyc_uname(struct utsname *uname) {
-    int32_t result = (int32_t)tinyc_sys_uname(uname);
+int32_t uname(struct utsname *name) {
+    int32_t result = (int32_t)tinyc_sys_uname(name);
     if (result < 0) {
-        tinyc_errno = -result;
+        errno = -result;
         return -1;
     }
 
@@ -408,7 +408,7 @@ int32_t tinyc_uname(struct utsname *uname) {
 
 uid_t getuid(void) {
     struct SysArgs args = {0};
-    uid_t result = (uid_t)tiny_c_syscall(SYS_getuid, &args);
+    uid_t result = (uid_t)tinyc_syscall(SYS_getuid, &args);
     return result;
 }
 
@@ -432,7 +432,7 @@ struct stat stat(const char *path) {
         .param_one = (size_t)path,
         .param_two = (size_t)&file_stat,
     };
-    tiny_c_syscall(SYS_stat, &args);
+    tinyc_syscall(SYS_stat, &args);
 
     return file_stat;
 }

@@ -1,6 +1,6 @@
 #include <stddef.h>
 
-// @todo: use globally if we refactor "tiny_c_fprintf" to "fprintf"
+// @todo: use globally if we refactor "fprintf" to "fprintf"
 
 #pragma once
 
@@ -18,8 +18,8 @@
 #if LOG_LEVEL <= TRACE
 
 #define LOGTRACE(fmt, ...)                                                     \
-    tiny_c_fprintf(2, "TRACE: ");                                              \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(2, "TRACE: ");                                                     \
+    fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -33,8 +33,8 @@
 #if LOG_LEVEL <= DEBUG
 
 #define LOGDEBUG(fmt, ...)                                                     \
-    tiny_c_fprintf(2, "DEBUG: ");                                              \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(2, "DEBUG: ");                                                     \
+    fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -48,8 +48,8 @@
 #if LOG_LEVEL <= INFO
 
 #define LOGINFO(fmt, ...)                                                      \
-    tiny_c_fprintf(2, "INFO: ");                                               \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(2, "INFO: ");                                                      \
+    fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -63,8 +63,8 @@
 #if LOG_LEVEL <= WARNING
 
 #define LOGWARNING(fmt, ...)                                                   \
-    tiny_c_fprintf(2, "WARNING: ");                                            \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(2, "WARNING: ");                                                   \
+    fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
 
@@ -78,8 +78,8 @@
 #if LOG_LEVEL <= ERROR
 
 #define LOGERROR(fmt, ...)                                                     \
-    tiny_c_fprintf(2, "ERROR: ");                                              \
-    tiny_c_fprintf(2, fmt, ##__VA_ARGS__);
+    fprintf(2, "ERROR: ");                                                     \
+    fprintf(2, fmt, ##__VA_ARGS__);
 
 #else
 
