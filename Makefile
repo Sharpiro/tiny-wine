@@ -43,7 +43,7 @@ windows: \
 	windynamic.exe \
 	windynamicfull.exe
 
-tinyc_start.o: src/tiny_c/tinyc_start.c
+tinyc_start.o: src/tinyc/tinyc_start.c
 	@$(CC) $(CFLAGS) \
 		-g \
 		-c \
@@ -55,9 +55,9 @@ tinyc_start.o: src/tiny_c/tinyc_start.c
 		-DAMD64 \
 		-masm=intel \
 		-o tinyc_start.o \
-		src/tiny_c/tinyc_start.c
+		src/tinyc/tinyc_start.c
 
-tinyc_sys.o: src/tiny_c/tiny_c.c
+tinyc_sys.o: src/tinyc/tinyc.c
 	@$(CC) $(CFLAGS) \
 		-g \
 		-c \
@@ -69,9 +69,9 @@ tinyc_sys.o: src/tiny_c/tiny_c.c
 		-DAMD64 \
 		-masm=intel \
 		-o tinyc_sys.o \
-		src/tiny_c/tinyc_sys.c
+		src/tinyc/tinyc_sys.c
 
-tiny_c.o: src/tiny_c/tiny_c.c
+tinyc.o: src/tinyc/tinyc.c
 	@$(CC) $(CFLAGS) \
 		-g \
 		-c \
@@ -82,12 +82,12 @@ tiny_c.o: src/tiny_c/tiny_c.c
 		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
-		-o tiny_c.o \
-		src/tiny_c/tiny_c.c
+		-o tinyc.o \
+		src/tinyc/tinyc.c
 
-libtinyc.a: tinyc_sys.o tiny_c.o
+libtinyc.a: tinyc_sys.o tinyc.o
 	@echo "libtinyc.a"
-	@ar rcs libtinyc.a tinyc_sys.o tiny_c.o
+	@ar rcs libtinyc.a tinyc_sys.o tinyc.o
 	@$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
 
 libstatic.a: src/programs/linux/string/static_lib.c
@@ -105,7 +105,7 @@ libstatic.a: src/programs/linux/string/static_lib.c
 	@ar rcs libstatic.a static_lib.o
 	@$(OBJDUMP) -M intel -D libstatic.a > libstatic.a.dump
 
-libtinyc.so: tinyc_sys.o tiny_c.o
+libtinyc.so: tinyc_sys.o tinyc.o
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -116,7 +116,7 @@ libtinyc.so: tinyc_sys.o tiny_c.o
 		-shared \
 		-o libtinyc.so \
 		tinyc_sys.o \
-		tiny_c.o
+		tinyc.o
 	@$(OBJDUMP) -M intel -D libtinyc.so > libtinyc.so.dump
 
 libdynamic.so:
@@ -493,5 +493,5 @@ clean:
 		windynamic_linux
 
 install: libtinyc.a libtinyc.so
-	cp src/tiny_c/tiny_c.h /usr/local/include
+	cp src/tinyc/tinyc.h /usr/local/include
 	cp libtinyc.a libtinyc.so /usr/local/lib

@@ -1,4 +1,4 @@
-#include "../../../tiny_c/tiny_c.h"
+#include "../../../tinyc/tinyc.h"
 
 int main(void) {
     return 42;

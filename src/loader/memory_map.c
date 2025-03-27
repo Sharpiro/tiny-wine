@@ -1,5 +1,5 @@
 #include "memory_map.h"
-#include "../tiny_c/tiny_c.h"
+#include "../tinyc/tinyc.h"
 #include "log.h"
 
 #define LOADER_BUFFER_LEN 0x210'000

@@ -1,5 +1,5 @@
 #include "loader_lib.h"
-#include "../../tiny_c/tiny_c.h"
+#include "../../tinyc/tinyc.h"
 #include "../log.h"
 #include "../memory_map.h"
 #include <fcntl.h>

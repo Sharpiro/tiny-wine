@@ -1,5 +1,5 @@
 #include "elf_tools.h"
-#include "../../tiny_c/tiny_c.h"
+#include "../../tinyc/tinyc.h"
 #include "../memory_map.h"
 
 #define ELF_HEADER_LEN sizeof(ELF_HEADER)

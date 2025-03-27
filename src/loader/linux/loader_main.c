@@ -1,6 +1,6 @@
 #include "../../dlls/macros.h"
-#include "../../tiny_c/tiny_c.h"
-#include "../../tiny_c/tinyc_sys.h"
+#include "../../tinyc/tinyc.h"
+#include "../../tinyc/tinyc_sys.h"
 #include "../log.h"
 #include "loader_lib.h"
 #include <fcntl.h>

@@ -1,11 +1,11 @@
-#include "tiny_c.h"
+#include "tinyc.h"
 #include "../loader/log.h"
 #include "tinyc_sys.h"
 #include <fcntl.h>
 #include <stdarg.h>
 #include <sys/syscall.h>
 
-// @todo: naming convention tiny_c_xyz vs tinyc_xyz
+// @todo: naming convention tinyc_xyz vs tinyc_xyz
 
 int32_t errno = 0;
 

@@ -1,5 +1,5 @@
 #include "../../src/loader/windows/pe_tools.h"
-#include "../../src/tiny_c/tiny_c.h"
+#include "../../src/tinyc/tinyc.h"
 #include <fcntl.h>
 #include <stddef.h>
 

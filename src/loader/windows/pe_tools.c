@@ -1,6 +1,6 @@
 
 #include "./pe_tools.h"
-#include "../../tiny_c/tiny_c.h"
+#include "../../tinyc/tinyc.h"
 #include <stddef.h>
 #include <stdint.h>
 
