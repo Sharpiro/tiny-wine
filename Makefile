@@ -57,7 +57,9 @@ tinyc_start.o: src/tinyc/tinyc_start.c
 		-o tinyc_start.o \
 		src/tinyc/tinyc_start.c
 
-tinyc_sys.o: src/tinyc/tinyc.c
+tinyc_sys.o: \
+	src/tinyc/tinyc.h \
+	src/tinyc/tinyc.c
 	@$(CC) $(CFLAGS) \
 		-g \
 		-c \
@@ -71,7 +73,9 @@ tinyc_sys.o: src/tinyc/tinyc.c
 		-o tinyc_sys.o \
 		src/tinyc/tinyc_sys.c
 
-tinyc.o: src/tinyc/tinyc.c
+tinyc.o: \
+	src/tinyc/tinyc.h \
+	src/tinyc/tinyc.c
 	@$(CC) $(CFLAGS) \
 		-g \
 		-c \

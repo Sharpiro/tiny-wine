@@ -5,9 +5,9 @@
 
 #define tw_assert(expr)                                                        \
     if (!(expr)) {                                                             \
-        fprintf(STDERR, "%s:%d\n", __FILE__, __LINE__);                        \
-        fprintf(STDERR, "%s\n", __func__);                                     \
-        fprintf(STDERR, "%s\n", #expr);                                        \
+        fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);                        \
+        fprintf(stderr, "%s\n", __func__);                                     \
+        fprintf(stderr, "%s\n", #expr);                                        \
         exit(-1);                                                              \
     }
 

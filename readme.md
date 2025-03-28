@@ -14,6 +14,7 @@ A basic dynamic loader for Linux and Windows.
 - No environment variables
 - Partial SSE
 - No AVX
+- There are many relocation types, only some are supported
 
 ## Prerequisites
 

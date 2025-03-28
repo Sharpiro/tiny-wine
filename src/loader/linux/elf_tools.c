@@ -295,11 +295,14 @@ static bool get_dynamic_data(
         );
         for (size_t i = 0; i < func_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_func_relocations[i];
+            size_t type = elf_relocation->r_info & 0xff;
+            if (type != R_X86_64_JUMP_SLOT) {
+                BAIL("Unsupported 64 bit function relocation type %zd\n", type);
+            }
             if (elf_relocation->r_addend > 0) {
                 BAIL("Unsupported 64 bit function relocation addend\n");
             }
 
-            size_t type = elf_relocation->r_info & 0xff;
             size_t symbol_index =
                 elf_relocation->r_info >> RELOCATION_SYMBOL_SHIFT_LENGTH;
             struct Symbol symbol = dyn_symbols[symbol_index];
@@ -340,14 +343,14 @@ static bool get_dynamic_data(
         );
         for (size_t i = 0; i < var_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_var_relocations[i];
+            size_t type = elf_relocation->r_info & 0xff;
+            if (type != R_X86_64_COPY && type != R_X86_64_GLOB_DAT) {
+                BAIL("Unsupported 64 bit variable relocation type %zd\n", type);
+            }
             if (elf_relocation->r_addend > 0) {
                 BAIL("Unsupported 64 bit variable relocation addend\n");
             }
 
-            size_t type = elf_relocation->r_info & 0xff;
-            if (type != R_X86_64_COPY && type != R_X86_64_GLOB_DAT) {
-                BAIL("Unsupported 64 bit variable relocation type\n");
-            }
             size_t symbol_index =
                 elf_relocation->r_info >> RELOCATION_SYMBOL_SHIFT_LENGTH;
             struct Symbol symbol = dyn_symbols[symbol_index];

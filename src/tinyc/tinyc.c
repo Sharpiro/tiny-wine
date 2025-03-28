@@ -7,6 +7,11 @@
 
 int32_t errno = 0;
 
+// @todo: creates a R_X86_64_RELATIVE relocation for pointer to static var
+//        creates a R_X86_64_64 relocation for pointer to non-static var
+// @todo: const is broken
+int32_t internal_files[] = {0, 1, 2};
+
 static size_t heap_start = 0;
 static size_t heap_end = 0;
 static size_t heap_index = 0;
@@ -200,10 +205,11 @@ void printf(const char *format, ...) {
     va_end(var_args);
 }
 
-void fprintf(int32_t file_handle, const char *format, ...) {
+void fprintf(FILE *file_handle, const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
-    fprintf_internal(file_handle, format, var_args);
+    int32_t fileno = *(int32_t *)file_handle;
+    fprintf_internal(fileno, format, var_args);
     va_end(var_args);
 }
 

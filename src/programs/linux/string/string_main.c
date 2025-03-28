@@ -1,7 +1,6 @@
 #include "../../../tinyc/tinyc.h"
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include <sys/types.h>
 
 const char *CONST_STRING = "const string";
@@ -33,10 +32,6 @@ int main(void) {
     printf("bss_string %s\n", bss_string);
 
     char *malloc_string = malloc(0x1000);
-    if (malloc_string == NULL) {
-        fprintf(STDERR, "malloc failed\n");
-        exit(-1);
-    }
     memcpy(malloc_string, "abcd", 5);
     printf("malloc_string %s\n", malloc_string);
 

@@ -384,7 +384,7 @@ static bool initialize_dynamic_data(
     for (size_t i = 0; i < *shared_libraries_len; i++) {
         struct RuntimeObject *shared_lib = &(*shared_libraries)[i];
         if (shared_lib->bss != NULL) {
-            LOGINFO("initializing shared lib .bss\n");
+            LOGINFO("initializing '%s' .bss\n", shared_lib->name);
             memset(shared_lib->bss, 0, shared_lib->bss_len);
         }
     }

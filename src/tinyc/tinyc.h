@@ -10,10 +10,16 @@
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
 #pragma clang diagnostic ignored "-Wbuiltin-requires-header"
 
+struct _IO_FILE;
+
+typedef struct _IO_FILE FILE;
+
 // @todo: make into 'File*'?
-#define stdin 0
-#define stdout 1
-#define stderr 2
+
+extern int32_t internal_files[];
+#define stdin (FILE *)internal_files
+#define stdout (FILE *)(internal_files + 1)
+#define stderr (FILE *)(internal_files + 2)
 
 #define STDOUT 1
 #define STDERR 2
@@ -39,11 +45,13 @@
 
 extern int32_t errno;
 
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
+
 double pow(double x, double y);
 
 void fputs(const char *data, int32_t file_handle);
 
-void fprintf(int32_t file_handle, const char *format, ...);
+void fprintf(FILE *file_handle, const char *format, ...);
 
 void printf(const char *format, ...);
 
@@ -91,11 +99,11 @@ uid_t getuid(void);
 off_t lseek(int32_t fd, off_t offset, int32_t whence);
 
 #define BAIL(fmt, ...)                                                         \
-    fprintf(STDERR, fmt, ##__VA_ARGS__);                                       \
+    fprintf(stderr, fmt, ##__VA_ARGS__);                                       \
     return false
 
 #define EXIT(fmt, ...)                                                         \
-    fprintf(STDERR, fmt, ##__VA_ARGS__);                                       \
+    fprintf(stderr, fmt, ##__VA_ARGS__);                                       \
     exit(1)
 
 size_t strlen(const char *data);

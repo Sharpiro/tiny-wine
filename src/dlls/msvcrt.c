@@ -29,6 +29,9 @@ EXPORTABLE char *_acmdln = NULL;
 
 char *command_line_array[0x100] = {};
 
+void DllMainCRTStartup(void) {
+}
+
 /**
  * Set n bytes of s to c.
  */
