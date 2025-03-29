@@ -176,7 +176,11 @@ static bool initialize_dynamic_data(
             BAIL("get_reserved_region_space failed\n");
         }
 
-        LOGINFO("Mapping library memory regions\n");
+        LOGINFO(
+            "Mapping '%s' memory regions at %zx\n",
+            shared_lib_name,
+            reserved_address
+        );
         if (!map_memory_regions(
                 shared_lib_file, memory_regions.data, memory_regions.length
             )) {
@@ -396,10 +400,11 @@ static bool initialize_dynamic_data(
         struct RuntimeGotEntry *runtime_got_entry =
             &runtime_got_entries.data[i];
         LOGDEBUG(
-            "GOT entry %d: %x == %x, variable: %s\n",
-            i + 1,
+            "Init GOT entry %d: %x == %x, lib: %zx\n",
+            i,
             runtime_got_entry->index,
-            runtime_got_entry->value
+            runtime_got_entry->value,
+            runtime_got_entry->lib_dynamic_offset
         );
         size_t *got_pointer = (size_t *)runtime_got_entry->index;
         *got_pointer = runtime_got_entry->value;

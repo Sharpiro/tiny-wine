@@ -37,19 +37,19 @@ int main(int argc, char **argv) {
 
     /* General information */
 
-    printf("File: %s\n", filename);
     printf("PE Header:\n");
+    printf("File: %s\n", filename);
     printf("DOS magic: %s\n", (char *)&dos_magic);
-    printf("PE magic: %x\n", pe_magic);
+    printf("PE magic: 0x%zx\n", pe_magic);
     printf("Class: %s\n", class);
-    printf("Base of code: %x\n", base_of_code);
-    printf("Image base: %x\n", image_base);
-    printf("Entry point address: %x\n", pe_data.entrypoint);
-    printf("Section headers start: %x\n", section_headers_start);
+    printf("Base of code: 0x%zx\n", base_of_code);
+    printf("Image base: 0x%zx\n", image_base);
+    printf("Entry: 0x%zx\n", pe_data.entrypoint);
+    printf("Section headers start: 0x%zx\n", section_headers_start);
     printf("Section headers length: %d\n", pe_data.section_headers_len);
     printf("Section header size: %d\n", sizeof(struct WinSectionHeader));
     printf(
-        "Symbol table offset: %x\n",
+        "Symbol table offset: 0x%zx\n",
         pe_data.winpe_header->image_file_header.pointer_to_symbol_table
     );
     printf(
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
         char *execute = win_permissions & 2 ? "e" : "-";
         char *visibility = win_permissions & 1 ? "s" : "p";
         printf(
-            "%d, %s, %x, %x, %x, %s%s%s%s\n",
+            "%d, %s, 0x%zx, 0x%zx, 0x%zx, %s%s%s%s\n",
             i,
             section_header->name,
             section_header->virtual_size,
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
         for (size_t j = 0; j < dir_entry->import_entries_len; j++) {
             struct ImportEntry *import_entry = &dir_entry->import_entries[j];
             printf(
-                "%d: %x, %s\n", j, import_entry->address, import_entry->name
+                "%d: 0x%zx, %s\n", j, import_entry->address, import_entry->name
             );
         }
     }
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
         struct ImportAddressEntry *iat_entry = &pe_data.import_address_table[i];
         printf(
-            "%d: %x:%x %s\n",
+            "%d: 0x%zx:0x%zx %s\n",
             i,
             iat_entry->key,
             iat_entry->value,
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
     );
     for (size_t i = 0; i < pe_data.export_entries_len; i++) {
         struct ExportEntry *export_entry = &pe_data.export_entries[i];
-        printf("%d: %x: %s\n", i, export_entry->address, export_entry->name);
+        printf("%d: 0x%zx: %s\n", i, export_entry->address, export_entry->name);
     }
 
     /* Relocations */
@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
         char *type = relocation->type == 0x00 ? "IMAGE_REL_BASED_ABSOLUTE"
             : relocation->type == 0x0a        ? "IMAGE_REL_BASED_DIR64"
                                               : "UNKNOWN";
-        printf("%d: %x, %s\n", i, offset, type);
+        printf("%d: 0x%zx, %s\n", i, offset, type);
     }
 
     /* Symbols */
@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
                                                                : "-";
 
             printf(
-                "%d: %x: %x %s, %s %s\n",
+                "%d: 0x%zx: 0x%zx %s, %s %s\n",
                 symbol->raw_index,
                 section_start,
                 symbol->value,

@@ -21,6 +21,7 @@ a.out
 /unit_test
 /winloader
 /readwin
+/readlin
 /windynamic_linux
 *.dll
 *.log

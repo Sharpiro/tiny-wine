@@ -4,6 +4,7 @@ endif
 
 OBJDUMP ?= objdump
 
+# @todo: rename 'WARNINGS'
 WARNINGS = \
 	-std=gnu2x \
 	-Wall -Wextra -Wpedantic -Wno-varargs \
@@ -28,7 +29,8 @@ linux: \
 	string \
 	tinyfetch \
 	static_pie \
-	dynamic
+	dynamic \
+	readlin
 
 windows: \
 	libtinyc.a \
@@ -90,7 +92,7 @@ tinyc.o: \
 		src/tinyc/tinyc.c
 
 libtinyc.a: tinyc_sys.o tinyc.o
-	@echo "libtinyc.a"
+	@echo "building libtinyc.a..."
 	@ar rcs libtinyc.a tinyc_sys.o tinyc.o
 	@$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
 
@@ -140,7 +142,7 @@ libdynamic.so:
 libntdll.so: \
 		src/dlls/ntdll.h \
 		src/dlls/ntdll.c
-	@echo "libntdll.so"
+	@echo "building libntdll.so..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -160,7 +162,7 @@ ntdll.dll: \
 		src/dlls/ntdll.h \
 		src/dlls/ntdll.c \
 		libntdll.so
-	@echo "ntdll.dll"
+	@echo "building ntdll.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -180,7 +182,7 @@ msvcrt.dll: \
 		src/dlls/msvcrt.h \
 		src/dlls/msvcrt.c \
 		ntdll.dll
-	@echo "msvcrt.dll"
+	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -201,7 +203,7 @@ msvcrt.dll: \
 KERNEL32.dll: \
 		ntdll.dll \
 		src/dlls/kernel32.c
-	@echo "KERNEL32.dll"
+	@echo "building KERNEL32.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -223,7 +225,7 @@ windynamiclib.dll: \
 		ntdll.dll \
 		src/programs/windows/win_dynamic/win_dynamic_lib.h \
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
-	@echo "windynamiclib.dll"
+	@echo "building windynamiclib.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -245,7 +247,7 @@ windynamiclib.dll: \
 windynamiclibfull.dll: \
 		src/programs/windows/win_dynamic/win_dynamic_lib.h \
 		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
-	@echo "windynamiclibfull.dll"
+	@echo "building windynamiclibfull.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -273,7 +275,7 @@ loader: \
 	src/loader/linux/elf_tools.c \
 	tinyc_start.o \
 	libtinyc.a
-	@echo "loader"
+	@echo "building loader..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
@@ -307,7 +309,7 @@ winloader: \
 		src/loader/linux/elf_tools.c \
 		tinyc_start.o \
 		libtinyc.a 
-	@echo "winloader"
+	@echo "building winloader..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
@@ -355,7 +357,7 @@ env: \
 		src/programs/linux/env/env_main.c \
 		tinyc_start.o \
 		libtinyc.a
-	@echo "env"
+	@echo "building env..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
@@ -429,7 +431,7 @@ windynamic.exe: \
 		src/dlls/macros.h \
 		src/programs/windows/win_dynamic/win_dynamic_main.c \
 		src/programs/windows/win_dynamic/runtime.c
-	@echo "windynamic.exe"
+	@echo "building windynamic.exe..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -455,7 +457,7 @@ windynamicfull.exe: \
 		KERNEL32.dll \
 		windynamiclibfull.dll \
 		src/programs/windows/win_dynamic/win_dynamic_full_main.c
-	@echo "windynamicfull.exe"
+	@echo "building windynamicfull.exe..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(WARNINGS) \
@@ -478,7 +480,7 @@ readwin: \
 		src/loader/windows/pe_tools.c \
 		tinyc_start.o \
 		libtinyc.a
-	@echo "readwin"
+	@echo "building readwin..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-masm=intel \
@@ -490,11 +492,29 @@ readwin: \
 		tinyc_start.o \
 		libtinyc.a
 
+readlin: \
+		tools/readlin/readlin_main.c \
+		tinyc_start.o \
+		libtinyc.a \
+		src/loader/linux/elf_tools.h \
+		src/loader/linux/elf_tools.c
+	@echo "building readlin..."
+	@$(CC) $(CFLAGS) -g \
+		-DAMD64 \
+		-masm=intel \
+		-nostdlib -static \
+		$(WARNINGS) \
+		-o readlin \
+		tools/readlin/readlin_main.c \
+		src/loader/linux/elf_tools.c \
+		tinyc_start.o \
+		libtinyc.a
+
 clean:
 	@rm -f \
 		*.dump *.o *.s *.a *.so *.dll *.exe \
 		loader env string tinyfetch dynamic unit_test static_pie winloader readwin \
-		windynamic_linux
+		windynamic_linux readlin
 
 install: libtinyc.a libtinyc.so
 	cp src/tinyc/tinyc.h /usr/local/include

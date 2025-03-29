@@ -63,6 +63,10 @@ struct DynamicData {
 struct ElfData {
     ELF_HEADER header;
     PROGRAM_HEADER *program_headers;
+    size_t word_size;
+    const char *endianness;
+    size_t version;
+    size_t os_abi;
     size_t program_headers_len;
     struct SectionHeader *section_headers;
     size_t section_headers_len;

@@ -107,7 +107,7 @@ bool log_memory_regions(void) {
         BAIL("read failed\n");
     }
 
-    LOGDEBUG("Mapped address regions:\n%s\n", maps_buffer);
+    LOGTRACE("Mapped address regions:\n%s\n", maps_buffer);
     return true;
 }
 

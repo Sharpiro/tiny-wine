@@ -4,6 +4,7 @@
     "libntdll",
     "msvcrt",
     "ntdll",
+    "readlin",
     "strchrnul",
     "tinyc",
     "winpe"

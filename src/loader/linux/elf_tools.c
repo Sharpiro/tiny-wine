@@ -1,6 +1,5 @@
 #include "elf_tools.h"
 #include "../../tinyc/tinyc.h"
-#include "../memory_map.h"
 
 #define ELF_HEADER_LEN sizeof(ELF_HEADER)
 
@@ -21,8 +20,7 @@ static bool get_section_headers(
         BAIL("seek failed\n");
     }
     size_t section_headers_size = elf_header->e_shnum * elf_header->e_shentsize;
-    SECTION_HEADER *elf_section_headers =
-        loader_malloc_arena(section_headers_size);
+    SECTION_HEADER *elf_section_headers = malloc(section_headers_size);
     if (elf_section_headers == NULL) {
         BAIL("malloc failed\n");
     }
@@ -37,7 +35,7 @@ static bool get_section_headers(
     if (seeked != (off_t)shstr_table_header->sh_offset) {
         BAIL("seek failed\n");
     }
-    uint8_t *shstr_table = loader_malloc_arena(shstr_table_header->sh_size);
+    uint8_t *shstr_table = malloc(shstr_table_header->sh_size);
     if (shstr_table == NULL) {
         BAIL("malloc failed\n");
     }
@@ -48,7 +46,7 @@ static bool get_section_headers(
 
     *section_headers_len = elf_header->e_shnum;
     *section_headers_ptr =
-        loader_malloc_arena(sizeof(struct SectionHeader) * elf_header->e_shnum);
+        malloc(sizeof(struct SectionHeader) * elf_header->e_shnum);
     if (section_headers_ptr == NULL) {
         BAIL("malloc failed\n");
     }
@@ -115,7 +113,7 @@ static bool get_dynamic_data(
 
     /* Load dynamic symbols */
     size_t dyn_sym_section_size = dyn_sym_section_header->size;
-    SYMBOL *dyn_elf_symbols = loader_malloc_arena(dyn_sym_section_size);
+    SYMBOL *dyn_elf_symbols = malloc(dyn_sym_section_size);
     if (dyn_elf_symbols == NULL) {
         BAIL("malloc failed\n");
     }
@@ -128,7 +126,7 @@ static bool get_dynamic_data(
         BAIL("read failed\n");
     }
 
-    char *dyn_strings = loader_malloc_arena(dyn_str_section_header->size);
+    char *dyn_strings = malloc(dyn_str_section_header->size);
     if (dyn_strings == NULL) {
         BAIL("malloc failed\n");
     }
@@ -144,7 +142,7 @@ static bool get_dynamic_data(
     size_t dyn_sym_table_len =
         dyn_sym_section_header->size / dyn_sym_section_header->entry_size;
     struct Symbol *dyn_symbols =
-        loader_malloc_arena(sizeof(struct Symbol) * dyn_sym_table_len);
+        malloc(sizeof(struct Symbol) * dyn_sym_table_len);
     if (dyn_symbols == NULL) {
         BAIL("malloc failed\n");
     }
@@ -171,8 +169,7 @@ static bool get_dynamic_data(
     struct GotEntry *got_entries = NULL;
     size_t got_entries_len = 0;
     if (got_section_header != NULL) {
-        size_t *global_offset_table =
-            loader_malloc_arena(got_section_header->size);
+        size_t *global_offset_table = malloc(got_section_header->size);
         if (global_offset_table == NULL) {
             BAIL("malloc failed\n");
         }
@@ -187,8 +184,7 @@ static bool get_dynamic_data(
 
         got_entries_len =
             got_section_header->size / got_section_header->entry_size;
-        got_entries =
-            loader_malloc_arena(sizeof(struct GotEntry) * got_entries_len);
+        got_entries = malloc(sizeof(struct GotEntry) * got_entries_len);
         size_t got_base_addr = got_section_header->addr;
         for (size_t i = 0; i < got_entries_len; i++) {
             size_t index = got_base_addr + i * got_section_header->entry_size;
@@ -209,8 +205,7 @@ static bool get_dynamic_data(
     struct GotEntry *got_plt_entries = NULL;
     size_t got_plt_entries_len = 0;
     if (got_plt_section_header != NULL) {
-        size_t *global_offset_table =
-            loader_malloc_arena(got_plt_section_header->size);
+        size_t *global_offset_table = malloc(got_plt_section_header->size);
         if (global_offset_table == NULL) {
             BAIL("malloc failed\n");
         }
@@ -233,8 +228,7 @@ static bool get_dynamic_data(
             );
         }
 
-        got_plt_entries =
-            loader_malloc_arena(sizeof(struct GotEntry) * got_plt_entries_len);
+        got_plt_entries = malloc(sizeof(struct GotEntry) * got_plt_entries_len);
         size_t got_base_addr = got_plt_section_header->addr;
         for (size_t i = 0; i < got_plt_entries_len; i++) {
             size_t index =
@@ -252,7 +246,7 @@ static bool get_dynamic_data(
 
     size_t total_got_entries_len = got_entries_len + got_plt_entries_len;
     struct GotEntry *total_got_entries =
-        loader_malloc_arena(sizeof(struct GotEntry) * total_got_entries_len);
+        malloc(sizeof(struct GotEntry) * total_got_entries_len);
     if (total_got_entries == NULL) {
         BAIL("malloc failed\n");
     }
@@ -274,8 +268,7 @@ static bool get_dynamic_data(
     struct Relocation *func_relocations = NULL;
     size_t func_relocations_len = 0;
     if (func_reloc_header) {
-        RELOCATION *elf_func_relocations =
-            loader_malloc_arena(func_reloc_header->size);
+        RELOCATION *elf_func_relocations = malloc(func_reloc_header->size);
         if (elf_func_relocations == NULL) {
             BAIL("malloc failed\n");
         }
@@ -290,9 +283,8 @@ static bool get_dynamic_data(
 
         func_relocations_len =
             func_reloc_header->size / func_reloc_header->entry_size;
-        func_relocations = loader_malloc_arena(
-            sizeof(struct Relocation) * func_relocations_len
-        );
+        func_relocations =
+            malloc(sizeof(struct Relocation) * func_relocations_len);
         for (size_t i = 0; i < func_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_func_relocations[i];
             size_t type = elf_relocation->r_info & 0xff;
@@ -322,8 +314,7 @@ static bool get_dynamic_data(
     struct Relocation *var_relocations = NULL;
     size_t var_relocations_len = 0;
     if (var_reloc_header) {
-        RELOCATION *elf_var_relocations =
-            loader_malloc_arena(var_reloc_header->size);
+        RELOCATION *elf_var_relocations = malloc(var_reloc_header->size);
         if (elf_var_relocations == NULL) {
             BAIL("malloc failed\n");
         }
@@ -338,9 +329,8 @@ static bool get_dynamic_data(
 
         var_relocations_len =
             var_reloc_header->size / var_reloc_header->entry_size;
-        var_relocations = loader_malloc_arena(
-            sizeof(struct Relocation) * var_relocations_len
-        );
+        var_relocations =
+            malloc(sizeof(struct Relocation) * var_relocations_len);
         for (size_t i = 0; i < var_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_var_relocations[i];
             size_t type = elf_relocation->r_info & 0xff;
@@ -366,7 +356,7 @@ static bool get_dynamic_data(
     /* Load dynamic entries */
     size_t dynamic_entries_len =
         dynamic_header->size / dynamic_header->entry_size;
-    DYNAMIC_ENTRY *dynamic_entries = loader_malloc_arena(dynamic_header->size);
+    DYNAMIC_ENTRY *dynamic_entries = malloc(dynamic_header->size);
     if (dynamic_entries == NULL) {
         BAIL("malloc failed\n");
     }
@@ -379,8 +369,7 @@ static bool get_dynamic_data(
         BAIL("read failed\n");
     }
 
-    char **shared_libraries =
-        loader_malloc_arena(sizeof(char *) * dynamic_entries_len);
+    char **shared_libraries = malloc(sizeof(char *) * dynamic_entries_len);
     if (shared_libraries == NULL) {
         BAIL("malloc failed\n");
     }
@@ -395,7 +384,7 @@ static bool get_dynamic_data(
             dyn_strings + dynamic_entry->d_un.d_val;
     }
 
-    *dynamic_data_ptr = loader_malloc_arena(sizeof(struct DynamicData));
+    *dynamic_data_ptr = malloc(sizeof(struct DynamicData));
     **dynamic_data_ptr = (struct DynamicData){
         .symbols = dyn_symbols,
         .symbols_len = dyn_symbols_len,
@@ -420,14 +409,14 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
     }
     const uint8_t ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
     if (memcmp(elf_header.e_ident, ELF_MAGIC, 4)) {
-        BAIL("Program type not supported\n");
+        BAIL("Invalid ELF header\n");
     }
     if (elf_header.e_phoff != ELF_HEADER_LEN) {
-        BAIL("expected program headers after elf header\n");
+        BAIL("expected program headers after ELF header\n");
     }
 
     size_t program_headers_size = elf_header.e_phnum * elf_header.e_phentsize;
-    PROGRAM_HEADER *program_headers = loader_malloc_arena(program_headers_size);
+    PROGRAM_HEADER *program_headers = malloc(program_headers_size);
     if (program_headers == NULL) {
         BAIL("malloc failed\n");
     }
@@ -451,9 +440,18 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
         BAIL("failed getting dynamic data\n");
     }
 
+    size_t word_size = elf_header.e_ident[4] == 1 ? 32 : 64;
+    const char *endianness = elf_header.e_ident[5] == 1 ? "little" : "big";
+    size_t version = elf_header.e_ident[6];
+    size_t os_abi = elf_header.e_ident[7];
+
     *elf_data = (struct ElfData){
         .header = elf_header,
         .program_headers = program_headers,
+        .word_size = word_size,
+        .endianness = endianness,
+        .version = version,
+        .os_abi = os_abi,
         .program_headers_len = elf_header.e_phnum,
         .section_headers = section_headers,
         .section_headers_len = section_headers_len,
