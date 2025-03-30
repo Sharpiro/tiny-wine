@@ -6,6 +6,7 @@
 typedef struct RuntimeGotEntry {
     size_t index;
     size_t value;
+    // Non-zero if the entry holds the library's runtime offset.
     size_t lib_dynamic_offset;
 } RuntimeGotEntry;
 

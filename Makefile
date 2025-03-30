@@ -405,7 +405,11 @@ static_pie: tinyc_start.o libtinyc.a
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D static_pie > static_pie.dump
 
-dynamic: libtinyc.so libdynamic.so
+dynamic: \
+	libtinyc.so \
+	libdynamic.so \
+	src/programs/linux/dynamic/dynamic_main.c
+	@echo "building dynamic..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		$(WARNINGS) \

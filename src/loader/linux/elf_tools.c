@@ -1,5 +1,6 @@
 #include "elf_tools.h"
 #include "../../tinyc/tinyc.h"
+#include "../log.h"
 
 #define ELF_HEADER_LEN sizeof(ELF_HEADER)
 
@@ -164,6 +165,7 @@ static bool get_dynamic_data(
     }
 
     /* Load .got */
+
     const struct SectionHeader *got_section_header =
         find_section_header(section_headers, section_headers_len, ".got");
     struct GotEntry *got_entries = NULL;
@@ -192,14 +194,15 @@ static bool get_dynamic_data(
             struct GotEntry got_entry = {
                 .index = index,
                 .value = value,
-                .is_library_virtual_base_address = i == 1,
-                .is_loader_callback = i == 2,
+                .is_library_virtual_base_address = false,
+                .is_loader_callback = false,
             };
             got_entries[i] = got_entry;
         }
     }
 
     /* Load .got.plt */
+
     const struct SectionHeader *got_plt_section_header =
         find_section_header(section_headers, section_headers_len, ".got.plt");
     struct GotEntry *got_plt_entries = NULL;
@@ -243,6 +246,9 @@ static bool get_dynamic_data(
             got_plt_entries[i] = got_entry;
         }
     }
+
+    LOGDEBUG("got_entries_len: %zd\n", got_entries_len);
+    LOGDEBUG("got_plt_entries_len: %zd\n", got_plt_entries_len);
 
     size_t total_got_entries_len = got_entries_len + got_plt_entries_len;
     struct GotEntry *total_got_entries =

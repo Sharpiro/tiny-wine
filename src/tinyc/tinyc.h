@@ -14,8 +14,7 @@ struct _IO_FILE;
 
 typedef struct _IO_FILE FILE;
 
-// extern const int32_t internal_files[];
-extern int32_t internal_files[];
+extern const int32_t internal_files[];
 #define stdin (FILE *)internal_files
 #define stdout (FILE *)(internal_files + 1)
 #define stderr (FILE *)(internal_files + 2)

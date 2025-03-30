@@ -1,15 +1,13 @@
 #! /bin/bash
 
 loop_count=${1:-1}
-log_level=0
-if [[ loop_count -gt 1 ]]; then
-    log_level=5
+if [[ -z "$CFLAGS" && loop_count -gt 1 ]]; then
     export CFLAGS="-DLOG_LEVEL=5"
 fi
 
 echo "cleaning"
 make clean
-echo "building w/ LOG_LEVEL $log_level"
+echo "building w/ CFLAGS '$CFLAGS'"
 make
 if [[ $? -ne 0 ]]; then
     exit
