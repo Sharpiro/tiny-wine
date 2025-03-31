@@ -164,6 +164,7 @@ bool map_import_address_table(
         }
 
         Converter dyn_callback_converter = convert(dynamic_callback_windows);
+        // @todo: trampoline 'call' misaligns stack
         uint8_t trampoline_code[DYNAMIC_CALLBACK_TRAMPOLINE_SIZE] = {
             ASM_X64_MOV32_IMMEDIATE_INTO_EAX,
             dyn_callback_converter.buffer[0],

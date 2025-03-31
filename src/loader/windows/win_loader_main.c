@@ -24,6 +24,7 @@ struct PreservedSwapState preserved_swap_state = {};
  */
 static void dynamic_callback_linux(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
+    double xmm0, xmm1;
     GET_PRESERVED_REGISTERS();
 
     size_t p7_stack1 = *(rbp + 4);
@@ -86,6 +87,9 @@ static void dynamic_callback_linux(void) {
         "mov r14, %[r14]\n"
         "mov r15, %[r15]\n"
 
+        "movsd xmm0, %[xmm0]\n"
+        "movsd xmm1, %[xmm1]\n"
+
         "mov rbx, %[rbx]\n"
         "mov rsp, rbp\n"
         "pop rbp\n"
@@ -105,7 +109,9 @@ static void dynamic_callback_linux(void) {
         [r12] "m"(r12),
         [r13] "m"(r13),
         [r14] "m"(r14),
-        [r15] "m"(r15)
+        [r15] "m"(r15),
+        [xmm0] "m"(xmm0),
+        [xmm1] "m"(xmm1)
     );
 }
 
@@ -118,6 +124,7 @@ static void dynamic_callback_linux(void) {
  */
 static void dynamic_callback_windows(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
+    double xmm0, xmm1;
     GET_PRESERVED_REGISTERS();
 
     size_t dyn_trampoline_end = rbp[1];
@@ -133,6 +140,11 @@ static void dynamic_callback_windows(void) {
     size_t func_iat_value_raw =
         dyn_trampoline_start - initial_global_runtime_iat_region_base;
 
+    // @todo: call into linux function with invalid stack
+    // __asm__(
+
+    //     "sub rsp, 8\n"
+    // );
     LOGTRACE("---Starting Windows dyn callback---\n");
 
     /** Find entry in Import Address Table */
@@ -184,9 +196,10 @@ static void dynamic_callback_windows(void) {
         EXIT("func_iat_value_raw '%x' not found\n", func_iat_value_raw);
     }
 
-    LOGTRACE(
-        "%s IAT: %x:%x\n", source_iat_object->name, func_iat_key, func_iat_value
-    );
+    // LOGTRACE(
+    //     "%s IAT: %x:%x\n", source_iat_object->name, func_iat_key,
+    //     func_iat_value
+    // );
 
     /** Find import entry using IAT entry */
 
@@ -212,19 +225,19 @@ static void dynamic_callback_windows(void) {
         );
     };
 
-    LOGTRACE(
-        "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
-        lib_name,
-        import_entry->name,
-        rcx,
-        rdx,
-        r8,
-        r9,
-        p5_win_stack1,
-        p6_win_stack2,
-        p7_win_stack3,
-        p8_win_stack4
-    );
+    // LOGTRACE(
+    //     "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
+    //     lib_name,
+    //     import_entry->name,
+    //     rcx,
+    //     rdx,
+    //     r8,
+    //     r9,
+    //     p5_win_stack1,
+    //     p6_win_stack2,
+    //     p7_win_stack3,
+    //     p8_win_stack4
+    // );
 
     /** Find function using library and function name */
 
@@ -260,7 +273,7 @@ static void dynamic_callback_windows(void) {
         EXIT("expected runtime function\n");
     }
 
-    LOGTRACE("Completed dynamic linking to %x\n", function_export.address);
+    // LOGTRACE("Completed dynamic linking to %x\n", function_export.address);
 
     if (is_lib_ntdll) {
         /* Converts from Windows state to Linux state, and back */
@@ -283,6 +296,10 @@ static void dynamic_callback_windows(void) {
             "mov r13, %[r13]\n"
             "mov r14, %[r14]\n"
             "mov r15, %[r15]\n"
+
+            "movsd xmm0, %[xmm0]\n"
+            "movsd xmm1, %[xmm1]\n"
+
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 8\n" // Remove dynamic trampoline address
@@ -293,10 +310,12 @@ static void dynamic_callback_windows(void) {
             "pop rbx\n"     // Save return address
             "add rsp, 32\n" // Remove frame padding
             "add rsp, 16\n" // Remove stack params 5 & 6
+            // "add rsp, 8\n"  // Convert padding
             "call %[function_address]\n"
 
             /* Restore windows stack frame and remaining registers */
 
+            // "sub rsp, 8\n"  // Convert padding
             "sub rsp, 16\n" // Restore stack params 5 & 6 space
             "sub rsp, 32\n" // Restore frame padding
             "push rbx\n"    // Restore return address
@@ -318,7 +337,9 @@ static void dynamic_callback_windows(void) {
               [r15] "m"(r15),
               [swap_state_rbx] "g"(&preserved_swap_state.rbx),
               [swap_state_rdi] "g"(&preserved_swap_state.rdi),
-              [swap_state_rsi] "g"(&preserved_swap_state.rsi)
+              [swap_state_rsi] "g"(&preserved_swap_state.rsi),
+              [xmm0] "m"(xmm0),
+              [xmm1] "m"(xmm1)
             :
         );
     } else {
@@ -335,6 +356,10 @@ static void dynamic_callback_windows(void) {
             "mov rbx, %[rbx]\n"
             "mov rdi, %[rdi]\n"
             "mov rsi, %[rsi]\n"
+
+            "movsd xmm0, %[xmm0]\n"
+            "movsd xmm1, %[xmm1]\n"
+
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 8\n" // Remove dynamic trampoline address
@@ -352,7 +377,9 @@ static void dynamic_callback_windows(void) {
               [r15] "m"(r15),
               [rbx] "m"(rbx),
               [rdi] "m"(rdi),
-              [rsi] "m"(rsi)
+              [rsi] "m"(rsi),
+              [xmm0] "m"(xmm0),
+              [xmm1] "m"(xmm1)
             :
         );
     }

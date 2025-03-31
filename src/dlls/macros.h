@@ -32,6 +32,8 @@
             "mov %[r14], r14\n"                                                \
             "mov %[r15], r15\n"                                                \
             "mov %[rbp], rbp\n"                                                \
+            "movsd %[xmm0], xmm0\n"                                            \
+            "movsd %[xmm1], xmm1\n"                                            \
             : [rbx] "=m"(rbx),                                                 \
               [rcx] "=m"(rcx),                                                 \
               [rdx] "=m"(rdx),                                                 \
@@ -43,7 +45,9 @@
               [r13] "=m"(r13),                                                 \
               [r14] "=m"(r14),                                                 \
               [r15] "=m"(r15),                                                 \
-              [rbp] "=m"(rbp))
+              [rbp] "=m"(rbp),                                                 \
+              [xmm0] "=m"(xmm0),                                               \
+              [xmm1] "=m"(xmm1))
 
 #define DEBUG_SET_MACHINE_STATE()                                              \
     __asm__("mov rbx, 0x01\n"                                                  \

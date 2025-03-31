@@ -15,6 +15,7 @@ size_t got_lib_dyn_offset_table[100] = {};
 // @note: unclear why some docs consider r10 to be 4th param instead of rcx
 void dynamic_callback_linux(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
+    double xmm0, xmm1;
     GET_PRESERVED_REGISTERS();
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
@@ -95,10 +96,13 @@ void dynamic_callback_linux(void) {
         "mov r14, %[r14]\n"
         "mov r15, %[r15]\n"
 
+        "movsd xmm0, %[xmm0]\n"
+        "movsd xmm1, %[xmm1]\n"
+
         "mov rbx, %[rbx]\n"
         "mov rsp, rbp\n"
         "pop rbp\n"
-        "add rsp, 16\n"
+        "add rsp, 16\n" // remove dynamic linking information
         "jmp %[function_address]\n"
         :
         :
@@ -114,7 +118,9 @@ void dynamic_callback_linux(void) {
         [r12] "m"(r12),
         [r13] "m"(r13),
         [r14] "m"(r14),
-        [r15] "m"(r15)
+        [r15] "m"(r15),
+        [xmm0] "m"(xmm0),
+        [xmm1] "m"(xmm1)
     );
 }
 
