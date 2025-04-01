@@ -1,7 +1,5 @@
 #include <stddef.h>
 
-// @todo: use globally if we refactor "fprintf" to "fprintf"
-
 #pragma once
 
 #define TRACE 1

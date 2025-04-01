@@ -25,7 +25,7 @@ struct PreservedSwapState preserved_swap_state = {};
 static void dynamic_callback_linux(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
     double xmm0, xmm1;
-    GET_PRESERVED_REGISTERS();
+    GET_REGISTERS_SNAPSHOT();
 
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
@@ -116,22 +116,30 @@ static void dynamic_callback_linux(void) {
 }
 
 /*
+ * Align stack after being called from trampoline function
+ */
+__attribute__((naked)) void dynamic_callback_windows_pre(void) {
+    __asm__(
+
+        "push 0\n"
+        "jmp dynamic_callback_windows\n"
+    );
+}
+
+/*
  * Dynamic callback from Windows to Windows, or from Windows to Linux
  * libntdll.so.
- * rbp[0] - old rbp.
- * rbp[2] - return address.
- * rbp[3-6] - shadow.
  */
-static void dynamic_callback_windows(void) {
+void dynamic_callback_windows(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
     double xmm0, xmm1;
-    GET_PRESERVED_REGISTERS();
+    GET_REGISTERS_SNAPSHOT();
 
-    size_t dyn_trampoline_end = rbp[1];
-    size_t p5_win_stack1 = rbp[7];
-    size_t p6_win_stack2 = rbp[8];
-    size_t p7_win_stack3 = rbp[9];
-    size_t p8_win_stack4 = rbp[10];
+    size_t dyn_trampoline_end = rbp[2];
+    size_t p5_win_stack1 = rbp[8];
+    size_t p6_win_stack2 = rbp[9];
+    size_t p7_win_stack3 = rbp[10];
+    size_t p8_win_stack4 = rbp[11];
 
     size_t dyn_trampoline_start =
         dyn_trampoline_end - DYNAMIC_CALLBACK_TRAMPOLINE_SIZE;
@@ -140,11 +148,6 @@ static void dynamic_callback_windows(void) {
     size_t func_iat_value_raw =
         dyn_trampoline_start - initial_global_runtime_iat_region_base;
 
-    // @todo: call into linux function with invalid stack
-    // __asm__(
-
-    //     "sub rsp, 8\n"
-    // );
     LOGTRACE("---Starting Windows dyn callback---\n");
 
     /** Find entry in Import Address Table */
@@ -196,10 +199,9 @@ static void dynamic_callback_windows(void) {
         EXIT("func_iat_value_raw '%x' not found\n", func_iat_value_raw);
     }
 
-    // LOGTRACE(
-    //     "%s IAT: %x:%x\n", source_iat_object->name, func_iat_key,
-    //     func_iat_value
-    // );
+    LOGTRACE(
+        "%s IAT: %x:%x\n", source_iat_object->name, func_iat_key, func_iat_value
+    );
 
     /** Find import entry using IAT entry */
 
@@ -225,19 +227,19 @@ static void dynamic_callback_windows(void) {
         );
     };
 
-    // LOGTRACE(
-    //     "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
-    //     lib_name,
-    //     import_entry->name,
-    //     rcx,
-    //     rdx,
-    //     r8,
-    //     r9,
-    //     p5_win_stack1,
-    //     p6_win_stack2,
-    //     p7_win_stack3,
-    //     p8_win_stack4
-    // );
+    LOGTRACE(
+        "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
+        lib_name,
+        import_entry->name,
+        rcx,
+        rdx,
+        r8,
+        r9,
+        p5_win_stack1,
+        p6_win_stack2,
+        p7_win_stack3,
+        p8_win_stack4
+    );
 
     /** Find function using library and function name */
 
@@ -273,7 +275,7 @@ static void dynamic_callback_windows(void) {
         EXIT("expected runtime function\n");
     }
 
-    // LOGTRACE("Completed dynamic linking to %x\n", function_export.address);
+    LOGTRACE("Completed dynamic linking to %x\n", function_export.address);
 
     if (is_lib_ntdll) {
         /* Converts from Windows state to Linux state, and back */
@@ -300,13 +302,14 @@ static void dynamic_callback_windows(void) {
             "movsd xmm0, %[xmm0]\n"
             "movsd xmm1, %[xmm1]\n"
 
+            ".loader_dynamic_callback_windows_swap:\n"
+
             "mov rsp, rbp\n"
             "pop rbp\n"
-            "add rsp, 8\n" // Remove dynamic trampoline address
+            "add rsp, 16\n" // Remove dynamic trampoline data
 
             /* Convert to linux stack frame */
 
-            ".loader_dynamic_callback_windows_swap:\n"
             "pop rbx\n"     // Save return address
             "add rsp, 32\n" // Remove frame padding
             "add rsp, 16\n" // Remove stack params 5 & 6
@@ -360,10 +363,11 @@ static void dynamic_callback_windows(void) {
             "movsd xmm0, %[xmm0]\n"
             "movsd xmm1, %[xmm1]\n"
 
+            ".loader_dynamic_callback_windows:\n"
+
             "mov rsp, rbp\n"
             "pop rbp\n"
-            "add rsp, 8\n" // Remove dynamic trampoline address
-            ".loader_dynamic_callback_windows:\n"
+            "add rsp, 16\n" // Remove dynamic trampoline data
             "jmp %[function_address]\n"
             :
             : [function_address] "r"(function_export.address),
@@ -641,7 +645,7 @@ static bool initialize_import_address_table(
 
     if (!map_import_address_table(
             &runtime_import_table,
-            (size_t)dynamic_callback_windows,
+            (size_t)dynamic_callback_windows_pre,
             runtime_obj->runtime_iat_section_base
         )) {
         BAIL("map_import_address_table failed\n");
@@ -853,11 +857,6 @@ int main(int argc, char **argv) {
         EXIT("teb memory init failed\n");
     }
 
-    size_t *inferior_stack = (size_t *)argv;
-    if ((size_t)inferior_stack % 16 != 8) {
-        EXIT("Windows stack pointer modulo 16 must be 8 at function start\n");
-    }
-
     size_t cmd_len = 0;
     size_t inferior_argc = (size_t)argc - 1;
     for (size_t i = 0; i < inferior_argc; i++) {
@@ -898,10 +897,14 @@ int main(int argc, char **argv) {
 
     /* Jump to program */
 
+    size_t *inferior_stack = (size_t *)argv;
+    if ((size_t)inferior_stack % 16 != 8) {
+        EXIT("Stack must NOT be 16 byte aligned when leaving winloader");
+    }
     *inferior_stack = (size_t)win_loader_implicit_end;
 
-    LOGINFO("inferior_entry: %x\n", pe_exe.entrypoint);
-    LOGINFO("inferior_stack: %x\n", inferior_stack);
+    LOGINFO("inferior_entry: %zx\n", pe_exe.entrypoint);
+    LOGINFO("inferior_stack: %zx\n", inferior_stack);
     LOGINFO("------------running program------------\n");
 
     __asm__(

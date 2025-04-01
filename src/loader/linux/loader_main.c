@@ -16,7 +16,7 @@ size_t got_lib_dyn_offset_table[100] = {};
 void dynamic_callback_linux(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
     double xmm0, xmm1;
-    GET_PRESERVED_REGISTERS();
+    GET_REGISTERS_SNAPSHOT();
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
 
@@ -591,9 +591,12 @@ int main(int32_t argc, char **argv, char **envv) {
         auxiliary_vector_count += 1;
     }
 
-    size_t *loader_stack_start = (size_t *)(argv - 1);
+    size_t *inferior_stack = (size_t *)(argv - 1);
+    if ((size_t)inferior_stack % 16 != 0) {
+        EXIT("Stack must be 16 byte aligned when leaving loader");
+    }
     size_t arg_count = (size_t)argc;
-    *loader_stack_start = arg_count - 1;
+    *inferior_stack = arg_count - 1;
     size_t word_count = arg_count + env_count + 1 + auxiliary_vector_count + 1;
     for (size_t i = 0; i < word_count; i++) {
         argv[i] = argv[i + 1];
@@ -602,7 +605,7 @@ int main(int32_t argc, char **argv, char **envv) {
     /* Jump to program */
 
     LOGINFO("inferior_entry: %zx\n", inferior_elf.header.e_entry);
-    LOGINFO("inferior_stack: %zx\n", loader_stack_start);
+    LOGINFO("inferior_stack: %zx\n", inferior_stack);
     LOGINFO("------------running program------------\n");
 
     __asm__(
@@ -613,7 +616,7 @@ int main(int32_t argc, char **argv, char **envv) {
         :
         :
 
-        [inferior_stack] "m"(loader_stack_start),
+        [inferior_stack] "m"(inferior_stack),
         [inferior_entry] "m"(inferior_elf.header.e_entry)
     );
 }

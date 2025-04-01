@@ -7,9 +7,6 @@
 
 int32_t errno = 0;
 
-// @todo: creates a R_X86_64_RELATIVE relocation for pointer to static var
-//        creates a R_X86_64_64 relocation for pointer to non-static var
-// @todo: const is broken
 const int32_t internal_files[] = {0, 1, 2};
 
 static size_t heap_start = 0;
