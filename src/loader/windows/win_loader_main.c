@@ -275,6 +275,13 @@ void dynamic_callback_windows(void) {
         EXIT("expected runtime function\n");
     }
 
+    // @todo: can't cache b/c you need to swap state every time
+    // size_t *iat_runtime_entry =
+    //     (size_t
+    //     *)(source_iat_object->pe_data.winpe_optional_header.image_base +
+    //                func_iat_key);
+    // *iat_runtime_entry = function_export.address;
+
     LOGTRACE("Completed dynamic linking to %x\n", function_export.address);
 
     if (is_lib_ntdll) {

@@ -4,8 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// @todo: do we need mmap functions here and in memory_map.c?
-
 #define MAX_ARRAY_LENGTH 1000
 
 static bool find_import_entry(

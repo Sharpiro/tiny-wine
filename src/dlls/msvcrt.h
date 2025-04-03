@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -39,3 +41,7 @@ int32_t fileno(FILE *file);
 void *malloc(size_t n);
 
 size_t wcslen(const wchar_t *s);
+
+int32_t _fileno(FILE *stream);
+
+#define fileno(x) _fileno(x)

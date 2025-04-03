@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
     printf("pow: %d\n", (int32_t)pow(2, 4));
 
     uint32_t *buffer = malloc(0x1000);
-    buffer[0] = 0xffffffff;
+    buffer[0] = 0xabcdef01;
     printf("malloc: %x\n", buffer[0]);
 
     printf(

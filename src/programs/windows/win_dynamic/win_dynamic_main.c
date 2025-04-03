@@ -4,7 +4,7 @@
 int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
-int main(int argc, char **argv, [[maybe_unused]] char **env) {
+int main(int argc, char **argv) {
     for (int i = 0; i < argc; i++) {
         if (i + 1 == argc) {
             printf("'%s'", argv[i]);
@@ -19,6 +19,17 @@ int main(int argc, char **argv, [[maybe_unused]] char **env) {
     );
     printf("uint32: %x, uint64: %zx\n", 0x12345678, 0x1234567812345678);
     printf("pow: %d\n", (int32_t)pow(2, 4));
+
+    uint32_t *buffer = malloc(0x1000);
+    buffer[0] = 0xabcdef01;
+    printf("malloc: %x\n", buffer[0]);
+
+    printf(
+        "stdin: %d, stdout: %d, stderr: %d\n",
+        fileno(stdin),
+        fileno(stdout),
+        fileno(stderr)
+    );
 
     /** .bss and .data init */
 
@@ -42,7 +53,7 @@ int main(int argc, char **argv, [[maybe_unused]] char **env) {
     printf("lib_var_data: %zd\n", lib_var_data);
     lib_var_data += 1;
     printf("lib_var_data: %zd\n", lib_var_data);
-    lib_var_data += 1;
+    lib_var_data = 44;
     printf("lib_var_data: %zd\n", lib_var_data);
     printf("*get_lib_var_data(): %zd\n", *get_lib_var_data());
 

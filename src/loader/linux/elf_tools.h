@@ -8,7 +8,6 @@
 #define PROGRAM_HEADER Elf64_Phdr
 #define SECTION_HEADER Elf64_Shdr
 #define SYMBOL Elf64_Sym
-// todo: Elf64_Rela is right but not sure if sometimes Elf64_Rel
 #define RELOCATION Elf64_Rela
 #define DYNAMIC_ENTRY Elf64_Dyn
 #define RELOCATION_SYMBOL_SHIFT_LENGTH 32

@@ -15,6 +15,8 @@ expected=`cat <<EOF
 large params: 1, 2, 3, 4, 5, 6, 7, 8
 uint32: 12345678, uint64: 1234567812345678
 pow: 16
+malloc: abcdef01
+stdin: 0, stdout: 1, stderr: 2
 exe_global_var_bss: 0
 exe_global_var_bss: 1
 exe_global_var_data: 42
@@ -44,7 +46,7 @@ expected=`cat <<EOF
 large params: 1, 2, 3, 4, 5, 6, 7, 8
 uint32: 12345678, uint64: 1234567812345678
 pow: 16
-malloc: ffffffff
+malloc: abcdef01
 stdin: 0, stdout: 1, stderr: 2
 exe_global_var_bss: 0
 exe_global_var_bss: 1
