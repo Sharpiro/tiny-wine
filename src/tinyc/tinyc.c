@@ -373,7 +373,7 @@ void *malloc(size_t n) {
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
         heap_end = tinyc_sys_brk(heap_end + extend_size);
-        LOGINFO("tinyc malloc heap extended to 0x%zx\n", heap_end);
+        LOGDEBUG("tinyc malloc heap extended to 0x%zx\n", heap_end);
     }
 
     if (heap_end <= heap_start) {

@@ -2,8 +2,6 @@
 #include "../../tinyc/tinyc.h"
 #include "../log.h"
 
-#define ELF_HEADER_LEN sizeof(ELF_HEADER)
-
 static bool get_section_headers(
     const ELF_HEADER *elf_header,
     int32_t fd,
@@ -380,8 +378,13 @@ static bool get_dynamic_data(
         BAIL("malloc failed\n");
     }
     size_t shared_libraries_len = 0;
+    bool is_pie = false;
     for (size_t i = 0; i < dynamic_entries_len; i++) {
         DYNAMIC_ENTRY *dynamic_entry = &dynamic_entries[i];
+        if (dynamic_entry->d_tag == DT_FLAGS_1 &&
+            (dynamic_entry->d_un.d_val & DF_1_PIE) != 0) {
+            is_pie = true;
+        }
         if (dynamic_entry->d_tag != 1) {
             continue;
         }
@@ -402,6 +405,7 @@ static bool get_dynamic_data(
         .var_relocations_len = var_relocations_len,
         .shared_libraries = shared_libraries,
         .shared_libraries_len = shared_libraries_len,
+        .is_pie = is_pie,
     };
 
     return true;
@@ -409,26 +413,27 @@ static bool get_dynamic_data(
 
 bool get_elf_data(int fd, struct ElfData *elf_data) {
     ELF_HEADER elf_header;
-    ssize_t header_read_len = read(fd, &elf_header, ELF_HEADER_LEN);
-    if (header_read_len != ELF_HEADER_LEN) {
+    ssize_t header_read_len = read(fd, &elf_header, sizeof(ELF_HEADER));
+    if (header_read_len != sizeof(ELF_HEADER)) {
         BAIL("read failed\n");
     }
     const uint8_t ELF_MAGIC[] = {0x7f, 'E', 'L', 'F'};
     if (memcmp(elf_header.e_ident, ELF_MAGIC, 4)) {
         BAIL("Invalid ELF header\n");
     }
-    if (elf_header.e_phoff != ELF_HEADER_LEN) {
-        BAIL("expected program headers after ELF header\n");
-    }
 
-    size_t program_headers_size = elf_header.e_phnum * elf_header.e_phentsize;
-    PROGRAM_HEADER *program_headers = malloc(program_headers_size);
-    if (program_headers == NULL) {
-        BAIL("malloc failed\n");
-    }
-    ssize_t ph_read_len = read(fd, program_headers, program_headers_size);
-    if ((size_t)ph_read_len != program_headers_size) {
-        BAIL("read failed\n");
+    PROGRAM_HEADER *program_headers = NULL;
+    if (elf_header.e_phoff > 0) {
+        size_t program_headers_size =
+            elf_header.e_phnum * elf_header.e_phentsize;
+        program_headers = malloc(program_headers_size);
+        if (program_headers == NULL) {
+            BAIL("malloc failed\n");
+        }
+        ssize_t ph_read_len = read(fd, program_headers, program_headers_size);
+        if ((size_t)ph_read_len != program_headers_size) {
+            BAIL("read failed\n");
+        }
     }
 
     struct SectionHeader *section_headers;

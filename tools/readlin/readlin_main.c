@@ -22,13 +22,22 @@ int main(int argc, char **argv) {
     /* General information */
 
     char *magic = (char *)inferior_elf.header.e_ident;
-    char *type = inferior_elf.header.e_type == 2 ? "EXEC" : "UNKNOWN";
+    char *type = inferior_elf.header.e_type == 1 ? "REL"
+        : inferior_elf.header.e_type == 2        ? "EXEC"
+        : inferior_elf.header.e_type == 3        ? "DYN"
+                                                 : "UNKNOWN";
+    bool is_pie =
+        inferior_elf.dynamic_data ? inferior_elf.dynamic_data->is_pie : false;
+    const char *is_pie_dislpay = is_pie ? "PIE" : "NOT PIE";
 
+    printf("File: %s\n\n", filename);
     printf("PE Header:\n");
-    printf("File: %s\n", filename);
     printf("Magic: \\x%x%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
     printf("Class: %zd\n", inferior_elf.word_size);
-    printf("Type: %s\n", type);
+    printf(
+        "Type: %d - %s - %s\n", inferior_elf.header.e_type, type, is_pie_dislpay
+    );
+    printf("Flags: %d\n", inferior_elf.header.e_flags);
     printf("Entry: 0x%zx\n", inferior_elf.header.e_entry);
     printf("Program headers start: 0x%zx\n", inferior_elf.header.e_phoff);
     printf("Section headers start: 0x%zx\n", inferior_elf.header.e_shoff);
@@ -36,6 +45,10 @@ int main(int argc, char **argv) {
     printf("Section headers length: %zd\n", inferior_elf.header.e_shnum);
 
     /* Global Offset Table */
+
+    if (!inferior_elf.dynamic_data) {
+        return 0;
+    }
 
     printf("\nGOT Entries(%d):\n", inferior_elf.dynamic_data->got_entries_len);
     for (size_t i = 0; i < inferior_elf.dynamic_data->got_entries_len; i++) {

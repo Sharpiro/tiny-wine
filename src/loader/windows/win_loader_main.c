@@ -58,7 +58,7 @@ static void dynamic_callback_linux(void) {
     }
 
     *got_entry = runtime_symbol->value;
-    LOGINFO(
+    LOGDEBUG(
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
@@ -261,7 +261,7 @@ void dynamic_callback_windows(void) {
         EXIT("expected runtime function\n");
     }
 
-    LOGINFO(
+    LOGDEBUG(
         "%zx: %s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         function_export.address,
         lib_name,
@@ -670,14 +670,14 @@ int main(int argc, char **argv) {
     }
 
     char *filename = argv[1];
-    LOGINFO("Starting winloader, %s, %d\n", filename, argc);
+    LOGINFO("Starting winloader, %s, %d args\n", filename, argc);
 
     /* Init heap */
 
     size_t brk_start = tinyc_sys_brk(0);
-    LOGINFO("BRK:, %x\n", brk_start);
+    LOGDEBUG("BRK:, %x\n", brk_start);
     size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
-    LOGINFO("BRK:, %x\n", brk_end);
+    LOGDEBUG("BRK:, %x\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");
     }

@@ -1,4 +1,4 @@
-#include "../../../dlls/msvcrt.h"
+#include <stddef.h>
 
 /**
  * Required by MinGW when relocations are necessary.

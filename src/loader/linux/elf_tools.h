@@ -57,6 +57,7 @@ struct DynamicData {
     size_t var_relocations_len;
     char **shared_libraries;
     size_t shared_libraries_len;
+    bool is_pie;
 };
 
 struct ElfData {

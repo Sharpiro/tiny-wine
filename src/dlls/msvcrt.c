@@ -13,20 +13,20 @@
 #pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 #pragma clang diagnostic ignored "-Wbuiltin-requires-header"
 
+EXPORTABLE int32_t errno = 0;
+
 static size_t heap_start = 0;
 static size_t heap_end = 0;
 static size_t heap_index = 0;
-static int32_t errno = 0;
+
+EXPORTABLE char *_acmdln = NULL;
+static char *command_line_array[100] = {};
 
 static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
     {.fileno_lazy_maybe = 0, .fileno = 0},
     {.fileno_lazy_maybe = 1, .fileno = 1},
     {.fileno_lazy_maybe = 2, .fileno = 2},
 };
-
-EXPORTABLE char *_acmdln = NULL;
-
-char *command_line_array[0x100] = {};
 
 void DllMainCRTStartup(void) {
 }
@@ -435,6 +435,11 @@ EXPORTABLE int __getmainargs(
 
     int arg_count = 0;
     while (true) {
+        const int MAX_ARG_SIZE =
+            sizeof(command_line_array) / sizeof(*command_line_array);
+        if (arg_count == MAX_ARG_SIZE) {
+            return -1;
+        }
         char *start = current_cmd;
         current_cmd = strchrnul(current_cmd, ' ');
         size_t str_len = (size_t)current_cmd - (size_t)start;

@@ -37,8 +37,8 @@ int main(int argc, char **argv) {
 
     /* General information */
 
+    printf("File: %s\n\n", filename);
     printf("PE Header:\n");
-    printf("File: %s\n", filename);
     printf("DOS magic: %s\n", (char *)&dos_magic);
     printf("PE magic: 0x%zx\n", pe_magic);
     printf("Class: %s\n", class);

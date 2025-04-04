@@ -4,8 +4,7 @@ endif
 
 OBJDUMP ?= objdump
 
-# @todo: rename 'WARNINGS'
-WARNINGS = \
+STANDARD_OPTIONS = \
 	-std=gnu2x \
 	-Wall -Wextra -Wpedantic -Wno-varargs \
 	-Wno-gnu-zero-variadic-macro-arguments \
@@ -51,7 +50,7 @@ tinyc_start.o: src/tinyc/tinyc_start.c
 		-c \
 		-O0 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fPIC \
 		-fno-stack-protector \
 		-DAMD64 \
@@ -67,7 +66,7 @@ tinyc_sys.o: \
 		-c \
 		-O0 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fPIC \
 		-fno-stack-protector \
 		-DAMD64 \
@@ -83,7 +82,7 @@ tinyc.o: \
 		-c \
 		-O0 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fPIC \
 		-fno-stack-protector \
 		-DAMD64 \
@@ -102,7 +101,7 @@ libstatic.a: src/programs/linux/string/static_lib.c
 		-c \
 		-O0 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fPIC \
 		-fno-stack-protector \
 		-DAMD64 \
@@ -114,7 +113,7 @@ libstatic.a: src/programs/linux/string/static_lib.c
 libtinyc.so: tinyc_sys.o tinyc.o
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		-g \
 		-DAMD64 \
@@ -128,7 +127,7 @@ libtinyc.so: tinyc_sys.o tinyc.o
 libdynamic.so:
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		-g \
 		-DAMD64 \
@@ -145,7 +144,7 @@ libntdll.so: \
 	@echo "building libntdll.so..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		-g \
 		-DAMD64 \
@@ -165,7 +164,7 @@ ntdll.dll: \
 	@echo "building ntdll.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
@@ -185,7 +184,7 @@ msvcrt.dll: \
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
@@ -206,7 +205,7 @@ KERNEL32.dll: \
 	@echo "building KERNEL32.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
@@ -228,7 +227,7 @@ windynamiclib.dll: \
 	@echo "building windynamiclib.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
@@ -250,7 +249,7 @@ windynamiclibfull.dll: \
 	@echo "building windynamiclibfull.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
@@ -279,7 +278,7 @@ loader: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-Wl,--section-start=.text=7d7d0000 \
 		-fno-stack-protector \
 		-g \
@@ -313,7 +312,7 @@ winloader: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-Wl,--section-start=.text=7d7d0000 \
 		-fno-stack-protector \
 		-g \
@@ -344,7 +343,7 @@ unit_test: \
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-o unit_test \
 		src/programs/linux/unit_test/unit_test_main.c \
 		src/loader/memory_map.c \
@@ -361,7 +360,7 @@ env: \
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-o env \
 		src/programs/linux/env/env_main.c \
 		tinyc_start.o \
@@ -372,7 +371,7 @@ string: libtinyc.a libstatic.a
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-o string \
 		src/programs/linux/string/string_main.c \
 		tinyc_start.o \
@@ -385,7 +384,7 @@ tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 		-DAMD64 \
 		-nostdlib \
 		-no-pie \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-o tinyfetch \
 		./libtinyc.so \
 		./libdynamic.so \
@@ -398,7 +397,7 @@ static_pie: tinyc_start.o libtinyc.a
 		-DAMD64 \
 		-nostdlib \
 		-static-pie \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-o static_pie \
 		src/programs/linux/static_pie/static_pie_main.c \
 		tinyc_start.o \
@@ -412,7 +411,7 @@ dynamic: \
 	@echo "building dynamic..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-S \
 		-o dynamic.s \
 		src/programs/linux/dynamic/dynamic_main.c
@@ -420,7 +419,7 @@ dynamic: \
 		-DAMD64 \
 		-nostdlib \
 		-no-pie \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-o dynamic \
 		./libdynamic.so \
 		./libtinyc.so \
@@ -438,7 +437,7 @@ windynamic.exe: \
 	@echo "building windynamic.exe..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
@@ -464,7 +463,7 @@ windynamicfull.exe: \
 	@echo "building windynamicfull.exe..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
@@ -489,7 +488,7 @@ readwin: \
 		-DAMD64 \
 		-masm=intel \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-o readwin \
 		tools/readwin/readwin_main.c \
 		src/loader/windows/pe_tools.c \
@@ -507,7 +506,7 @@ readlin: \
 		-DAMD64 \
 		-masm=intel \
 		-nostdlib -static \
-		$(WARNINGS) \
+		$(STANDARD_OPTIONS) \
 		-o readlin \
 		tools/readlin/readlin_main.c \
 		src/loader/linux/elf_tools.c \

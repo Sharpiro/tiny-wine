@@ -456,14 +456,14 @@ int main(int32_t argc, char **argv, char **envv) {
     }
 
     char *filename = argv[1];
-    LOGINFO("Starting loader, %s, %d\n", filename, argc);
+    LOGINFO("Starting loader, %s, %d args\n", filename, argc);
 
     /* Init heap */
 
     size_t brk_start = tinyc_sys_brk(0);
-    LOGINFO("BRK:, %x\n", brk_start);
+    LOGDEBUG("BRK:, %x\n", brk_start);
     size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
-    LOGINFO("BRK:, %x\n", brk_end);
+    LOGDEBUG("BRK:, %x\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");
     }
