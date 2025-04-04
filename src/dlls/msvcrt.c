@@ -1,5 +1,4 @@
 #include "msvcrt.h"
-#include "../loader/log.h"
 #include "./macros.h"
 #include "ntdll.h"
 #include <stdarg.h>
@@ -349,9 +348,6 @@ EXPORTABLE void *malloc(size_t n) {
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
         heap_end = sys_brk(heap_end + extend_size);
-        LOGINFO(
-            "msvcrt malloc Heap extended, 0x%zx:0x%zx\n", heap_start, heap_end
-        );
     }
 
     if (heap_end <= heap_start) {
@@ -398,7 +394,6 @@ EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
     UNICODE_STRING *command_line =
         &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
     _acmdln = to_char_pointer((wchar_t *)command_line->Buffer);
-    LOGINFO("_initterm _acmdln: %p, %s \n", _acmdln, _acmdln);
 
     size_t len = (size_t)(last - first);
     for (size_t i = 0; i < len; i++) {
@@ -406,7 +401,6 @@ EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
         if (func == NULL) {
             continue;
         }
-        LOGINFO("_initterm func %zd\n", i);
         func();
     }
 }
@@ -437,8 +431,6 @@ EXPORTABLE int __getmainargs(
     [[maybe_unused]] int do_wild_card,
     [[maybe_unused]] void *start_info
 ) {
-    LOGINFO("__getmainargs\n");
-
     char *current_cmd = _acmdln;
 
     int arg_count = 0;
@@ -498,7 +490,6 @@ EXPORTABLE int32_t vfprintf(
 ) {
     int32_t file_no = _fileno(stream);
     fprintf_internal(file_no, format, arg);
-    LOGINFO("inserted newline manually\n");
     return 0;
 }
 

@@ -58,7 +58,7 @@ static void dynamic_callback_linux(void) {
     }
 
     *got_entry = runtime_symbol->value;
-    LOGTRACE(
+    LOGINFO(
         "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
         runtime_symbol->value,
         runtime_relocation->name,
@@ -227,20 +227,6 @@ void dynamic_callback_windows(void) {
         );
     };
 
-    LOGTRACE(
-        "%s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
-        lib_name,
-        import_entry->name,
-        rcx,
-        rdx,
-        r8,
-        r9,
-        p5_win_stack1,
-        p6_win_stack2,
-        p7_win_stack3,
-        p8_win_stack4
-    );
-
     /** Find function using library and function name */
 
     WinRuntimeExport function_export = {};
@@ -275,12 +261,20 @@ void dynamic_callback_windows(void) {
         EXIT("expected runtime function\n");
     }
 
-    // @todo: can't cache b/c you need to swap state every time
-    // size_t *iat_runtime_entry =
-    //     (size_t
-    //     *)(source_iat_object->pe_data.winpe_optional_header.image_base +
-    //                func_iat_key);
-    // *iat_runtime_entry = function_export.address;
+    LOGINFO(
+        "%zx: %s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
+        function_export.address,
+        lib_name,
+        import_entry->name,
+        rcx,
+        rdx,
+        r8,
+        r9,
+        p5_win_stack1,
+        p6_win_stack2,
+        p7_win_stack3,
+        p8_win_stack4
+    );
 
     LOGTRACE("Completed dynamic linking to %x\n", function_export.address);
 
