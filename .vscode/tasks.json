@@ -4,12 +4,12 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "CFLAGS='-DVERBOSE' make"
+      "command": "CFLAGS='-DLOG_LEVEL=1' make"
     },
     {
       "label": "build_win",
       "type": "shell",
-      "command": "CFLAGS='-DVERBOSE' make windows"
+      "command": "CFLAGS='-DLOG_LEVEL=1' make windows"
     },
     {
       "label": "build_unit_test",
