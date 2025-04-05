@@ -26,16 +26,14 @@ int main(int argc, char **argv) {
         : inferior_elf.header.e_type == 2        ? "EXEC"
         : inferior_elf.header.e_type == 3        ? "DYN"
                                                  : "UNKNOWN";
-    bool is_pie =
-        inferior_elf.dynamic_data ? inferior_elf.dynamic_data->is_pie : false;
-    const char *is_pie_dislpay = is_pie ? "PIE" : "NOT PIE";
+    const char *is_pie_display = inferior_elf.is_pie ? "PIE" : "NOT PIE";
 
     printf("File: %s\n\n", filename);
     printf("PE Header:\n");
     printf("Magic: \\x%x%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
     printf("Class: %zd\n", inferior_elf.word_size);
     printf(
-        "Type: %d - %s - %s\n", inferior_elf.header.e_type, type, is_pie_dislpay
+        "Type: %d - %s - %s\n", inferior_elf.header.e_type, type, is_pie_display
     );
     printf("Flags: %d\n", inferior_elf.header.e_flags);
     printf("Entry: 0x%zx\n", inferior_elf.header.e_entry);

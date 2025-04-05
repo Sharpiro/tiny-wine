@@ -71,6 +71,7 @@ struct ElfData {
     struct SectionHeader *section_headers;
     size_t section_headers_len;
     struct DynamicData *dynamic_data;
+    bool is_pie;
 };
 
 bool get_elf_data(int fd, struct ElfData *elf_data);

@@ -27,7 +27,6 @@ linux: \
 	env \
 	string \
 	tinyfetch \
-	static_pie \
 	dynamic \
 	readlin
 
@@ -392,17 +391,23 @@ tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 		tinyc_start.o
 	@$(OBJDUMP) -M intel -D tinyfetch > tinyfetch.dump
 
-static_pie: tinyc_start.o libtinyc.a
+static_pie: \
+	tinyc_start.o \
+	libtinyc.a \
+	src/programs/linux/string/string_main.c
+	@echo "building static_pie..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
+		-DPIE \
 		-nostdlib \
-		-static-pie \
+		-fPIE -pie \
 		$(STANDARD_OPTIONS) \
 		-o static_pie \
-		src/programs/linux/static_pie/static_pie_main.c \
+		src/programs/linux/string/string_main.c \
 		tinyc_start.o \
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D static_pie > static_pie.dump
+
 
 dynamic: \
 	libtinyc.so \

@@ -15,7 +15,8 @@ A basic dynamic loader for Linux and Windows.
 - Partial SSE
 - No AVX
 - There are many relocation types, only some are supported
-- Printing floats
+- No Printing floats
+- Partial Position independent executables (PIE)
 
 ## Prerequisites
 

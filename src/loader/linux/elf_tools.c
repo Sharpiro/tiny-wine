@@ -455,6 +455,10 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
     const char *endianness = elf_header.e_ident[5] == 1 ? "little" : "big";
     size_t version = elf_header.e_ident[6];
     size_t os_abi = elf_header.e_ident[7];
+    bool is_pie = dynamic_data ? dynamic_data->is_pie : false;
+    if (is_pie && elf_header.e_type != ET_DYN) {
+        BAIL("Unexpected non-dynamic PIE");
+    }
 
     *elf_data = (struct ElfData){
         .header = elf_header,
@@ -467,6 +471,7 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
         .section_headers = section_headers,
         .section_headers_len = section_headers_len,
         .dynamic_data = dynamic_data,
+        .is_pie = is_pie,
     };
 
     return true;

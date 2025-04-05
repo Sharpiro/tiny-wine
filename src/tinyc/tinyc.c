@@ -33,6 +33,7 @@ size_t strlen(const char *data) {
     return len;
 }
 
+// @todo: convert to File*
 void fputs(const char *data, int32_t file_handle) {
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";

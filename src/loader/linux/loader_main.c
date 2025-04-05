@@ -492,7 +492,8 @@ int main(int32_t argc, char **argv, char **envv) {
         EXIT("error parsing elf data\n");
     }
 
-    if (inferior_elf.header.e_type != ET_EXEC) {
+    size_t elf_type = inferior_elf.header.e_type;
+    if (elf_type != ET_EXEC && !inferior_elf.is_pie) {
         EXIT("Program type '%d' not supported\n", inferior_elf.header.e_type);
     }
 
@@ -509,6 +510,15 @@ int main(int32_t argc, char **argv, char **envv) {
         EXIT("failed getting memory regions\n");
     }
 
+    size_t reserved_address = 0;
+    if (inferior_elf.is_pie) {
+        if (!reserve_region_space(&memory_regions, &reserved_address)) {
+            EXIT("get_reserved_region_space failed\n");
+        }
+    }
+
+    LOGINFO("Mapping '%s' memory regions at %zx\n", filename, reserved_address);
+
     if (!map_memory_regions(fd, memory_regions.data, memory_regions.length)) {
         EXIT("loader map memory regions failed\n");
     }
@@ -522,7 +532,7 @@ int main(int32_t argc, char **argv, char **envv) {
     size_t bss_len = 0;
     if (bss_section_header != NULL) {
         LOGINFO("initializing .bss\n");
-        bss = (uint8_t *)bss_section_header->addr;
+        bss = (uint8_t *)(reserved_address + bss_section_header->addr);
         bss_len = bss_section_header->size;
         memset(bss, 0, bss_len);
     }
@@ -538,6 +548,7 @@ int main(int32_t argc, char **argv, char **envv) {
     if (inferior_elf.dynamic_data != NULL) {
         if (!get_function_relocations(
                 inferior_elf.dynamic_data,
+                // @todo: PIE relocation test
                 0,
                 &runtime_func_relocations,
                 &runtime_func_relocations_len
@@ -604,7 +615,8 @@ int main(int32_t argc, char **argv, char **envv) {
 
     /* Jump to program */
 
-    LOGINFO("inferior_entry: %zx\n", inferior_elf.header.e_entry);
+    size_t entry = reserved_address + inferior_elf.header.e_entry;
+    LOGINFO("inferior_entry: %zx\n", entry);
     LOGINFO("inferior_stack: %zx\n", inferior_stack);
     LOGINFO("------------running program------------\n");
 
@@ -616,7 +628,6 @@ int main(int32_t argc, char **argv, char **envv) {
         :
         :
 
-        [inferior_stack] "m"(inferior_stack),
-        [inferior_entry] "m"(inferior_elf.header.e_entry)
+        [inferior_stack] "m"(inferior_stack), [inferior_entry] "m"(entry)
     );
 }

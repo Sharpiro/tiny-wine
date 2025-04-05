@@ -35,6 +35,8 @@ int main(void) {
     memcpy(malloc_string, "abcd", 5);
     printf("malloc_string %s\n", malloc_string);
 
+    // #ifndef __PIE__
+
     printf("lib test_number_data: %d\n", test_number_data);
     test_number_data = 54321;
     printf("lib test_number_data: %d\n", test_number_data);
@@ -43,5 +45,5 @@ int main(void) {
     printf("lib test_number_bss: %d\n", test_number_bss);
     printf("lib get_test_number_data: %d\n", get_test_number_data());
 
-    exit(0);
+    // #endif
 }
