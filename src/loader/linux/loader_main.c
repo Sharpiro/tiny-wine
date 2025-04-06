@@ -126,6 +126,7 @@ void dynamic_callback_linux(void) {
 
 static bool initialize_dynamic_data(
     struct DynamicData *inferior_dyn_data,
+    size_t inferior_offset,
     struct RuntimeObject **shared_libraries,
     size_t *shared_libraries_len
 ) {
@@ -278,9 +279,11 @@ static bool initialize_dynamic_data(
             &inferior_dyn_data->var_relocations[i];
         struct RuntimeRelocation runtime_relocation = {
             .offset = curr_relocation->offset,
+            .type = curr_relocation->type,
+            .addend = curr_relocation->addend,
             .value = curr_relocation->symbol.value,
             .name = curr_relocation->symbol.name,
-            .type = curr_relocation->type,
+            .lib_dyn_offset = inferior_offset,
         };
         LOGINFO(
             "variable relocation %d: %s %x:%x, type %d\n",
@@ -305,9 +308,11 @@ static bool initialize_dynamic_data(
                 : curr_lib->dynamic_offset + curr_relocation->symbol.value;
             struct RuntimeRelocation runtime_relocation = {
                 .offset = curr_lib->dynamic_offset + curr_relocation->offset,
+                .type = curr_relocation->type,
+                .addend = curr_relocation->addend,
                 .value = value,
                 .name = curr_relocation->symbol.name,
-                .type = curr_relocation->type,
+                .lib_dyn_offset = curr_lib->dynamic_offset,
             };
             LOGINFO(
                 "Varaible relocation: %d: %s %x:%x\n",
@@ -319,8 +324,29 @@ static bool initialize_dynamic_data(
             runtime_var_relocations[var_reloc_index++] = runtime_relocation;
         }
     }
+
     for (size_t i = 0; i < runtime_var_relocations_len; i++) {
         struct RuntimeRelocation *run_var_reloc = &runtime_var_relocations[i];
+        if (run_var_reloc->type != R_X86_64_COPY &&
+            run_var_reloc->type != R_X86_64_GLOB_DAT &&
+            run_var_reloc->type != R_X86_64_RELATIVE) {
+            BAIL(
+                "Unsupported 64 bit variable relocation type %zd\n",
+                run_var_reloc->type
+            );
+        }
+        if (run_var_reloc->type == R_X86_64_RELATIVE) {
+            run_var_reloc->offset =
+                run_var_reloc->lib_dyn_offset + run_var_reloc->offset;
+            if (run_var_reloc->addend <= 0) {
+                BAIL("Unsupported negative relocation addend");
+            }
+
+            run_var_reloc->value =
+                run_var_reloc->lib_dyn_offset + (size_t)run_var_reloc->addend;
+            continue;
+        }
+
         const struct RuntimeSymbol *runtime_symbol;
         if (!find_runtime_symbol(
                 run_var_reloc->name,
@@ -425,6 +451,11 @@ static bool initialize_dynamic_data(
 
     for (size_t i = 0; i < runtime_var_relocations_len; i++) {
         struct RuntimeRelocation *var_relocation = &runtime_var_relocations[i];
+        if (var_relocation->type == R_X86_64_RELATIVE) {
+            size_t *variable = (size_t *)var_relocation->offset;
+            *variable = var_relocation->value;
+            continue;
+        }
         if (var_relocation->type != R_X86_64_COPY) {
             continue;
         }
@@ -497,8 +528,6 @@ int main(int32_t argc, char **argv, char **envv) {
         EXIT("Program type '%d' not supported\n", inferior_elf.header.e_type);
     }
 
-    LOGINFO("program entry: %x\n", inferior_elf.header.e_entry);
-
     MemoryRegionList memory_regions = {
         .allocator = loader_malloc_arena,
     };
@@ -548,7 +577,7 @@ int main(int32_t argc, char **argv, char **envv) {
     if (inferior_elf.dynamic_data != NULL) {
         if (!get_function_relocations(
                 inferior_elf.dynamic_data,
-                // @todo: PIE relocation test
+                // @todo: PIE
                 0,
                 &runtime_func_relocations,
                 &runtime_func_relocations_len
@@ -563,25 +592,13 @@ int main(int32_t argc, char **argv, char **envv) {
 
         if (!initialize_dynamic_data(
                 inferior_elf.dynamic_data,
+                reserved_address,
                 &shared_objects,
                 &shared_libraries_len
             )) {
             EXIT("failed initializing dynamic data\n");
         }
     }
-
-    executable_object = loader_malloc_arena(sizeof(struct RuntimeObject));
-    *executable_object = (struct RuntimeObject){
-        .name = filename,
-        .dynamic_offset = 0,
-        .elf_data = inferior_elf,
-        .memory_regions = memory_regions,
-        .runtime_func_relocations = runtime_func_relocations,
-        .runtime_func_relocations_len = runtime_func_relocations_len,
-        .bss = bss,
-        .bss_len = bss_len,
-        .runtime_symbols = exe_runtime_symbols,
-    };
 
     /* Setup stack and environment */
 
@@ -612,6 +629,20 @@ int main(int32_t argc, char **argv, char **envv) {
     for (size_t i = 0; i < word_count; i++) {
         argv[i] = argv[i + 1];
     }
+
+    executable_object = loader_malloc_arena(sizeof(struct RuntimeObject));
+    *executable_object = (struct RuntimeObject){
+        .name = filename,
+        // @todo: PIE
+        .dynamic_offset = 0,
+        .elf_data = inferior_elf,
+        .memory_regions = memory_regions,
+        .runtime_func_relocations = runtime_func_relocations,
+        .runtime_func_relocations_len = runtime_func_relocations_len,
+        .bss = bss,
+        .bss_len = bss_len,
+        .runtime_symbols = exe_runtime_symbols,
+    };
 
     /* Jump to program */
 

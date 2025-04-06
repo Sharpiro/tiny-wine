@@ -27,6 +27,7 @@ linux: \
 	env \
 	string \
 	tinyfetch \
+	static_pie \
 	dynamic \
 	readlin
 
@@ -51,7 +52,6 @@ tinyc_start.o: src/tinyc/tinyc_start.c
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-fPIC \
-		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
 		-o tinyc_start.o \
@@ -67,7 +67,6 @@ tinyc_sys.o: \
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-fPIC \
-		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
 		-o tinyc_sys.o \
@@ -83,7 +82,6 @@ tinyc.o: \
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-fPIC \
-		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
 		-o tinyc.o \
@@ -102,7 +100,6 @@ libstatic.a: src/programs/linux/string/static_lib.c
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-fPIC \
-		-fno-stack-protector \
 		-DAMD64 \
 		-masm=intel \
 		-o static_lib.o src/programs/linux/string/static_lib.c
@@ -113,7 +110,6 @@ libtinyc.so: tinyc_sys.o tinyc.o
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		-g \
 		-DAMD64 \
 		-nostdlib -static \
@@ -127,7 +123,6 @@ libdynamic.so:
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		-g \
 		-DAMD64 \
 		-nostdlib -static \
@@ -144,7 +139,6 @@ libntdll.so: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		-g \
 		-DAMD64 \
 		-DDLL \
@@ -164,7 +158,6 @@ ntdll.dll: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
@@ -184,7 +177,6 @@ msvcrt.dll: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
@@ -205,7 +197,6 @@ KERNEL32.dll: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
@@ -227,7 +218,6 @@ windynamiclib.dll: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
@@ -249,7 +239,6 @@ windynamiclibfull.dll: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
@@ -279,7 +268,6 @@ loader: \
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-Wl,--section-start=.text=7d7d0000 \
-		-fno-stack-protector \
 		-g \
 		-DAMD64 \
 		-masm=intel \
@@ -313,7 +301,6 @@ winloader: \
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-Wl,--section-start=.text=7d7d0000 \
-		-fno-stack-protector \
 		-g \
 		-DAMD64 \
 		-masm=intel \
@@ -366,7 +353,11 @@ env: \
 		libtinyc.a
 	@$(OBJDUMP) -M intel -D env > env.dump
 
-string: libtinyc.a libstatic.a
+string: \
+		libtinyc.a \
+		libstatic.a \
+		src/programs/linux/string/string_main.c
+	@echo "building string..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
@@ -405,7 +396,8 @@ static_pie: \
 		-o static_pie \
 		src/programs/linux/string/string_main.c \
 		tinyc_start.o \
-		libtinyc.a
+		libtinyc.a \
+		libstatic.a
 	@$(OBJDUMP) -M intel -D static_pie > static_pie.dump
 
 
@@ -443,7 +435,6 @@ windynamic.exe: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
@@ -469,7 +460,6 @@ windynamicfull.exe: \
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
-		-fno-stack-protector \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \

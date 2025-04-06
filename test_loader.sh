@@ -34,7 +34,8 @@ lib test_number_bss: 1
 lib get_test_number_data: 54321
 EOF
 `
-assert [ "`$PRELOADER ./loader string silent`" == "$expected" ]
+assert [ "`$PRELOADER ./loader string`" == "$expected" ]
+assert [ "`$PRELOADER ./loader static_pie`" == "$expected" ]
 
 # Dynamic Test
 expected=`cat <<EOF

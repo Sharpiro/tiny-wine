@@ -26,15 +26,13 @@ int main(int argc, char **argv) {
         : inferior_elf.header.e_type == 2        ? "EXEC"
         : inferior_elf.header.e_type == 3        ? "DYN"
                                                  : "UNKNOWN";
-    const char *is_pie_display = inferior_elf.is_pie ? "PIE" : "NOT PIE";
+    const char *pie_display = inferior_elf.is_pie ? " - PIE" : "";
 
     printf("File: %s\n\n", filename);
     printf("PE Header:\n");
     printf("Magic: \\x%x%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
     printf("Class: %zd\n", inferior_elf.word_size);
-    printf(
-        "Type: %d - %s - %s\n", inferior_elf.header.e_type, type, is_pie_display
-    );
+    printf("Type: %d - %s%s\n", inferior_elf.header.e_type, type, pie_display);
     printf("Flags: %d\n", inferior_elf.header.e_flags);
     printf("Entry: 0x%zx\n", inferior_elf.header.e_entry);
     printf("Program headers start: 0x%zx\n", inferior_elf.header.e_phoff);
@@ -42,11 +40,46 @@ int main(int argc, char **argv) {
     printf("Section header size: %zd\n", inferior_elf.header.e_shentsize);
     printf("Section headers length: %zd\n", inferior_elf.header.e_shnum);
 
-    /* Global Offset Table */
-
     if (!inferior_elf.dynamic_data) {
         return 0;
     }
+
+    /* Relocations */
+
+    size_t var_relocations_len = inferior_elf.dynamic_data->var_relocations_len;
+    printf("\nVariable Relocations (%d):\n", var_relocations_len);
+    for (size_t i = 0; i < var_relocations_len; i++) {
+        struct Relocation *relocation =
+            &inferior_elf.dynamic_data->var_relocations[i];
+        printf(
+            "0x%zx, %s, 0x%zx, 0x%x, %s, '%s'\n",
+            relocation->offset,
+            relocation->type_name,
+            relocation->addend,
+            relocation->symbol.value,
+            relocation->symbol.type_name,
+            relocation->symbol.name
+        );
+    }
+
+    size_t func_relocations_len =
+        inferior_elf.dynamic_data->func_relocations_len;
+    printf("\nFunction Relocations (%d):\n", func_relocations_len);
+    for (size_t i = 0; i < func_relocations_len; i++) {
+        struct Relocation *relocation =
+            &inferior_elf.dynamic_data->func_relocations[i];
+        printf(
+            "0x%zx, %s, 0x%zx, 0x%x, %s, '%s'\n",
+            relocation->offset,
+            relocation->type_name,
+            relocation->addend,
+            relocation->symbol.value,
+            relocation->symbol.type_name,
+            relocation->symbol.name
+        );
+    }
+
+    /* Global Offset Table */
 
     printf("\nGOT Entries(%d):\n", inferior_elf.dynamic_data->got_entries_len);
     for (size_t i = 0; i < inferior_elf.dynamic_data->got_entries_len; i++) {

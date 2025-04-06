@@ -14,9 +14,10 @@ CREATE_LIST_STRUCT(RuntimeGotEntry)
 
 struct RuntimeRelocation {
     size_t offset;
+    size_t type;
+    ssize_t addend;
     size_t value;
     const char *name;
-    size_t type;
     size_t lib_dyn_offset;
 };
 

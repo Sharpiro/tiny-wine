@@ -2,6 +2,8 @@
 #include "../../tinyc/tinyc.h"
 #include "../log.h"
 
+#define STRINGIFY(name) #name
+
 static bool get_section_headers(
     const ELF_HEADER *elf_header,
     int32_t fd,
@@ -83,6 +85,32 @@ const struct SectionHeader *find_section_header(
     return section_header;
 }
 
+static const char *get_relocation_type_name(size_t type) {
+    switch (type) {
+    case 5:
+        return STRINGIFY(R_X86_64_COPY);
+    case 7:
+        return STRINGIFY(R_X86_64_JUMP_SLOT);
+    case 8:
+        return STRINGIFY(R_X86_64_RELATIVE);
+    default:
+        return "Unknown";
+    }
+}
+
+static const char *get_symbol_type_name(size_t type) {
+    switch (type) {
+    case 0:
+        return STRINGIFY(STT_NOTYPE);
+    case 1:
+        return STRINGIFY(STT_OBJECT);
+    case 2:
+        return STRINGIFY(STT_FUNC);
+    default:
+        return "Unknown";
+    }
+}
+
 static bool get_dynamic_data(
     const struct SectionHeader *section_headers,
     size_t section_headers_len,
@@ -157,6 +185,7 @@ static bool get_dynamic_data(
             .value = dyn_elf_symbol.st_value,
             .size = dyn_elf_symbol.st_size,
             .type = type,
+            .type_name = get_symbol_type_name(type),
             .binding = binding,
         };
         dyn_symbols[dyn_symbols_len++] = symbol;
@@ -305,6 +334,7 @@ static bool get_dynamic_data(
             struct Relocation relocation = {
                 .offset = elf_relocation->r_offset,
                 .type = type,
+                .type_name = get_relocation_type_name(type),
                 .symbol = symbol,
             };
             func_relocations[i] = relocation;
@@ -312,6 +342,7 @@ static bool get_dynamic_data(
     }
 
     /* Load variable relocations */
+
     const struct SectionHeader *var_reloc_header = find_section_header(
         section_headers, section_headers_len, VARIABLE_RELOCATION_HEADER
     );
@@ -338,19 +369,14 @@ static bool get_dynamic_data(
         for (size_t i = 0; i < var_relocations_len; i++) {
             RELOCATION *elf_relocation = &elf_var_relocations[i];
             size_t type = elf_relocation->r_info & 0xff;
-            if (type != R_X86_64_COPY && type != R_X86_64_GLOB_DAT) {
-                BAIL("Unsupported 64 bit variable relocation type %zd\n", type);
-            }
-            if (elf_relocation->r_addend > 0) {
-                BAIL("Unsupported 64 bit variable relocation addend\n");
-            }
-
             size_t symbol_index =
                 elf_relocation->r_info >> RELOCATION_SYMBOL_SHIFT_LENGTH;
             struct Symbol symbol = dyn_symbols[symbol_index];
             struct Relocation relocation = {
                 .offset = elf_relocation->r_offset,
                 .type = type,
+                .type_name = get_relocation_type_name(type),
+                .addend = elf_relocation->r_addend,
                 .symbol = symbol,
             };
             var_relocations[i] = relocation;
@@ -358,6 +384,7 @@ static bool get_dynamic_data(
     }
 
     /* Load dynamic entries */
+
     size_t dynamic_entries_len =
         dynamic_header->size / dynamic_header->entry_size;
     DYNAMIC_ENTRY *dynamic_entries = malloc(dynamic_header->size);

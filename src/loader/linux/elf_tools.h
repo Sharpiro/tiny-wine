@@ -3,6 +3,7 @@
 #include <elf.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <sys/types.h>
 
 #define ELF_HEADER Elf64_Ehdr
 #define PROGRAM_HEADER Elf64_Phdr
@@ -37,12 +38,15 @@ struct Symbol {
     size_t value;
     size_t size;
     size_t type;
+    const char *type_name;
     size_t binding;
 };
 
 struct Relocation {
     size_t offset;
     size_t type;
+    const char *type_name;
+    ssize_t addend;
     struct Symbol symbol;
 };
 
