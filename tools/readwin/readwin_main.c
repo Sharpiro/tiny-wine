@@ -6,6 +6,7 @@
 // @todo: get working via winloader?
 // @todo: reduce number of linux test program binaries
 // @todo: dedicated include directory?
+// @todo: don't dump into main directory?
 
 int main(int argc, char **argv) {
     if (argc < 2 || memcmp(argv[1], "--", 2) == 0) {

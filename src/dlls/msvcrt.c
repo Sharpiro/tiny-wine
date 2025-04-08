@@ -64,11 +64,17 @@ EXPORTABLE size_t strlen(const char *data) {
     return len;
 }
 
-static bool print_len(int32_t file_handle, const char *data, size_t length) {
+EXPORTABLE int32_t _fileno(FILE *stream) {
+    _WinFileInternal *internal_file = (_WinFileInternal *)stream;
+    return internal_file->fileno_lazy_maybe;
+}
+
+static bool print_len(FILE *file_handle, const char *data, size_t length) {
+    int32_t file_no = _fileno(file_handle);
     HANDLE win_handle;
-    if (file_handle == STDOUT) {
+    if (file_no == STDOUT) {
         win_handle = (HANDLE)-11;
-    } else if (file_handle == STDERR) {
+    } else if (file_no == STDERR) {
         win_handle = (HANDLE)-12;
     } else {
         return false;
@@ -91,7 +97,7 @@ static bool print_len(int32_t file_handle, const char *data, size_t length) {
     return true;
 }
 
-static void fputs(const char *data, int32_t file_handle) {
+EXPORTABLE void fputs(const char *data, FILE *file_handle) {
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
         print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
@@ -102,9 +108,13 @@ static void fputs(const char *data, int32_t file_handle) {
     print_len(file_handle, data, str_len);
 }
 
+EXPORTABLE void *__iob_func() {
+    return WIN_FILE_INTERNAL_LIST;
+}
+
 EXPORTABLE int32_t puts(const char *data) {
-    fputs(data, STDOUT);
-    fputs("\n", STDOUT);
+    fputs(data, stdout);
+    fputs("\n", stdout);
     return 0;
 }
 
@@ -116,7 +126,7 @@ EXPORTABLE double pow(double x, double y) {
     return product;
 }
 
-static void print_number_hex(int32_t file_handle, size_t num) {
+static void print_number_hex(FILE *file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789abcdef";
 
@@ -139,7 +149,7 @@ static void print_number_hex(int32_t file_handle, size_t num) {
     print_len(file_handle, (char *)num_buffer, buffer_index);
 }
 
-static void print_number_decimal(int32_t file_handle, size_t num) {
+static void print_number_decimal(FILE *file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789";
 
@@ -171,7 +181,7 @@ struct PrintItem {
 };
 
 static void fprintf_internal(
-    int32_t file_handle, const char *format, va_list var_args
+    FILE *file_handle, const char *format, va_list var_args
 ) {
     size_t print_items_len = 0;
     struct PrintItem print_items[128] = {0};
@@ -261,18 +271,9 @@ EXPORTABLE void exit(int32_t exit_code) {
 EXPORTABLE int32_t printf(const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
-    fprintf_internal(STDOUT, format, var_args);
+    fprintf_internal(stdout, format, var_args);
     va_end(var_args);
     return 0;
-}
-
-EXPORTABLE void *__iob_func(void) {
-    return WIN_FILE_INTERNAL_LIST;
-}
-
-EXPORTABLE int32_t _fileno(FILE *stream) {
-    _WinFileInternal *internal_file = (_WinFileInternal *)stream;
-    return internal_file->fileno_lazy_maybe;
 }
 
 EXPORTABLE int32_t fprintf(
@@ -280,10 +281,9 @@ EXPORTABLE int32_t fprintf(
     [[maybe_unused]] const char *__restrict format,
     ...
 ) {
-    int32_t file_no = _fileno(stream);
     va_list var_args;
     va_start(var_args, format);
-    fprintf_internal(file_no, format, var_args);
+    fprintf_internal(stream, format, var_args);
     va_end(var_args);
     return 0;
 }
@@ -493,8 +493,7 @@ EXPORTABLE int32_t vfprintf(
     [[maybe_unused]] const char *__restrict format,
     [[maybe_unused]] __gnuc_va_list arg
 ) {
-    int32_t file_no = _fileno(stream);
-    fprintf_internal(file_no, format, arg);
+    fprintf_internal(stream, format, arg);
     return 0;
 }
 
@@ -527,8 +526,7 @@ EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
 
 EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
     char c_char = (char)c;
-    int32_t file_no = _fileno(stream);
-    if (!print_len(file_no, &c_char, 1)) {
+    if (!print_len(stream, &c_char, 1)) {
         return -1;
     }
 

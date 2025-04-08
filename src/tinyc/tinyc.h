@@ -47,7 +47,7 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
 double pow(double x, double y);
 
-void fputs(const char *data, int32_t file_handle);
+void fputs(const char *data, FILE *file_handle);
 
 void fprintf(FILE *file_handle, const char *format, ...);
 

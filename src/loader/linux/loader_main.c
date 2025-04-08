@@ -577,8 +577,7 @@ int main(int32_t argc, char **argv, char **envv) {
     if (inferior_elf.dynamic_data != NULL) {
         if (!get_function_relocations(
                 inferior_elf.dynamic_data,
-                // @todo: PIE
-                0,
+                reserved_address,
                 &runtime_func_relocations,
                 &runtime_func_relocations_len
             )) {
@@ -633,8 +632,7 @@ int main(int32_t argc, char **argv, char **envv) {
     executable_object = loader_malloc_arena(sizeof(struct RuntimeObject));
     *executable_object = (struct RuntimeObject){
         .name = filename,
-        // @todo: PIE
-        .dynamic_offset = 0,
+        .dynamic_offset = reserved_address,
         .elf_data = inferior_elf,
         .memory_regions = memory_regions,
         .runtime_func_relocations = runtime_func_relocations,

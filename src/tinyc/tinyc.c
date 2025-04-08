@@ -13,13 +13,20 @@ static size_t heap_start = 0;
 static size_t heap_end = 0;
 static size_t heap_index = 0;
 
-static void print_len(int32_t file_handle, const char *data, size_t length) {
+int32_t fileno(FILE *stream) {
+    int32_t *internal_file = (int32_t *)stream;
+    return *internal_file;
+}
+
+static bool print_len(FILE *file_handle, const char *data, size_t length) {
+    int32_t file_no = fileno(file_handle);
     struct SysArgs args = {
-        .param_one = (size_t)file_handle,
+        .param_one = (size_t)file_no,
         .param_two = (size_t)data,
         .param_three = length,
     };
     tinyc_syscall(SYS_write, &args);
+    return true;
 }
 
 size_t strlen(const char *data) {
@@ -33,8 +40,7 @@ size_t strlen(const char *data) {
     return len;
 }
 
-// @todo: convert to File*
-void fputs(const char *data, int32_t file_handle) {
+void fputs(const char *data, FILE *file_handle) {
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
         print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
@@ -53,7 +59,7 @@ double pow(double x, double y) {
     return product;
 }
 
-static void print_number_hex(int32_t file_handle, size_t num) {
+static void print_number_hex(FILE *file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789abcdef";
 
@@ -76,7 +82,7 @@ static void print_number_hex(int32_t file_handle, size_t num) {
     print_len(file_handle, (char *)num_buffer, buffer_index);
 }
 
-static void print_number_decimal(int32_t file_handle, size_t num) {
+static void print_number_decimal(FILE *file_handle, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789";
 
@@ -113,7 +119,7 @@ struct PrintItem {
 };
 
 static void fprintf_internal(
-    int32_t file_handle, const char *format, va_list var_args
+    FILE *file_handle, const char *format, va_list var_args
 ) {
     size_t print_items_len = 0;
     struct PrintItem print_items[128] = {0};
@@ -199,15 +205,14 @@ static void fprintf_internal(
 void printf(const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
-    fprintf_internal(STDOUT, format, var_args);
+    fprintf_internal(stdout, format, var_args);
     va_end(var_args);
 }
 
 void fprintf(FILE *file_handle, const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
-    int32_t fileno = *(int32_t *)file_handle;
-    fprintf_internal(fileno, format, var_args);
+    fprintf_internal(file_handle, format, var_args);
     va_end(var_args);
 }
 

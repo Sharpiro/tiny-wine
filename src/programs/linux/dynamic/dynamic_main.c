@@ -17,8 +17,8 @@ int main(void) {
     size_t num2 = (size_t)pow(2, 4);
 
     /* Call dynamic function tree */
-    fputs("1st call\n", STDOUT);
-    fputs("2nd call\n", STDOUT);
+    fputs("1st call\n", stdout);
+    fputs("2nd call\n", stdout);
     printf("%d + %d = %d\n", num1, num2, num1 + num2);
 
     /* 2nd shared lib dynamic leaf */
