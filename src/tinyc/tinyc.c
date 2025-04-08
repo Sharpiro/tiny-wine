@@ -102,13 +102,8 @@ static void print_number_decimal(FILE *file_handle, size_t num) {
     }
 
     size_t print_start = (size_t)num_buffer + num_start;
-    size_t print_len = num_start == 0 ? 1 : MAX_DIGITS - num_start;
-    struct SysArgs args = {
-        .param_one = (size_t)file_handle,
-        .param_two = print_start,
-        .param_three = print_len,
-    };
-    tinyc_syscall(SYS_write, &args);
+    size_t print_length = num_start == 0 ? 1 : MAX_DIGITS - num_start;
+    print_len(file_handle, (char *)print_start, print_length);
 }
 
 struct PrintItem {
