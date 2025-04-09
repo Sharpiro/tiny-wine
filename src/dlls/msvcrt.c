@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <sys/types.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
@@ -69,33 +68,37 @@ EXPORTABLE int32_t _fileno(FILE *stream) {
     return internal_file->fileno_lazy_maybe;
 }
 
-static bool print_len(FILE *file_handle, const char *data, size_t length) {
-    int32_t file_no = _fileno(file_handle);
-    HANDLE win_handle;
-    if (file_no == STDOUT) {
-        win_handle = (HANDLE)-11;
-    } else if (file_no == STDERR) {
-        win_handle = (HANDLE)-12;
-    } else {
-        return false;
-    }
+// #ifdef WINDOWS
 
-    if (NtWriteFile(
-            win_handle,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            (PVOID)data,
-            (ULONG)length,
-            NULL,
-            NULL
-        ) == -1) {
-        return false;
-    }
+// static bool print_len(FILE *file_handle, const char *data, size_t length) {
+//     int32_t file_no = _fileno(file_handle);
+//     HANDLE win_handle;
+//     if (file_no == STDOUT) {
+//         win_handle = (HANDLE)-11;
+//     } else if (file_no == STDERR) {
+//         win_handle = (HANDLE)-12;
+//     } else {
+//         return false;
+//     }
 
-    return true;
-}
+//     if (NtWriteFile(
+//             win_handle,
+//             NULL,
+//             NULL,
+//             NULL,
+//             NULL,
+//             (PVOID)data,
+//             (ULONG)length,
+//             NULL,
+//             NULL
+//         ) == -1) {
+//         return false;
+//     }
+
+//     return true;
+// }
+
+// #endif
 
 EXPORTABLE void fputs(const char *data, FILE *file_handle) {
     if (data == NULL) {
@@ -262,10 +265,6 @@ static void fprintf_internal(
     }
 
     va_end(var_args);
-}
-
-EXPORTABLE void exit(int32_t exit_code) {
-    NtTerminateProcess((HANDLE)-1, exit_code);
 }
 
 EXPORTABLE int32_t printf(const char *format, ...) {
@@ -462,10 +461,6 @@ EXPORTABLE int __getmainargs(
 }
 
 EXPORTABLE void _onexit([[maybe_unused]] void (*func)()) {
-}
-
-EXPORTABLE void abort() {
-    NtTerminateProcess((HANDLE)-1, 3);
 }
 
 EXPORTABLE void calloc() {

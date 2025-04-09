@@ -73,8 +73,9 @@ tinyc_sys.o: \
 		src/tinyc/tinyc_sys.c
 
 tinyc.o: \
-	src/tinyc/tinyc.h \
-	src/tinyc/tinyc.c
+	src/dlls/msvcrt.h \
+	src/dlls/msvcrt.c \
+	src/dlls/msvcrt_linux.c
 	@$(CC) $(CFLAGS) \
 		-g \
 		-c \
@@ -84,12 +85,12 @@ tinyc.o: \
 		-fPIC \
 		-DAMD64 \
 		-masm=intel \
-		-o tinyc.o \
-		src/tinyc/tinyc.c
+		src/dlls/msvcrt.c \
+		src/dlls/msvcrt_linux.c
 
-libtinyc.a: tinyc_sys.o tinyc.o
+libtinyc.a: tinyc_sys.o msvcrt.o msvcrt_linux.o
 	@echo "building libtinyc.a..."
-	@ar rcs libtinyc.a tinyc_sys.o tinyc.o
+	@ar rcs libtinyc.a tinyc_sys.o msvcrt.o msvcrt_linux.o
 	@$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
 
 libstatic.a: src/programs/linux/string/static_lib.c
@@ -106,7 +107,7 @@ libstatic.a: src/programs/linux/string/static_lib.c
 	@ar rcs libstatic.a static_lib.o
 	@$(OBJDUMP) -M intel -D libstatic.a > libstatic.a.dump
 
-libtinyc.so: tinyc_sys.o tinyc.o
+libtinyc.so: tinyc_sys.o msvcrt.o msvcrt_linux.o
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
@@ -116,7 +117,8 @@ libtinyc.so: tinyc_sys.o tinyc.o
 		-shared \
 		-o libtinyc.so \
 		tinyc_sys.o \
-		tinyc.o
+		msvcrt.o \
+		msvcrt_linux.o
 	@$(OBJDUMP) -M intel -D libtinyc.so > libtinyc.so.dump
 
 libdynamic.so:
@@ -172,6 +174,7 @@ ntdll.dll: \
 msvcrt.dll: \
 		src/dlls/msvcrt.h \
 		src/dlls/msvcrt.c \
+		src/dlls/msvcrt_win.c \
 		ntdll.dll
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
@@ -187,6 +190,7 @@ msvcrt.dll: \
 		-fPIC \
 		-o msvcrt.dll \
 		src/dlls/msvcrt.c \
+		src/dlls/msvcrt_win.c \
 		ntdll.dll
 	@$(OBJDUMP) -M intel -D msvcrt.dll > msvcrt.dll.dump
 
@@ -354,6 +358,7 @@ env: \
 	@$(OBJDUMP) -M intel -D env > env.dump
 
 string: \
+		tinyc_start.o \
 		libtinyc.a \
 		libstatic.a \
 		src/programs/linux/string/string_main.c
@@ -383,6 +388,7 @@ tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 	@$(OBJDUMP) -M intel -D tinyfetch > tinyfetch.dump
 
 static_pie: \
+	libstatic.a \
 	tinyc_start.o \
 	libtinyc.a \
 	src/programs/linux/string/string_main.c
@@ -402,6 +408,7 @@ static_pie: \
 
 
 dynamic: \
+	tinyc_start.o \
 	libtinyc.so \
 	libdynamic.so \
 	src/programs/linux/dynamic/dynamic_main.c

@@ -24,6 +24,10 @@ typedef struct _WinFileInternal {
 #define stdout ((FILE *)((_WinFileInternal *)__iob_func() + 1))
 #define stderr ((FILE *)((_WinFileInternal *)__iob_func() + 2))
 
+#define MAP_FAILED ((void *)-1)
+
+extern int32_t errno;
+
 void *__iob_func();
 
 double pow(double x, double y);
@@ -45,3 +49,5 @@ size_t wcslen(const wchar_t *s);
 int32_t _fileno(FILE *stream);
 
 #define fileno(x) _fileno(x)
+
+bool print_len(FILE *file_handle, const char *data, size_t length);
