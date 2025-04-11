@@ -1,6 +1,5 @@
 #include "../../dlls/macros.h"
-#include "../../tinyc/tinyc.h"
-#include "../../tinyc/tinyc_sys.h"
+#include "../../dlls/msvcrt.h"
 #include "../log.h"
 #include "loader_lib.h"
 
@@ -41,7 +40,7 @@ void dynamic_callback_linux(void) {
             }
             if (relocation_index >= current_lib->runtime_func_relocations_len) {
                 EXIT(
-                    "relocation index %d is not less than %d\n",
+                    "relocation index %zd is not less than %zd\n",
                     relocation_index,
                     current_lib->runtime_func_relocations_len
                 );
@@ -409,7 +408,7 @@ static bool initialize_dynamic_data(
                 var_relocation->offset,
                 &runtime_got_entry
             )) {
-            BAIL("Variable got entry %x not found\n", var_relocation->offset);
+            BAIL("Variable got entry %zx not found\n", var_relocation->offset);
         }
 
         runtime_got_entry->value = var_relocation->value;
@@ -483,7 +482,7 @@ static bool initialize_dynamic_data(
 
 int main(int32_t argc, char **argv, char **envv) {
     if (argc < 2) {
-        EXIT("Filename required\n", argc);
+        EXIT("Filename required\n");
     }
 
     char *filename = argv[1];
@@ -491,9 +490,9 @@ int main(int32_t argc, char **argv, char **envv) {
 
     /* Init heap */
 
-    size_t brk_start = tinyc_sys_brk(0);
+    size_t brk_start = brk(0);
     LOGDEBUG("BRK:, %x\n", brk_start);
-    size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
+    size_t brk_end = brk(brk_start + 0x1000);
     LOGDEBUG("BRK:, %x\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");

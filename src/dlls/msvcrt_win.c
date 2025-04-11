@@ -1,6 +1,10 @@
+#include "macros.h"
 #include "msvcrt.h"
 #include "ntdll.h"
 #include <stddef.h>
+
+#define STDOUT 1
+#define STDERR 2
 
 bool print_len(FILE *file_handle, const char *data, size_t length) {
     int32_t file_no = _fileno(file_handle);
@@ -30,10 +34,10 @@ bool print_len(FILE *file_handle, const char *data, size_t length) {
     return true;
 }
 
-void exit(int32_t exit_code) {
+EXPORTABLE void exit(int32_t exit_code) {
     NtTerminateProcess((HANDLE)-1, exit_code);
 }
 
-void abort() {
+EXPORTABLE void abort() {
     NtTerminateProcess((HANDLE)-1, 3);
 }

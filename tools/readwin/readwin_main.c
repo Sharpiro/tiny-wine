@@ -1,5 +1,5 @@
+#include "../../src/dlls/msvcrt.h"
 #include "../../src/loader/windows/pe_tools.h"
-#include "../../src/tinyc/tinyc.h"
 #include <stddef.h>
 
 // @todo: merge tinyc and msvcrt?
@@ -47,10 +47,10 @@ int main(int argc, char **argv) {
     printf("Image base: 0x%zx\n", image_base);
     printf("Entry: 0x%zx\n", pe_data.entrypoint);
     printf("Section headers start: 0x%zx\n", section_headers_start);
-    printf("Section headers length: %d\n", pe_data.section_headers_len);
-    printf("Section header size: %d\n", sizeof(struct WinSectionHeader));
+    printf("Section headers length: %zd\n", pe_data.section_headers_len);
+    printf("Section header size: %zd\n", sizeof(struct WinSectionHeader));
     printf(
-        "Symbol table offset: 0x%zx\n",
+        "Symbol table offset: 0x%x\n",
         pe_data.winpe_header->image_file_header.pointer_to_symbol_table
     );
     printf(
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
     /* Section headers */
 
-    printf("\nSection Headers (%d):\n", pe_data.section_headers_len);
+    printf("\nSection Headers (%zd):\n", pe_data.section_headers_len);
     for (size_t i = 0; i < pe_data.section_headers_len; i++) {
         struct WinSectionHeader *section_header = &pe_data.section_headers[i];
         size_t file_offset = section_header->file_offset;
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
         char *execute = win_permissions & 2 ? "e" : "-";
         char *visibility = win_permissions & 1 ? "s" : "p";
         printf(
-            "%d, %s, 0x%zx, 0x%zx, 0x%zx, %s%s%s%s\n",
+            "%zd, %s, 0x%x, 0x%x, 0x%zx, %s%s%s%s\n",
             i,
             section_header->name,
             section_header->virtual_size,
@@ -88,28 +88,28 @@ int main(int argc, char **argv) {
     char *import_section_name =
         pe_data.import_section ? (char *)pe_data.import_section->name : "N/A";
     printf(
-        "\nImports (%d) (%s):\n",
+        "\nImports (%zd) (%s):\n",
         pe_data.import_dir_entries_len,
         import_section_name
     );
     for (size_t i = 0; i < pe_data.import_dir_entries_len; i++) {
         struct ImportDirectoryEntry *dir_entry = &pe_data.import_dir_entries[i];
         printf(
-            "%s (%d):\n", dir_entry->lib_name, dir_entry->import_entries_len
+            "%s (%zd):\n", dir_entry->lib_name, dir_entry->import_entries_len
         );
         for (size_t j = 0; j < dir_entry->import_entries_len; j++) {
             struct ImportEntry *import_entry = &dir_entry->import_entries[j];
             printf(
-                "%d: 0x%zx, %s\n", j, import_entry->address, import_entry->name
+                "%zd: 0x%zx, %s\n", j, import_entry->address, import_entry->name
             );
         }
     }
 
-    printf("\nImport Address Table (%d):\n", pe_data.import_address_table_len);
+    printf("\nImport Address Table (%zd):\n", pe_data.import_address_table_len);
     for (size_t i = 0; i < pe_data.import_address_table_len; i++) {
         struct ImportAddressEntry *iat_entry = &pe_data.import_address_table[i];
         printf(
-            "%d: 0x%zx:0x%zx %s\n",
+            "%zd: 0x%zx:0x%zx %s\n",
             i,
             iat_entry->key,
             iat_entry->value,
@@ -122,30 +122,32 @@ int main(int argc, char **argv) {
     const char *export_section_name =
         pe_data.export_section_name ? pe_data.export_section_name : "N/A";
     printf(
-        "\nExports (%d) (%s):\n",
+        "\nExports (%zd) (%s):\n",
         pe_data.export_entries_len,
         export_section_name
     );
     for (size_t i = 0; i < pe_data.export_entries_len; i++) {
         struct ExportEntry *export_entry = &pe_data.export_entries[i];
-        printf("%d: 0x%zx: %s\n", i, export_entry->address, export_entry->name);
+        printf(
+            "%zd: 0x%zx: %s\n", i, export_entry->address, export_entry->name
+        );
     }
 
     /* Relocations */
 
-    printf("\nRelocations (%d):\n", pe_data.relocations.length);
+    printf("\nRelocations (%zd):\n", pe_data.relocations.length);
     for (size_t i = 0; i < pe_data.relocations.length; i++) {
         struct RelocationEntry *relocation = &pe_data.relocations.data[i];
         size_t offset = relocation->block_page_rva + relocation->offset;
         char *type = relocation->type == 0x00 ? "IMAGE_REL_BASED_ABSOLUTE"
             : relocation->type == 0x0a        ? "IMAGE_REL_BASED_DIR64"
                                               : "UNKNOWN";
-        printf("%d: 0x%zx, %s\n", i, offset, type);
+        printf("%zd: 0x%zx, %s\n", i, offset, type);
     }
 
     /* Symbols */
 
-    printf("\nSymbols (%d):\n", pe_data.symbols_len);
+    printf("\nSymbols (%zd):\n", pe_data.symbols_len);
     if (show_symbols) {
         for (size_t i = 0; i < pe_data.symbols_len; i++) {
             struct WinSymbol *symbol = &pe_data.symbols[i];
@@ -161,7 +163,7 @@ int main(int argc, char **argv) {
                                                                : "-";
 
             printf(
-                "%d: 0x%zx: 0x%zx %s, %s %s\n",
+                "%zd: 0x%zx: 0x%x %s, %s %s\n",
                 symbol->raw_index,
                 section_start,
                 symbol->value,

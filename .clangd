@@ -14,3 +14,5 @@ CompileFlags:
     - -Wno-gnu-statement-expression-from-macro-expansion
     - -Wvla
     - -Wno-format-pedantic
+Diagnostics:
+  Suppress: ["unused-includes"]

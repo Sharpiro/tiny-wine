@@ -1,7 +1,6 @@
 #include "../../dlls/macros.h"
+#include "../../dlls/msvcrt.h"
 #include "../../dlls/win_type.h"
-#include "../../tinyc/tinyc.h"
-#include "../../tinyc/tinyc_sys.h"
 #include "../linux/loader_lib.h"
 #include "../log.h"
 #include "../memory_map.h"
@@ -196,7 +195,7 @@ void dynamic_callback_windows(void) {
         }
     }
     if (func_iat_key == 0) {
-        EXIT("func_iat_value_raw '%x' not found\n", func_iat_value_raw);
+        EXIT("func_iat_value_raw '%zx' not found\n", func_iat_value_raw);
     }
 
     LOGTRACE(
@@ -221,7 +220,7 @@ void dynamic_callback_windows(void) {
     }
     if (import_entry == NULL) {
         EXIT(
-            "import_entry %x not found in %s IAT\n",
+            "import_entry %zx not found in %s IAT\n",
             func_iat_value,
             source_iat_object->name
         );
@@ -666,7 +665,7 @@ __attribute__((naked)) void win_loader_implicit_end(void) {
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        EXIT("Filename required\n", argc);
+        EXIT("Filename required\n");
     }
 
     char *filename = argv[1];
@@ -674,9 +673,9 @@ int main(int argc, char **argv) {
 
     /* Init heap */
 
-    size_t brk_start = tinyc_sys_brk(0);
+    size_t brk_start = brk(0);
     LOGDEBUG("BRK:, %x\n", brk_start);
-    size_t brk_end = tinyc_sys_brk(brk_start + 0x1000);
+    size_t brk_end = brk(brk_start + 0x1000);
     LOGDEBUG("BRK:, %x\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");

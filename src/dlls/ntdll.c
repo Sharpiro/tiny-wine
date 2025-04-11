@@ -87,12 +87,13 @@ size_t sys_brk(size_t brk) {
     return syscall(SYS_brk, &args);
 }
 
-size_t mprotect(size_t address, size_t length, size_t protection) {
+// @todo: this is a duped func
+int32_t mprotect(void *address, size_t length, int32_t protection) {
     struct SysArgs args = {
-        .param_one = address,
+        .param_one = (size_t)address,
         .param_two = length,
-        .param_three = protection,
+        .param_three = (size_t)protection,
     };
-    size_t result = syscall(SYS_mprotect, &args);
+    int32_t result = (int32_t)syscall(SYS_mprotect, &args);
     return result;
 }

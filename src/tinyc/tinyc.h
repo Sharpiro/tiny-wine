@@ -19,9 +19,6 @@ extern const int32_t internal_files[];
 #define stdout (FILE *)(internal_files + 1)
 #define stderr (FILE *)(internal_files + 2)
 
-#define STDOUT 1
-#define STDERR 2
-
 #define ENOENT 2  /* No such file or directory */
 #define EAGAIN 11 /* Try again */
 #define EACCES 13 /* Permission denied */
@@ -51,7 +48,7 @@ void fputs(const char *data, FILE *file_handle);
 
 void fprintf(FILE *file_handle, const char *format, ...);
 
-void printf(const char *format, ...);
+int32_t printf(const char *format, ...);
 
 void exit(int32_t code);
 

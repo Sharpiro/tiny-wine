@@ -1,4 +1,4 @@
-#include "../../../tinyc/tinyc.h"
+#include "../../../dlls/msvcrt.h"
 #include "stddef.h"
 #include <string.h>
 
@@ -19,11 +19,11 @@ int main(void) {
     /* Call dynamic function tree */
     fputs("1st call\n", stdout);
     fputs("2nd call\n", stdout);
-    printf("%d + %d = %d\n", num1, num2, num1 + num2);
+    printf("%zd + %zd = %zd\n", num1, num2, num1 + num2);
 
     /* 2nd shared lib dynamic leaf */
     const char *str = "how now brown cow";
-    printf("2nd shared lib length of '%s': %d\n", str, strlen(str));
+    printf("2nd shared lib length of '%s': %zd\n", str, strlen(str));
 
     /* Dynamic variable relocation */
     int32_t *dynamic_var_data = &test_number_data;
@@ -50,5 +50,5 @@ int main(void) {
 
     /** Many parameter function */
     size_t add_many_result = add_many(1, 2, 3, 4, 5, 6, 7, 8);
-    printf("add_many_result: %d\n", add_many_result);
+    printf("add_many_result: %zd\n", add_many_result);
 }

@@ -6,12 +6,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
-#pragma clang diagnostic ignored "-Winvalid-noreturn"
-#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
-#pragma clang diagnostic ignored "-Wbuiltin-requires-header"
-
 EXPORTABLE int32_t errno = 0;
 
 static size_t heap_start = 0;
@@ -63,42 +57,24 @@ EXPORTABLE size_t strlen(const char *data) {
     return len;
 }
 
+EXPORTABLE int32_t strcmp(const char *buffer_a, const char *buffer_b) {
+    for (size_t i = 0; true; i++) {
+        char a = buffer_a[i];
+        char b = buffer_b[i];
+        if (a == 0 && b == 0) {
+            break;
+        }
+        if (a != b) {
+            return a - b;
+        }
+    }
+    return 0;
+}
+
 EXPORTABLE int32_t _fileno(FILE *stream) {
     _WinFileInternal *internal_file = (_WinFileInternal *)stream;
     return internal_file->fileno_lazy_maybe;
 }
-
-// #ifdef WINDOWS
-
-// static bool print_len(FILE *file_handle, const char *data, size_t length) {
-//     int32_t file_no = _fileno(file_handle);
-//     HANDLE win_handle;
-//     if (file_no == STDOUT) {
-//         win_handle = (HANDLE)-11;
-//     } else if (file_no == STDERR) {
-//         win_handle = (HANDLE)-12;
-//     } else {
-//         return false;
-//     }
-
-//     if (NtWriteFile(
-//             win_handle,
-//             NULL,
-//             NULL,
-//             NULL,
-//             NULL,
-//             (PVOID)data,
-//             (ULONG)length,
-//             NULL,
-//             NULL
-//         ) == -1) {
-//         return false;
-//     }
-
-//     return true;
-// }
-
-// #endif
 
 EXPORTABLE void fputs(const char *data, FILE *file_handle) {
     if (data == NULL) {

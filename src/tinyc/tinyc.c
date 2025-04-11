@@ -1,4 +1,4 @@
-#include "tinyc.h"
+#include "../dlls/msvcrt.h"
 #include "../loader/log.h"
 #include "tinyc_sys.h"
 #include <stdarg.h>
@@ -18,7 +18,7 @@ int32_t fileno(FILE *stream) {
     return *internal_file;
 }
 
-static bool print_len(FILE *file_handle, const char *data, size_t length) {
+bool print_len(FILE *file_handle, const char *data, size_t length) {
     int32_t file_no = fileno(file_handle);
     struct SysArgs args = {
         .param_one = (size_t)file_no,
@@ -197,18 +197,22 @@ static void fprintf_internal(
     va_end(var_args);
 }
 
-void printf(const char *format, ...) {
+int32_t printf(const char *format, ...) {
     va_list var_args;
     va_start(var_args, format);
     fprintf_internal(stdout, format, var_args);
     va_end(var_args);
+    return 0;
 }
 
-void fprintf(FILE *file_handle, const char *format, ...) {
+int32_t fprintf(
+    FILE *__restrict file_handle, const char *__restrict format, ...
+) {
     va_list var_args;
     va_start(var_args, format);
     fprintf_internal(file_handle, format, var_args);
     va_end(var_args);
+    return 0;
 }
 
 void exit(int32_t code) {

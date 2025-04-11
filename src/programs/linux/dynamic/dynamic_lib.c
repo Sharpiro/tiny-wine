@@ -1,4 +1,4 @@
-#include "../../../tinyc/tinyc.h"
+#include "../../../dlls/msvcrt.h"
 #include <pwd.h>
 #include <stdbool.h>
 #include <stddef.h>

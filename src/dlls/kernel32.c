@@ -65,7 +65,7 @@ bool VirtualProtect(
     [[maybe_unused]] DWORD flNewProtect,
     [[maybe_unused]] PDWORD lpflOldProtect
 ) {
-    size_t protection;
+    int32_t protection;
     if (flNewProtect == PAGE_EXECUTE_READWRITE) {
         protection = 7;
     } else {
@@ -73,7 +73,7 @@ bool VirtualProtect(
     }
 
     *lpflOldProtect = 0xff;
-    mprotect((size_t)lpAddress, dwSize, protection);
+    mprotect(lpAddress, dwSize, protection);
     return true;
 }
 

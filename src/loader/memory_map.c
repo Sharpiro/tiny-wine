@@ -1,6 +1,7 @@
 #include "memory_map.h"
-#include "../tinyc/tinyc.h"
+#include "../dlls/msvcrt.h"
 #include "log.h"
+#include <sys/utsname.h>
 
 #define LOADER_BUFFER_LEN 0x210'000
 
@@ -116,7 +117,7 @@ bool map_memory_regions(
         );
         if ((size_t)addr != memory_region->start) {
             BAIL(
-                "failed trying to map %x, errorno %d: %s\n",
+                "failed trying to map %zx, errorno %d: %s\n",
                 memory_region->start,
                 errno,
                 strerror(errno)

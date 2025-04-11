@@ -1,10 +1,9 @@
-#include "../../../tinyc/tinyc.h"
+#include "../../../dlls/msvcrt.h"
 #include <pwd.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/utsname.h>
-#include <unistd.h>
 
 bool read_to_string(const char *path, char **content);
 
@@ -85,7 +84,7 @@ int main(int argc, char **argv) {
     double uptime_hours = (uptime_days - (double)(size_t)uptime_days) * 24;
     double uptime_minutes = (uptime_hours - (double)(size_t)uptime_hours) * 60;
     printf(
-        "Uptime: %d days, %d hours, %d minutes\n",
+        "Uptime: %zd days, %zd hours, %zd minutes\n",
         (size_t)uptime_days,
         (size_t)uptime_hours,
         (size_t)uptime_minutes

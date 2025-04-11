@@ -32,4 +32,4 @@ NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus);
 
 size_t sys_brk(size_t brk);
 
-size_t mprotect(size_t address, size_t length, size_t protection);
+int32_t mprotect(void *address, size_t length, int32_t protection);

@@ -1,5 +1,5 @@
 #include "loader_lib.h"
-#include "../../tinyc/tinyc.h"
+#include "../../dlls/msvcrt.h"
 #include "../log.h"
 #include "../memory_map.h"
 #include <stddef.h>
@@ -213,7 +213,7 @@ bool get_memory_regions(
         }
         if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
             LOGWARNING(
-                "PH %d: zero filesize w/ non-zero offset may not be "
+                "PH %zd: zero filesize w/ non-zero offset may not be "
                 "unsupported\n",
                 i + 1
             );
