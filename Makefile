@@ -2,6 +2,11 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
+# @todo: generate header deps -MMD and -MP
+# @todo: move objdump to script or enable w/ env var?
+# @todo: don't dump into main directory? build dir?
+# @todo: lowercase kernel32
+
 OBJDUMP ?= objdump
 
 STANDARD_OPTIONS = \
@@ -44,7 +49,9 @@ windows: \
 	windynamic.exe \
 	windynamicfull.exe
 
-tinyc_start.o: src/tinyc/tinyc_start.c
+build/%.o: src/%.c
+	@mkdir -p $(dir $@)
+	@echo "building $@..."
 	@$(CC) $(CFLAGS) \
 		-g \
 		-c \
@@ -54,30 +61,13 @@ tinyc_start.o: src/tinyc/tinyc_start.c
 		-fPIC \
 		-DAMD64 \
 		-masm=intel \
-		-o tinyc_start.o \
-		src/tinyc/tinyc_start.c
+		$< \
+		-o $@
 
-tinyc_temp: \
-	src/dlls/msvcrt.h \
-	src/dlls/msvcrt.c \
-	src/dlls/msvcrt_linux.c
-	@echo "building tinyc_temp..."
-	@$(CC) $(CFLAGS) \
-		-g \
-		-c \
-		-O0 \
-		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
-		-fPIC \
-		-DAMD64 \
-		-masm=intel \
-		src/dlls/msvcrt.c \
-		src/dlls/msvcrt_linux.c
-
-libtinyc.a: tinyc_temp
+libtinyc.a: build/dlls/msvcrt.o build/dlls/msvcrt_linux.o
 	@echo "building libtinyc.a..."
-	@ar rcs libtinyc.a msvcrt.o msvcrt_linux.o
-	@$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
+	@ar rcs libtinyc.a build/dlls/msvcrt.o build/dlls/msvcrt_linux.o
+	@# @$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
 
 libstatic.a: src/programs/linux/string/static_lib.c
 	@$(CC) $(CFLAGS) \
@@ -91,9 +81,9 @@ libstatic.a: src/programs/linux/string/static_lib.c
 		-masm=intel \
 		-o static_lib.o src/programs/linux/string/static_lib.c
 	@ar rcs libstatic.a static_lib.o
-	@$(OBJDUMP) -M intel -D libstatic.a > libstatic.a.dump
+	@# @$(OBJDUMP) -M intel -D libstatic.a > libstatic.a.dump
 
-libtinyc.so: tinyc_temp
+libtinyc.so: build/dlls/msvcrt.o build/dlls/msvcrt_linux.o
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
@@ -102,9 +92,9 @@ libtinyc.so: tinyc_temp
 		-nostdlib -static \
 		-shared \
 		-o libtinyc.so \
-		msvcrt.o \
-		msvcrt_linux.o
-	@$(OBJDUMP) -M intel -D libtinyc.so > libtinyc.so.dump
+		build/dlls/msvcrt.o \
+		build/dlls/msvcrt_linux.o
+	@# @$(OBJDUMP) -M intel -D libtinyc.so > libtinyc.so.dump
 
 libdynamic.so:
 	@$(CC) $(CFLAGS) \
@@ -117,7 +107,7 @@ libdynamic.so:
 		-fPIC \
 		-o libdynamic.so \
 		src/programs/linux/dynamic/dynamic_lib.c
-	@$(OBJDUMP) -M intel -D libdynamic.so > libdynamic.so.dump
+	@# @$(OBJDUMP) -M intel -D libdynamic.so > libdynamic.so.dump
 
 libntdll.so: \
 		src/dlls/ntdll.h \
@@ -135,7 +125,7 @@ libntdll.so: \
 		-fPIC \
 		-o libntdll.so \
 		src/dlls/ntdll.c
-	@$(OBJDUMP) -M intel -D libntdll.so > libntdll.so.dump
+	@# @$(OBJDUMP) -M intel -D libntdll.so > libntdll.so.dump
 
 ntdll.dll: \
 		src/dlls/ntdll.h \
@@ -154,7 +144,7 @@ ntdll.dll: \
 		-fPIC \
 		-o ntdll.dll \
 		src/dlls/ntdll.c
-	@$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
+	@# @$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 
 msvcrt.dll: \
 		src/dlls/msvcrt.h \
@@ -177,7 +167,7 @@ msvcrt.dll: \
 		src/dlls/msvcrt.c \
 		src/dlls/msvcrt_win.c \
 		ntdll.dll
-	@$(OBJDUMP) -M intel -D msvcrt.dll > msvcrt.dll.dump
+	@# @$(OBJDUMP) -M intel -D msvcrt.dll > msvcrt.dll.dump
 
 KERNEL32.dll: \
 		ntdll.dll \
@@ -197,7 +187,7 @@ KERNEL32.dll: \
 		-o KERNEL32.dll \
 		ntdll.dll \
 		src/dlls/kernel32.c 
-	@$(OBJDUMP) -M intel -D KERNEL32.dll > KERNEL32.dll.dump
+	@# @$(OBJDUMP) -M intel -D KERNEL32.dll > KERNEL32.dll.dump
 
 windynamiclib.dll: \
 		ntdll.dll \
@@ -219,7 +209,7 @@ windynamiclib.dll: \
 		-o windynamiclib.dll \
 		ntdll.dll \
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
-	@$(OBJDUMP) -M intel -D windynamiclib.dll > windynamiclib.dll.dump
+	@# @$(OBJDUMP) -M intel -D windynamiclib.dll > windynamiclib.dll.dump
 
 windynamiclibfull.dll: \
 		src/programs/windows/win_dynamic/win_dynamic_lib.h \
@@ -238,7 +228,7 @@ windynamiclibfull.dll: \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o windynamiclibfull.dll \
 		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
-	@$(OBJDUMP) -M intel -D windynamiclibfull.dll > windynamiclibfull.dll.dump
+	@# @$(OBJDUMP) -M intel -D windynamiclibfull.dll > windynamiclibfull.dll.dump
 
 loader: \
 	src/list.h \
@@ -249,7 +239,7 @@ loader: \
 	src/loader/linux/loader_lib.c \
 	src/loader/linux/elf_tools.h \
 	src/loader/linux/elf_tools.c \
-	tinyc_start.o \
+	build/tinyc/tinyc_start.o \
 	libtinyc.a
 	@echo "building loader..."
 	@$(CC) $(CFLAGS) \
@@ -265,9 +255,9 @@ loader: \
 		src/loader/linux/loader_main.c \
 		src/loader/linux/loader_lib.c \
 		src/loader/linux/elf_tools.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
-	@$(OBJDUMP) -M intel -D loader > loader.dump
+	@# @$(OBJDUMP) -M intel -D loader > loader.dump
 
 winloader: \
 		src/list.h \
@@ -282,7 +272,7 @@ winloader: \
 		src/loader/linux/loader_lib.c \
 		src/loader/linux/elf_tools.h \
 		src/loader/linux/elf_tools.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a 
 	@echo "building winloader..."
 	@$(CC) $(CFLAGS) \
@@ -300,9 +290,9 @@ winloader: \
 		src/loader/windows/pe_tools.c \
 		src/loader/linux/loader_lib.c \
 		src/loader/linux/elf_tools.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
-	@$(OBJDUMP) -M intel -D winloader > winloader.dump
+	@# @$(OBJDUMP) -M intel -D winloader > winloader.dump
 
 unit_test: \
 		src/programs/linux/unit_test/unit_test_main.c \
@@ -313,7 +303,7 @@ unit_test: \
 		src/loader/linux/loader_lib.c \
 		src/loader/windows/win_loader_lib.h \
 		src/loader/windows/win_loader_lib.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
@@ -324,12 +314,12 @@ unit_test: \
 		src/loader/memory_map.c \
 		src/loader/linux/loader_lib.c \
 		src/loader/windows/win_loader_lib.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
 
 env: \
 		src/programs/linux/env/env_main.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
 	@echo "building env..."
 	@$(CC) $(CFLAGS) -g \
@@ -338,12 +328,12 @@ env: \
 		$(STANDARD_OPTIONS) \
 		-o env \
 		src/programs/linux/env/env_main.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
-	@$(OBJDUMP) -M intel -D env > env.dump
+	@# @$(OBJDUMP) -M intel -D env > env.dump
 
 string: \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a \
 		libstatic.a \
 		src/programs/linux/string/string_main.c
@@ -354,12 +344,12 @@ string: \
 		$(STANDARD_OPTIONS) \
 		-o string \
 		src/programs/linux/string/string_main.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a \
 		libstatic.a
-	@$(OBJDUMP) -M intel -D string > string.dump
+	@# @$(OBJDUMP) -M intel -D string > string.dump
 
-tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
+tinyfetch: build/tinyc/tinyc_start.o libtinyc.so libdynamic.so
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib \
@@ -369,12 +359,12 @@ tinyfetch: tinyc_start.o libtinyc.so libdynamic.so
 		./libtinyc.so \
 		./libdynamic.so \
 		src/programs/linux/tinyfetch/tinyfetch_main.c \
-		tinyc_start.o
-	@$(OBJDUMP) -M intel -D tinyfetch > tinyfetch.dump
+		build/tinyc/tinyc_start.o
+	@# @$(OBJDUMP) -M intel -D tinyfetch > tinyfetch.dump
 
 static_pie: \
 	libstatic.a \
-	tinyc_start.o \
+	build/tinyc/tinyc_start.o \
 	libtinyc.a \
 	src/programs/linux/string/string_main.c
 	@echo "building static_pie..."
@@ -386,14 +376,14 @@ static_pie: \
 		$(STANDARD_OPTIONS) \
 		-o static_pie \
 		src/programs/linux/string/string_main.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a \
 		libstatic.a
-	@$(OBJDUMP) -M intel -D static_pie > static_pie.dump
+	@# @$(OBJDUMP) -M intel -D static_pie > static_pie.dump
 
 
 dynamic: \
-	tinyc_start.o \
+	build/tinyc/tinyc_start.o \
 	libtinyc.so \
 	libdynamic.so \
 	src/programs/linux/dynamic/dynamic_main.c
@@ -413,8 +403,8 @@ dynamic: \
 		./libdynamic.so \
 		./libtinyc.so \
 		src/programs/linux/dynamic/dynamic_main.c \
-		tinyc_start.o
-	@$(OBJDUMP) -M intel -D dynamic > dynamic.dump
+		build/tinyc/tinyc_start.o
+	@# @$(OBJDUMP) -M intel -D dynamic > dynamic.dump
 
 windynamic.exe: \
 		msvcrt.dll \
@@ -440,7 +430,7 @@ windynamic.exe: \
 		windynamiclib.dll \
 		src/programs/windows/win_dynamic/win_dynamic_main.c \
 		src/programs/windows/win_dynamic/runtime.c
-	@$(OBJDUMP) -M intel -D windynamic.exe > windynamic.exe.dump
+	@# @$(OBJDUMP) -M intel -D windynamic.exe > windynamic.exe.dump
 
 windynamicfull.exe: \
 		winloader \
@@ -461,14 +451,14 @@ windynamicfull.exe: \
 		-o windynamicfull.exe \
 		windynamiclibfull.dll \
 		src/programs/windows/win_dynamic/win_dynamic_full_main.c
-	@$(OBJDUMP) -M intel -D windynamicfull.exe > windynamicfull.exe.dump
+	@# @$(OBJDUMP) -M intel -D windynamicfull.exe > windynamicfull.exe.dump
 
 readwin: \
 		tools/readwin/readwin_main.c \
 		src/list.h \
 		src/loader/windows/pe_tools.h \
 		src/loader/windows/pe_tools.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
 	@echo "building readwin..."
 	@$(CC) $(CFLAGS) -g \
@@ -479,12 +469,12 @@ readwin: \
 		-o readwin \
 		tools/readwin/readwin_main.c \
 		src/loader/windows/pe_tools.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
 
 readlin: \
 		tools/readlin/readlin_main.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a \
 		src/loader/linux/elf_tools.h \
 		src/loader/linux/elf_tools.c
@@ -497,10 +487,11 @@ readlin: \
 		-o readlin \
 		tools/readlin/readlin_main.c \
 		src/loader/linux/elf_tools.c \
-		tinyc_start.o \
+		build/tinyc/tinyc_start.o \
 		libtinyc.a
 
 clean:
+	@rm -rf ./build
 	@rm -f \
 		*.dump *.o *.s *.a *.so *.dll *.exe \
 		loader env string tinyfetch dynamic unit_test static_pie winloader readwin \
