@@ -528,7 +528,21 @@ EXPORTABLE void localeconv() {
     exit(42);
 }
 
-EXPORTABLE void strerror() {
-    fprintf(stderr, "strerror unimplemented\n");
-    exit(42);
+EXPORTABLE char *strerror(int32_t errno) {
+    switch (errno) {
+    case ENOENT:
+        return "No such file or directory";
+    case EAGAIN:
+        return "Resource temporarily unavailable";
+    case EACCES:
+        return "Permission denied";
+    case EEXIST:
+        return "File exists";
+    case EINVAL:
+        return "Invalid argument";
+    case ERANGE:
+        return "Math result not representable";
+    default:
+        return "Unknown";
+    }
 }

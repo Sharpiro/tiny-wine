@@ -14,6 +14,7 @@ A basic dynamic loader for Linux and Windows.
 - No environment variables
 - No AVX
 - No Printing floats
+- dlls must be in same dir as binary
 
 ## Prerequisites
 
