@@ -2,10 +2,7 @@
 #include "../../src/loader/windows/pe_tools.h"
 #include <stddef.h>
 
-// @todo: merge tinyc and msvcrt?
 // @todo: get working via winloader?
-// @todo: reduce number of linux test program binaries
-// @todo: dedicated include directory?
 
 int main(int argc, char **argv) {
     if (argc < 2 || memcmp(argv[1], "--", 2) == 0) {
