@@ -835,8 +835,8 @@ int main(int argc, char **argv) {
     if (gs_mem == NULL) {
         EXIT("gs_region memory init failed\n");
     }
-    if (tinyc_sys_arch_prctl(ARCH_SET_GS, (size_t)gs_mem) != 0) {
-        EXIT("tinyc_sys_arch_prctl failed\n");
+    if (arch_prctl(ARCH_SET_GS, (size_t)gs_mem) != 0) {
+        EXIT("arch_prctl failed\n");
     }
     USHORT CMD_MAX_LEN = 0x100;
     WCHAR *cmd = loader_malloc_arena(sizeof(WCHAR) * CMD_MAX_LEN);

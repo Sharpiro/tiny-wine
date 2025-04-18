@@ -80,7 +80,7 @@ NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
     return result;
 }
 
-size_t sys_brk(size_t brk) {
+size_t brk(size_t brk) {
     struct SysArgs args = {
         .param_one = brk,
     };

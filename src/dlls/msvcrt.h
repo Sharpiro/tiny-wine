@@ -64,6 +64,10 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
 int32_t memcmp(const void *__s1, const void *__s2, size_t __n);
 
+// @todo: windows only
+
+#define fileno(x) _fileno(x)
+
 void *__iob_func();
 
 double pow(double x, double y);
@@ -84,13 +88,15 @@ size_t wcslen(const wchar_t *s);
 
 int32_t _fileno(FILE *stream);
 
-#define fileno(x) _fileno(x)
-
-bool print_len(FILE *file_handle, const char *data, size_t length);
-
 void fputs(const char *data, FILE *file_handle);
 
+char *getcwd(char *buffer, size_t size);
+
+int32_t strcmp(const char *__s1, const char *__s2);
+
 // @todo: these are linux syscalls
+
+ssize_t write(int32_t fd, const char *data, size_t length);
 
 int32_t open(const char *path, int32_t flags);
 
@@ -99,8 +105,6 @@ int32_t close(int32_t fd);
 ssize_t read(int32_t fd, void *buf, size_t count);
 
 off_t lseek(int32_t fd, off_t offset, int whence);
-
-int32_t strcmp(const char *__s1, const char *__s2);
 
 void *mmap(
     void *address,
@@ -117,8 +121,6 @@ int32_t getpid(void);
 
 size_t brk(size_t brk);
 
-char *getcwd(char *buffer, size_t size);
-
 uint32_t getuid();
 
-size_t tinyc_sys_arch_prctl(size_t code, size_t address);
+size_t arch_prctl(size_t code, size_t address);

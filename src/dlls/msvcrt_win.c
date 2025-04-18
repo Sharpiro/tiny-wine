@@ -6,32 +6,27 @@
 #define STDOUT 1
 #define STDERR 2
 
-bool print_len(FILE *file_handle, const char *data, size_t length) {
-    int32_t file_no = _fileno(file_handle);
+ssize_t write(int32_t fd, const char *data, size_t length) {
     HANDLE win_handle;
-    if (file_no == STDOUT) {
+    if (fd == STDOUT) {
         win_handle = (HANDLE)-11;
-    } else if (file_no == STDERR) {
+    } else if (fd == STDERR) {
         win_handle = (HANDLE)-12;
     } else {
-        return false;
+        return -1;
     }
 
-    if (NtWriteFile(
-            win_handle,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            (PVOID)data,
-            (ULONG)length,
-            NULL,
-            NULL
-        ) == -1) {
-        return false;
-    }
-
-    return true;
+    return NtWriteFile(
+        win_handle,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        (PVOID)data,
+        (ULONG)length,
+        NULL,
+        NULL
+    );
 }
 
 EXPORTABLE void exit(int32_t exit_code) {

@@ -2,10 +2,10 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: migrate to build dir
+# @todo: merge tinyc and msvcrt?
+# @todo: rename msvcrt
 # @todo: generate header deps -MMD and -MP
 # @todo: move objdump to script or enable w/ env var?
-# @todo: merge tinyc and msvcrt?
 # @todo: reduce number of linux test program binaries
 # @todo: dedicated include directory?
 

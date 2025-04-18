@@ -76,15 +76,16 @@ EXPORTABLE int32_t _fileno(FILE *stream) {
     return internal_file->fileno_lazy_maybe;
 }
 
-EXPORTABLE void fputs(const char *data, FILE *file_handle) {
+EXPORTABLE void fputs(const char *data, FILE *stream) {
+    int32_t file_no = _fileno(stream);
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
-        print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
+        write(file_no, NULL_STRING, sizeof(NULL_STRING) - 1);
         return;
     }
 
     size_t str_len = strlen(data);
-    print_len(file_handle, data, str_len);
+    write(file_no, data, str_len);
 }
 
 EXPORTABLE void *__iob_func() {
@@ -105,7 +106,7 @@ EXPORTABLE double pow(double x, double y) {
     return product;
 }
 
-static void print_number_hex(FILE *file_handle, size_t num) {
+static void print_number_hex(FILE *stream, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789abcdef";
 
@@ -125,10 +126,11 @@ static void print_number_hex(FILE *file_handle, size_t num) {
         }
     }
 
-    print_len(file_handle, (char *)num_buffer, buffer_index);
+    int32_t file_no = _fileno(stream);
+    write(file_no, (char *)num_buffer, buffer_index);
 }
 
-static void print_number_decimal(FILE *file_handle, size_t num) {
+static void print_number_decimal(FILE *stream, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789";
 
@@ -148,8 +150,9 @@ static void print_number_decimal(FILE *file_handle, size_t num) {
     }
 
     size_t print_start = (size_t)num_buffer + num_start;
-    size_t print_length = num_start == 0 ? 1 : MAX_DIGITS - num_start;
-    print_len(file_handle, (char *)print_start, print_length);
+    size_t writegth = num_start == 0 ? 1 : MAX_DIGITS - num_start;
+    int32_t file_no = _fileno(stream);
+    write(file_no, (char *)print_start, writegth);
 }
 
 struct PrintItem {
@@ -160,7 +163,7 @@ struct PrintItem {
 };
 
 static void fprintf_internal(
-    FILE *file_handle, const char *format, va_list var_args
+    FILE *stream, const char *format, va_list var_args
 ) {
     size_t print_items_len = 0;
     struct PrintItem print_items[128] = {0};
@@ -200,22 +203,23 @@ static void fprintf_internal(
     };
     print_items[print_items_len++] = print_item;
 
+    int32_t file_no = _fileno(stream);
     for (size_t i = 0; i < print_items_len; i++) {
         struct PrintItem print_item = print_items[i];
         switch (print_item.formatter) {
         case 0x00: {
             const char *data = format + print_item.start;
-            print_len(file_handle, data, print_item.length);
+            write(file_no, data, print_item.length);
             break;
         }
         case 's': {
             char *data = va_arg(var_args, char *);
-            fputs(data, file_handle);
+            fputs(data, stream);
             break;
         }
         case 'c': {
             char data = va_arg(var_args, char);
-            print_len(file_handle, &data, 1);
+            write(file_no, &data, 1);
             break;
         }
         case 'p':
@@ -223,18 +227,18 @@ static void fprintf_internal(
             size_t data = print_item.is_large_formatter
                 ? va_arg(var_args, uint64_t)
                 : va_arg(var_args, uint32_t);
-            print_number_hex(file_handle, data);
+            print_number_hex(stream, data);
             break;
         }
         case 'd': {
             size_t data = print_item.is_large_formatter
                 ? va_arg(var_args, uint64_t)
                 : va_arg(var_args, uint32_t);
-            print_number_decimal(file_handle, data);
+            print_number_decimal(stream, data);
             break;
         }
         default: {
-            fputs("<unknown>", file_handle);
+            fputs("<unknown>", stream);
             break;
         }
         }
@@ -316,13 +320,13 @@ EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
     if (heap_start == 0) {
-        heap_start = sys_brk(0);
+        heap_start = brk(0);
         heap_end = heap_start;
         heap_index = heap_start;
     }
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        heap_end = sys_brk(heap_end + extend_size);
+        heap_end = brk(heap_end + extend_size);
     }
 
     if (heap_end <= heap_start) {
@@ -497,7 +501,8 @@ EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
 
 EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
     char c_char = (char)c;
-    if (!print_len(stream, &c_char, 1)) {
+    int32_t file_no = _fileno(stream);
+    if (!write(file_no, &c_char, 1)) {
         return -1;
     }
 
