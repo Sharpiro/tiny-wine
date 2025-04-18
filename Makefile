@@ -107,9 +107,10 @@ build/libntdll.so: \
 	@# @$(OBJDUMP) -M intel -D libntdll.so > libntdll.so.dump
 
 ntdll.dll: \
+		build/libntdll.so \
 		src/dlls/ntdll.h \
 		src/dlls/ntdll.c \
-		build/libntdll.so
+		src/dlls/msvcrt_linux.c
 	@echo "building ntdll.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -117,11 +118,13 @@ ntdll.dll: \
 		--target=x86_64-w64-windows-gnu \
 		-g \
 		-DAMD64 \
+		-DDLL \
 		-masm=intel \
 		-nostdlib \
 		-shared \
 		-fPIC \
 		-o build/ntdll.dll \
+		src/dlls/msvcrt_linux.c \
 		src/dlls/ntdll.c
 	@# @$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 

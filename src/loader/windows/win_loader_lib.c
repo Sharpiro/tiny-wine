@@ -1,5 +1,6 @@
 #include "./win_loader_lib.h"
 #include "../../dlls/msvcrt.h"
+#include "../../dlls/msvcrt_linux.h"
 #include "../../dlls/ntdll.h"
 #include "../log.h"
 #include <stddef.h>

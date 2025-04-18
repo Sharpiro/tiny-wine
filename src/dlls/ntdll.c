@@ -1,4 +1,8 @@
 #include "ntdll.h"
+#include "macros.h"
+#include "msvcrt_linux.h"
+
+int32_t errno = 0;
 
 void DllMainCRTStartup(void) {
 }
@@ -47,7 +51,7 @@ static size_t sys_exit(int32_t code) {
     return syscall(SYS_exit, &args);
 }
 
-NTSTATUS NtWriteFile(
+EXPORTABLE NTSTATUS NtWriteFile(
     HANDLE file_handle,
     [[maybe_unused]] HANDLE event,
     [[maybe_unused]] PVOID apc_routine,
@@ -71,7 +75,8 @@ NTSTATUS NtWriteFile(
     return result;
 }
 
-NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
+EXPORTABLE NTSTATUS
+NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
     if ((int64_t)ProcessHandle != -1) {
         return -1;
     }
@@ -80,20 +85,10 @@ NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
     return result;
 }
 
-size_t brk(size_t brk) {
-    struct SysArgs args = {
-        .param_one = brk,
-    };
-    return syscall(SYS_brk, &args);
+size_t brk_win(size_t brk_address) {
+    return brk(brk_address);
 }
 
-// @todo: this is a duped func
-int32_t mprotect(void *address, size_t length, int32_t protection) {
-    struct SysArgs args = {
-        .param_one = (size_t)address,
-        .param_two = length,
-        .param_three = (size_t)protection,
-    };
-    int32_t result = (int32_t)syscall(SYS_mprotect, &args);
-    return result;
+int32_t mprotect_win(void *address, size_t length, int32_t protection) {
+    return mprotect(address, length, protection);
 }

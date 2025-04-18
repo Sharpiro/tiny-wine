@@ -30,6 +30,6 @@ int32_t NtWriteFile(
 
 NTSTATUS NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus);
 
-size_t brk(size_t brk);
+size_t brk_win(size_t brk);
 
-int32_t mprotect(void *address, size_t length, int32_t protection);
+int32_t mprotect_win(void *address, size_t length, int32_t protection);

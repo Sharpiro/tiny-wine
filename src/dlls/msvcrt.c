@@ -320,13 +320,13 @@ EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
     if (heap_start == 0) {
-        heap_start = brk(0);
+        heap_start = brk_win(0);
         heap_end = heap_start;
         heap_index = heap_start;
     }
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        heap_end = brk(heap_end + extend_size);
+        heap_end = brk_win(heap_end + extend_size);
     }
 
     if (heap_end <= heap_start) {

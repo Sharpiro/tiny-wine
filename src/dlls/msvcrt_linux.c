@@ -1,9 +1,7 @@
+#include "msvcrt_linux.h"
 #include "msvcrt.h"
 #include "sys.h"
 #include <stddef.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <sys/utsname.h>
 
 size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;

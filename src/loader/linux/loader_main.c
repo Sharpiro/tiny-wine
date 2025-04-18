@@ -1,5 +1,6 @@
 #include "../../dlls/macros.h"
 #include "../../dlls/msvcrt.h"
+#include "../../dlls/msvcrt_linux.h"
 #include "../log.h"
 #include "loader_lib.h"
 

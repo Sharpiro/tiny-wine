@@ -6,10 +6,10 @@
 #pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 #pragma clang diagnostic ignored "-Wbuiltin-requires-header"
 
+#include "linux_types.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <sys/types.h>
 
 #define ENOENT 2  /* No such file or directory */
 #define EAGAIN 11 /* Try again */
@@ -118,8 +118,6 @@ void *mmap(
 int32_t munmap(void *address, size_t length);
 
 int32_t getpid(void);
-
-size_t brk(size_t brk);
 
 uint32_t getuid();
 

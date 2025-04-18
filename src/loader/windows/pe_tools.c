@@ -1,5 +1,6 @@
 
 #include "./pe_tools.h"
+#include "../../dlls/linux_types.h"
 #include "../../dlls/msvcrt.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -31,7 +32,7 @@ static bool find_import_entry(
 
 static bool mem_is_empty(const void *buffer, size_t n) {
     for (size_t i = 0; i < n; i++) {
-        u_int8_t byte = ((u_int8_t *)buffer)[i];
+        uint8_t byte = ((uint8_t *)buffer)[i];
         if (byte != 0) {
             return false;
         }
