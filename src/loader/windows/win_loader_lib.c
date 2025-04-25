@@ -147,7 +147,7 @@ bool map_import_address_table(
         const struct RuntimeImportAddressEntry *current_import =
             &import_address_table->data[i];
         if (current_import->value == 0) {
-            LOGDEBUG("IAT %x is 0\n", current_import->key);
+            LOGDEBUG("IAT %zx is 0\n", current_import->key);
             continue;
         }
 
@@ -155,7 +155,7 @@ bool map_import_address_table(
         *runtime_import_key = current_import->value;
 
         LOGDEBUG(
-            "IAT: %x, %x, %s\n",
+            "IAT: %zx, %zx, %s\n",
             current_import->key,
             current_import->value,
             current_import->is_variable ? "variable" : "function"

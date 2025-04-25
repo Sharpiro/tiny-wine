@@ -1,16 +1,16 @@
 #pragma once
 
+#include "linux_types.h"
 #include "macros.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
 #pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 #pragma clang diagnostic ignored "-Wbuiltin-requires-header"
-
-#include "linux_types.h"
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 #define ENOENT 2  /* No such file or directory */
 #define EAGAIN 11 /* Try again */
@@ -65,8 +65,6 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
 int32_t memcmp(const void *__s1, const void *__s2, size_t __n);
 
-// @todo: windows only
-
 #define fileno(x) _fileno(x)
 
 void *__iob_func();
@@ -85,8 +83,6 @@ int32_t fprintf(FILE *__restrict stream, const char *__restrict __format, ...);
 
 int32_t puts(const char *data);
 
-int32_t fileno(FILE *file);
-
 void *malloc(size_t n);
 
 size_t wcslen(const wchar_t *s);
@@ -98,32 +94,3 @@ void fputs(const char *data, FILE *file_handle);
 char *getcwd(char *buffer, size_t size);
 
 int32_t strcmp(const char *__s1, const char *__s2);
-
-// @todo: these are linux syscalls
-
-ssize_t write(int32_t fd, const char *data, size_t length);
-
-int32_t open(const char *path, int32_t flags);
-
-int32_t close(int32_t fd);
-
-ssize_t read(int32_t fd, void *buf, size_t count);
-
-off_t lseek(int32_t fd, off_t offset, int whence);
-
-void *mmap(
-    void *address,
-    size_t length,
-    int32_t prot,
-    int32_t flags,
-    int32_t fd,
-    off_t offset
-);
-
-int32_t munmap(void *address, size_t length);
-
-int32_t getpid(void);
-
-uint32_t getuid();
-
-size_t arch_prctl(size_t code, size_t address);

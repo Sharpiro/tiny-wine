@@ -26,6 +26,7 @@ struct utsname {
     char release[65];
     char version[65];
     char machine[65];
+    char __domainname[65];
 };
 
 struct SysArgs {
@@ -47,3 +48,32 @@ size_t brk(size_t brk_address);
 ssize_t write(int32_t fd, const char *data, size_t length);
 
 void exit(int32_t exit_code);
+
+ssize_t write(int32_t fd, const char *data, size_t length);
+
+int32_t open(const char *path, int32_t flags);
+
+int32_t close(int32_t fd);
+
+ssize_t read(int32_t fd, void *buf, size_t count);
+
+off_t lseek(int32_t fd, off_t offset, int whence);
+
+void *mmap(
+    void *address,
+    size_t length,
+    int32_t prot,
+    int32_t flags,
+    int32_t fd,
+    off_t offset
+);
+
+int32_t munmap(void *address, size_t length);
+
+int32_t getpid(void);
+
+uint32_t getuid();
+
+size_t arch_prctl(size_t code, size_t address);
+
+int32_t uname(struct utsname *name);

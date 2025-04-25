@@ -1,4 +1,5 @@
 #include "../../../dlls/msvcrt.h"
+#include "../../../dlls/sys_linux.h"
 #include <pwd.h>
 #include <stdbool.h>
 #include <stddef.h>

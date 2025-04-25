@@ -1,7 +1,7 @@
 
 #include "./pe_tools.h"
-#include "../../dlls/linux_types.h"
 #include "../../dlls/msvcrt.h"
+#include "../../dlls/sys_linux.h"
 #include <stddef.h>
 #include <stdint.h>
 

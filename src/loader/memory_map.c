@@ -1,7 +1,7 @@
 #include "memory_map.h"
 #include "../dlls/msvcrt.h"
+#include "../dlls/sys_linux.h"
 #include "log.h"
-#include <sys/utsname.h>
 
 #define LOADER_BUFFER_LEN 0x210'000
 
@@ -89,7 +89,7 @@ bool map_memory_regions(
         int32_t prot_execute = (int32_t)(memory_region->permissions & 1) << 2;
         int32_t map_protection = prot_read | prot_write | prot_execute;
         LOGDEBUG(
-            "mapping address: %x:%x, offset: %x, permissions: %d\n",
+            "mapping address: %zx:%zx, offset: %zx, permissions: %zd\n",
             memory_region->start,
             memory_region->end,
             memory_region->file_offset,

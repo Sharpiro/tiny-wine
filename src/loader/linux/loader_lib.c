@@ -1,5 +1,6 @@
 #include "loader_lib.h"
 #include "../../dlls/msvcrt.h"
+#include "../../dlls/sys_linux.h"
 #include "../log.h"
 #include "../memory_map.h"
 #include <stddef.h>
@@ -219,7 +220,7 @@ bool get_memory_regions(
             );
         }
         if (program_header->p_memsz != program_header->p_filesz) {
-            LOGDEBUG("PH filesize != memsize\n", i + 1);
+            LOGDEBUG("PH filesize != memsize\n");
         }
 
         size_t file_offset = program_header->p_offset /
@@ -233,7 +234,7 @@ bool get_memory_regions(
         size_t max_region_address =
             program_header->p_vaddr + program_header->p_memsz;
         if (max_region_address > end) {
-            LOGTRACE("Memory region %x extended due to offset\n", start);
+            LOGTRACE("Memory region %zx extended due to offset\n", start);
             end += 0x1000;
         }
 

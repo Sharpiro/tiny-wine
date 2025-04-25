@@ -16,6 +16,8 @@
 
 #define BRK brk_win
 
+#include "msvcrt_win.h"
+
 #endif
 
 EXPORTABLE int32_t errno = 0;

@@ -1,4 +1,5 @@
 #include "../../src/dlls/msvcrt.h"
+#include "../../src/dlls/sys_linux.h"
 #include "../../src/loader/linux/elf_tools.h"
 #include <stddef.h>
 
