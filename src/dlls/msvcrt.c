@@ -6,22 +6,31 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef LINUX
+
+#include "sys_linux.h"
+
+#define BRK brk
+
+#else
+
+#define BRK brk_win
+
+#endif
+
 EXPORTABLE int32_t errno = 0;
 
 static size_t heap_start = 0;
 static size_t heap_end = 0;
 static size_t heap_index = 0;
 
-EXPORTABLE char *_acmdln = NULL;
-static char *command_line_array[100] = {};
-
-static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
+static _FileInternal FILE_INTERNAL_LIST[] = {
     {.fileno_lazy_maybe = 0, .fileno = 0},
     {.fileno_lazy_maybe = 1, .fileno = 1},
     {.fileno_lazy_maybe = 2, .fileno = 2},
 };
 
-void DllMainCRTStartup(void) {
+EXPORTABLE void DllMainCRTStartup(void) {
 }
 
 /**
@@ -71,8 +80,12 @@ EXPORTABLE int32_t strcmp(const char *buffer_a, const char *buffer_b) {
     return 0;
 }
 
+EXPORTABLE void *__iob_func() {
+    return FILE_INTERNAL_LIST;
+}
+
 EXPORTABLE int32_t _fileno(FILE *stream) {
-    _WinFileInternal *internal_file = (_WinFileInternal *)stream;
+    _FileInternal *internal_file = (_FileInternal *)stream;
     return internal_file->fileno_lazy_maybe;
 }
 
@@ -86,10 +99,6 @@ EXPORTABLE void fputs(const char *data, FILE *stream) {
 
     size_t str_len = strlen(data);
     write(file_no, data, str_len);
-}
-
-EXPORTABLE void *__iob_func() {
-    return WIN_FILE_INTERNAL_LIST;
 }
 
 EXPORTABLE int32_t puts(const char *data) {
@@ -267,66 +276,18 @@ EXPORTABLE int32_t fprintf(
     return 0;
 }
 
-EXPORTABLE void __C_specific_handler() {
-    fprintf(stderr, "__C_specific_handler unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void __initenv() {
-    fprintf(stderr, "__initenv unimplemented\n");
-    exit(42);
-}
-
-/**
- * Initialize locale-specific information.
- */
-EXPORTABLE int __lconv_init() {
-    return 0;
-}
-
-/**
- * Informs runtime if app is console or gui.
- */
-EXPORTABLE void __set_app_type([[maybe_unused]] int type) {
-}
-
-EXPORTABLE void __setusermatherr() {
-    fprintf(stderr, "__setusermatherr unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void _amsg_exit() {
-    fprintf(stderr, "_amsg_exit unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void _cexit() {
-    fprintf(stderr, "_cexit unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void _commode() {
-    fprintf(stderr, "_commode unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void _fmode() {
-    fprintf(stderr, "_fmode unimplemented\n");
-    exit(42);
-}
-
 // @note: fake malloc that leaks memory
 EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
     if (heap_start == 0) {
-        heap_start = brk_win(0);
+        heap_start = BRK(0);
         heap_end = heap_start;
         heap_index = heap_start;
     }
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        heap_end = brk_win(heap_end + extend_size);
+        heap_end = BRK(heap_end + extend_size);
     }
 
     if (heap_end <= heap_start) {
@@ -351,39 +312,6 @@ EXPORTABLE size_t wcslen(const wchar_t *s) {
     return length;
 }
 
-static char *to_char_pointer(wchar_t *data) {
-    size_t length = wcslen(data);
-    char *buffer = malloc(length + 1);
-    size_t i;
-    for (i = 0; i < length; i++) {
-        buffer[i] = (char)data[i];
-    }
-    buffer[i] = 0x00;
-    return buffer;
-}
-
-typedef void (*_PVFV)(void);
-
-/**
- * Initializes app with an array of functions
- */
-EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
-    TEB *teb = NULL;
-    __asm__("mov %0, gs:[0x30]\n" : "=r"(teb));
-    UNICODE_STRING *command_line =
-        &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
-    _acmdln = to_char_pointer((wchar_t *)command_line->Buffer);
-
-    size_t len = (size_t)(last - first);
-    for (size_t i = 0; i < len; i++) {
-        _PVFV func = first[i];
-        if (func == NULL) {
-            continue;
-        }
-        func();
-    }
-}
-
 /**
  * Locate character in string.
  * @return pointer to char or pointer to string's null terminator if not found.
@@ -398,51 +326,6 @@ char *strchrnul(const char *string, int c) {
     return (char *)(string + string_len);
 }
 
-/**
- * @param do_wild_card If nonzero, enables wildcard expansion for
- command-line arguments (only relevant in certain CRT implementations).
- * @param start_info Reserved for internal use.
- */
-EXPORTABLE int __getmainargs(
-    int *pargc,
-    char ***pargv,
-    char ***penvp,
-    [[maybe_unused]] int do_wild_card,
-    [[maybe_unused]] void *start_info
-) {
-    char *current_cmd = _acmdln;
-
-    int arg_count = 0;
-    while (true) {
-        const int MAX_ARG_SIZE =
-            sizeof(command_line_array) / sizeof(*command_line_array);
-        if (arg_count == MAX_ARG_SIZE) {
-            return -1;
-        }
-        char *start = current_cmd;
-        current_cmd = strchrnul(current_cmd, ' ');
-        size_t str_len = (size_t)current_cmd - (size_t)start;
-        char *cmd_part = malloc(str_len + 1);
-        memcpy(cmd_part, start, str_len);
-        cmd_part[str_len] = 0x00;
-        command_line_array[arg_count] = cmd_part;
-        arg_count += 1;
-
-        if (*current_cmd == 0x00) {
-            break;
-        }
-        current_cmd += 1;
-    }
-
-    *pargc = arg_count;
-    *pargv = command_line_array;
-    *penvp = NULL;
-    return 0;
-}
-
-EXPORTABLE void _onexit([[maybe_unused]] void (*func)()) {
-}
-
 EXPORTABLE void calloc() {
     fprintf(stderr, "calloc unimplemented\n");
     exit(42);
@@ -450,11 +333,6 @@ EXPORTABLE void calloc() {
 
 EXPORTABLE void free() {
     fprintf(stderr, "free unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void signal() {
-    fprintf(stderr, "signal unimplemented\n");
     exit(42);
 }
 
@@ -470,33 +348,6 @@ EXPORTABLE int32_t vfprintf(
 ) {
     fprintf_internal(stream, format, arg);
     return 0;
-}
-
-/* Returns the code page identifier for the current locale */
-EXPORTABLE int ___lc_codepage_func() {
-    fprintf(stderr, "___lc_codepage_func unimplemented\n");
-    exit(42);
-    // const int CODE_PAGE_WINDOWS = 1252;
-    // const int CODE_PAGE_UTF8 = 65001;
-    // return CODE_PAGE_WINDOWS;
-}
-
-/* Returns the maximum number of bytes in a multibyte character for the
- * current locale */
-EXPORTABLE int ___mb_cur_max_func() {
-    fprintf(stderr, "___mb_cur_max_func unimplemented\n");
-    exit(42);
-    // return 1;
-}
-
-EXPORTABLE int32_t *_errno() {
-    return &errno;
-}
-
-EXPORTABLE void _lock([[maybe_unused]] int32_t locknum) {
-}
-
-EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
 }
 
 EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
@@ -551,3 +402,27 @@ EXPORTABLE char *strerror(int32_t errno) {
         return "Unknown";
     }
 }
+
+#ifdef LINUX
+
+void exit(int32_t code) {
+    struct SysArgs args = {.param_one = (size_t)code};
+    syscall(SYS_exit, &args);
+}
+
+void abort() {
+    struct SysArgs args = {.param_one = 3};
+    syscall(SYS_exit, &args);
+}
+
+#else
+
+void exit(int32_t exit_code) {
+    NtTerminateProcess((HANDLE)-1, exit_code);
+}
+
+void abort() {
+    NtTerminateProcess((HANDLE)-1, 3);
+}
+
+#endif

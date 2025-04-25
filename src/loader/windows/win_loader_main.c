@@ -1,5 +1,6 @@
 #include "../../dlls/macros.h"
 #include "../../dlls/msvcrt.h"
+#include "../../dlls/sys_linux.h"
 #include "../../dlls/win_type.h"
 #include "../linux/loader_lib.h"
 #include "../log.h"
@@ -37,13 +38,15 @@ static void dynamic_callback_linux(void) {
         EXIT("lib_dyn_offset was null\n");
     }
 
-    LOGTRACE("relocation params: %x, %x\n", *lib_dyn_offset, relocation_index);
+    LOGTRACE(
+        "relocation params: %zx, %zx\n", *lib_dyn_offset, relocation_index
+    );
 
     struct RuntimeRelocation *runtime_relocation =
         &lib_ntdll->runtime_func_relocations[relocation_index];
 
     size_t *got_entry = (size_t *)runtime_relocation->offset;
-    LOGTRACE("got_entry: %x: %x\n", got_entry, *got_entry);
+    LOGTRACE("got_entry: %p: %zx\n", got_entry, *got_entry);
 
     const struct RuntimeSymbol *runtime_symbol;
     if (!find_runtime_symbol(
@@ -58,8 +61,9 @@ static void dynamic_callback_linux(void) {
 
     *got_entry = runtime_symbol->value;
     LOGDEBUG(
-        "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
+        "%zx: %s: %s(%zx, %zx, %zx, %zx, %zx, %zx, %zx, %zx)\n",
         runtime_symbol->value,
+        "libntdll.so",
         runtime_relocation->name,
         rdi,
         rsi,
@@ -70,7 +74,7 @@ static void dynamic_callback_linux(void) {
         p7_stack1,
         p8_stack2
     );
-    LOGTRACE("Completed dynamic linking to %x\n", runtime_symbol->value);
+    LOGTRACE("Completed dynamic linking to %zx\n", runtime_symbol->value);
 
     __asm__(
 
@@ -199,7 +203,10 @@ void dynamic_callback_windows(void) {
     }
 
     LOGTRACE(
-        "%s IAT: %x:%x\n", source_iat_object->name, func_iat_key, func_iat_value
+        "%s IAT: %zx:%zx\n",
+        source_iat_object->name,
+        func_iat_key,
+        func_iat_value
     );
 
     /** Find import entry using IAT entry */
@@ -261,7 +268,7 @@ void dynamic_callback_windows(void) {
     }
 
     LOGDEBUG(
-        "%zx: %s: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
+        "%zx: %s: %s(%zx, %zx, %zx, %zx, %zx, %zx, %zx, %zx)\n",
         function_export.address,
         lib_name,
         import_entry->name,
@@ -275,7 +282,7 @@ void dynamic_callback_windows(void) {
         p8_win_stack4
     );
 
-    LOGTRACE("Completed dynamic linking to %x\n", function_export.address);
+    LOGTRACE("Completed dynamic linking to %zx\n", function_export.address);
 
     if (is_lib_ntdll) {
         /* Converts from Windows state to Linux state, and back */
@@ -473,12 +480,12 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
 
     /** Init GOT */
 
-    LOGINFO("GOT entries: %d\n", runtime_got_entries.length);
+    LOGINFO("GOT entries: %zd\n", runtime_got_entries.length);
     for (size_t i = 0; i < runtime_got_entries.length; i++) {
         struct RuntimeGotEntry *runtime_got_entry =
             &runtime_got_entries.data[i];
         LOGDEBUG(
-            "GOT entry %d: %x == %x, variable: %s\n",
+            "GOT entry %zd: %zx == %zx\n",
             i + 1,
             runtime_got_entry->index,
             runtime_got_entry->value
@@ -674,9 +681,9 @@ int main(int argc, char **argv) {
     /* Init heap */
 
     size_t brk_start = brk(0);
-    LOGDEBUG("BRK:, %x\n", brk_start);
+    LOGDEBUG("BRK:, %zx\n", brk_start);
     size_t brk_end = brk(brk_start + 0x1000);
-    LOGDEBUG("BRK:, %x\n", brk_end);
+    LOGDEBUG("BRK:, %zx\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");
     }
@@ -862,7 +869,7 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < inferior_argc; i++) {
         char *string = argv[i + 1];
         size_t string_len = strlen(string);
-        LOGINFO("stack arg %d: %s\n", i, string);
+        LOGINFO("stack arg %zd: %s\n", i, string);
         for (size_t i = 0; i < string_len; i++) {
             cmd[cmd_len] = (WCHAR)string[i];
             cmd_len += 1;
@@ -904,7 +911,7 @@ int main(int argc, char **argv) {
     *inferior_stack = (size_t)win_loader_implicit_end;
 
     LOGINFO("inferior_entry: %zx\n", pe_exe.entrypoint);
-    LOGINFO("inferior_stack: %zx\n", inferior_stack);
+    LOGINFO("inferior_stack: %p\n", inferior_stack);
     LOGINFO("------------running program------------\n");
 
     __asm__(

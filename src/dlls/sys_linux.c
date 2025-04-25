@@ -1,7 +1,9 @@
-#include "msvcrt_linux.h"
+#include "sys_linux.h"
 #include "msvcrt.h"
-#include "sys.h"
 #include <stddef.h>
+#include <stdint.h>
+
+// @todo: errno not working properly
 
 size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
@@ -34,15 +36,6 @@ ssize_t write(int32_t fd, const char *data, size_t length) {
     };
     syscall(SYS_write, &args);
     return (ssize_t)length;
-}
-
-void exit(int32_t code) {
-    struct SysArgs args = {.param_one = (size_t)code};
-    syscall(SYS_exit, &args);
-}
-
-void abort() {
-    exit(3);
 }
 
 void *mmap(
@@ -166,12 +159,11 @@ int32_t mprotect(void *address, size_t length, int32_t protection) {
         .param_two = length,
         .param_three = (size_t)protection,
     };
-    size_t result = syscall(SYS_mprotect, &args);
-    int32_t err = (int32_t)result;
-    if (err < 1) {
-        errno = -err;
+    int32_t result = (int32_t)syscall(SYS_mprotect, &args);
+    if (result < 0) {
+        errno = -result;
     }
-    return err;
+    return result;
 }
 
 size_t arch_prctl(size_t code, size_t address) {

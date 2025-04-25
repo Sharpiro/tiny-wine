@@ -1,5 +1,6 @@
 #pragma once
 
+#include "macros.h"
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
@@ -44,17 +45,17 @@ struct _IO_FILE;
 
 typedef struct _IO_FILE FILE;
 
-typedef struct _WinFileInternal {
+typedef struct _FileInternal {
     uint8_t start[16];
     int32_t fileno_lazy_maybe;
     uint32_t p1;
     int32_t fileno;
     uint8_t end[20];
-} _WinFileInternal;
+} _FileInternal;
 
-#define stdin ((FILE *)((_WinFileInternal *)__iob_func()))
-#define stdout ((FILE *)((_WinFileInternal *)__iob_func() + 1))
-#define stderr ((FILE *)((_WinFileInternal *)__iob_func() + 2))
+#define stdin ((FILE *)((_FileInternal *)__iob_func()))
+#define stdout ((FILE *)((_FileInternal *)__iob_func() + 1))
+#define stderr ((FILE *)((_FileInternal *)__iob_func() + 2))
 
 #define MAP_FAILED ((void *)-1)
 
@@ -72,7 +73,11 @@ void *__iob_func();
 
 double pow(double x, double y);
 
-void exit(int32_t exit_code);
+EXPORTABLE void exit(int32_t exit_code);
+
+EXPORTABLE void abort();
+
+char *strchrnul(const char *string, int c);
 
 int32_t printf(const char *format, ...);
 

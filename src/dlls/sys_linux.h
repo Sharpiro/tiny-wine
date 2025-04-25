@@ -1,5 +1,6 @@
 #pragma once
 
+#include "linux_types.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -27,6 +28,22 @@ struct utsname {
     char machine[65];
 };
 
+struct SysArgs {
+    size_t param_one;
+    size_t param_two;
+    size_t param_three;
+    size_t param_four;
+    size_t param_five;
+    size_t param_six;
+    size_t param_seven;
+};
+
+size_t syscall(size_t sys_no, struct SysArgs *sys_args);
+
 int32_t mprotect(void *address, size_t length, int32_t protection);
 
 size_t brk(size_t brk_address);
+
+ssize_t write(int32_t fd, const char *data, size_t length);
+
+void exit(int32_t exit_code);

@@ -1,6 +1,6 @@
 #include "../../dlls/macros.h"
 #include "../../dlls/msvcrt.h"
-#include "../../dlls/msvcrt_linux.h"
+#include "../../dlls/sys_linux.h"
 #include "../log.h"
 #include "loader_lib.h"
 
@@ -18,7 +18,7 @@ void dynamic_callback_linux(void) {
     size_t p7_stack1 = *(rbp + 4);
     size_t p8_stack2 = *(rbp + 5);
 
-    LOGTRACE("starting dynamic linking at %x\n", dynamic_callback_linux);
+    LOGTRACE("starting dynamic linking at %p\n", dynamic_callback_linux);
 
     size_t *lib_dyn_offset = (size_t *)(*(rbp + 1));
     size_t relocation_index = *(rbp + 2);
@@ -26,7 +26,9 @@ void dynamic_callback_linux(void) {
         EXIT("lib_dyn_offset was null\n");
     }
 
-    LOGTRACE("relocation params: %x, %x\n", *lib_dyn_offset, relocation_index);
+    LOGTRACE(
+        "relocation params: %zx, %zx\n", *lib_dyn_offset, relocation_index
+    );
     struct RuntimeRelocation *runtime_relocation;
     if (*lib_dyn_offset == 0) {
         runtime_relocation =
@@ -51,7 +53,7 @@ void dynamic_callback_linux(void) {
     }
 
     size_t *got_entry = (size_t *)runtime_relocation->offset;
-    LOGTRACE("got_entry: %x: %x\n", got_entry, *got_entry);
+    LOGTRACE("got_entry: %p: %zx\n", got_entry, *got_entry);
 
     const struct RuntimeSymbol *runtime_symbol;
     if (!find_runtime_symbol(
@@ -66,7 +68,7 @@ void dynamic_callback_linux(void) {
 
     *got_entry = runtime_symbol->value;
     LOGTRACE(
-        "%x: %s(%x, %x, %x, %x, %x, %x, %x, %x)\n",
+        "%zx: %s(%zx, %zx, %zx, %zx, %zx, %zx, %zx, %zx)\n",
         runtime_symbol->value,
         runtime_relocation->name,
         rdi,
@@ -284,7 +286,7 @@ static bool initialize_dynamic_data(
             .lib_dyn_offset = inferior_offset,
         };
         LOGINFO(
-            "variable relocation %d: %s %x:%x, type %d\n",
+            "variable relocation %zd: %s %zx:%zx, type %zd\n",
             i + 1,
             runtime_relocation.name,
             runtime_relocation.offset,
@@ -313,7 +315,7 @@ static bool initialize_dynamic_data(
                 .lib_dyn_offset = curr_lib->dynamic_offset,
             };
             LOGINFO(
-                "Varaible relocation: %d: %s %x:%x\n",
+                "Varaible relocation: %zd: %s %zx:%zx\n",
                 i + 1,
                 runtime_relocation.name,
                 runtime_relocation.offset,
@@ -425,12 +427,12 @@ static bool initialize_dynamic_data(
 
     /** Init GOT */
 
-    LOGINFO("GOT entries: %d\n", runtime_got_entries.length);
+    LOGINFO("GOT entries: %zd\n", runtime_got_entries.length);
     for (size_t i = 0; i < runtime_got_entries.length; i++) {
         struct RuntimeGotEntry *runtime_got_entry =
             &runtime_got_entries.data[i];
         LOGDEBUG(
-            "Init GOT entry %d: %x == %x, lib: %zx\n",
+            "Init GOT entry %zd: %zx == %zx, lib: %zx\n",
             i,
             runtime_got_entry->index,
             runtime_got_entry->value,
@@ -490,9 +492,9 @@ int main(int32_t argc, char **argv, char **envv) {
     /* Init heap */
 
     size_t brk_start = brk(0);
-    LOGDEBUG("BRK:, %x\n", brk_start);
+    LOGDEBUG("BRK:, %zx\n", brk_start);
     size_t brk_end = brk(brk_start + 0x1000);
-    LOGDEBUG("BRK:, %x\n", brk_end);
+    LOGDEBUG("BRK:, %zx\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");
     }
@@ -644,7 +646,7 @@ int main(int32_t argc, char **argv, char **envv) {
 
     size_t entry = reserved_address + inferior_elf.header.e_entry;
     LOGINFO("inferior_entry: %zx\n", entry);
-    LOGINFO("inferior_stack: %zx\n", inferior_stack);
+    LOGINFO("inferior_stack: %p\n", inferior_stack);
     LOGINFO("------------running program------------\n");
 
     __asm__(

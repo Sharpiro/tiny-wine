@@ -2,6 +2,7 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
+# @todo: build dir basically killed all caching
 # @todo: merge tinyc and msvcrt?
 # @todo: rename msvcrt
 # @todo: generate header deps -MMD and -MP
@@ -53,16 +54,17 @@ build/%.o: src/%.c
 		$(STANDARD_OPTIONS) \
 		-fPIC \
 		-DAMD64 \
+		-DLINUX \
 		-masm=intel \
 		$< \
 		-o $@
 
-build/libtinyc.a: build/dlls/msvcrt.o build/dlls/msvcrt_linux.o
+build/libtinyc.a: build/dlls/msvcrt.o build/dlls/sys_linux.o
 	@echo "building libtinyc.a..."
-	@ar rcs build/libtinyc.a build/dlls/msvcrt.o build/dlls/msvcrt_linux.o
+	@ar rcs build/libtinyc.a build/dlls/msvcrt.o build/dlls/sys_linux.o
 	@# @$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
 
-build/libtinyc.so: build/dlls/msvcrt.o build/dlls/msvcrt_linux.o
+build/libtinyc.so: build/dlls/msvcrt.o build/dlls/sys_linux.o
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		$(STANDARD_OPTIONS) \
@@ -72,7 +74,7 @@ build/libtinyc.so: build/dlls/msvcrt.o build/dlls/msvcrt_linux.o
 		-shared \
 		-o build/libtinyc.so \
 		build/dlls/msvcrt.o \
-		build/dlls/msvcrt_linux.o
+		build/dlls/sys_linux.o
 	@# @$(OBJDUMP) -M intel -D libtinyc.so > libtinyc.so.dump
 
 build/libdynamic.so:
@@ -90,7 +92,8 @@ build/libdynamic.so:
 
 build/libntdll.so: \
 		src/dlls/ntdll.h \
-		src/dlls/ntdll.c
+		src/dlls/ntdll.c \
+		src/dlls/sys_linux.c
 	@echo "building libntdll.so..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -103,6 +106,7 @@ build/libntdll.so: \
 		-shared \
 		-fPIC \
 		-o build/libntdll.so \
+		src/dlls/sys_linux.c \
 		src/dlls/ntdll.c
 	@# @$(OBJDUMP) -M intel -D libntdll.so > libntdll.so.dump
 
@@ -110,7 +114,7 @@ ntdll.dll: \
 		build/libntdll.so \
 		src/dlls/ntdll.h \
 		src/dlls/ntdll.c \
-		src/dlls/msvcrt_linux.c
+		src/dlls/sys_linux.c
 	@echo "building ntdll.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -124,7 +128,7 @@ ntdll.dll: \
 		-shared \
 		-fPIC \
 		-o build/ntdll.dll \
-		src/dlls/msvcrt_linux.c \
+		src/dlls/sys_linux.c \
 		src/dlls/ntdll.c
 	@# @$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 
