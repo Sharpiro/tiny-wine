@@ -1,5 +1,5 @@
 #include "macros.h"
-#include "win_type.h"
+#include "types_win.h"
 #include <stddef.h>
 
 EXPORTABLE int32_t NtWriteFile(

@@ -1,7 +1,7 @@
 #include "../../dlls/macros.h"
 #include "../../dlls/msvcrt.h"
 #include "../../dlls/sys_linux.h"
-#include "../../dlls/win_type.h"
+#include "../../dlls/types_win.h"
 #include "../linux/loader_lib.h"
 #include "../log.h"
 #include "../memory_map.h"

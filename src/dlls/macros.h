@@ -2,6 +2,8 @@
 
 #include <stddef.h>
 
+// @todo: move this out?
+
 /**
  * By default variable exports will require relocations.
  * You can explicitly set export/import to avoid this.

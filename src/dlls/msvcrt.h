@@ -1,7 +1,7 @@
 #pragma once
 
-#include "linux_types.h"
 #include "macros.h"
+#include "types_linux.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
