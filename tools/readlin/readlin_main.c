@@ -1,5 +1,6 @@
+#include "../../src/dlls/sys_linux.h"
+#include "../../src/dlls/twlibc.h"
 #include "../../src/loader/linux/elf_tools.h"
-#include "../../src/tinyc/tinyc.h"
 #include <stddef.h>
 
 int main(int argc, char **argv) {
@@ -37,8 +38,8 @@ int main(int argc, char **argv) {
     printf("Entry: 0x%zx\n", inferior_elf.header.e_entry);
     printf("Program headers start: 0x%zx\n", inferior_elf.header.e_phoff);
     printf("Section headers start: 0x%zx\n", inferior_elf.header.e_shoff);
-    printf("Section header size: %zd\n", inferior_elf.header.e_shentsize);
-    printf("Section headers length: %zd\n", inferior_elf.header.e_shnum);
+    printf("Section header size: %d\n", inferior_elf.header.e_shentsize);
+    printf("Section headers length: %d\n", inferior_elf.header.e_shnum);
 
     if (!inferior_elf.dynamic_data) {
         return 0;
@@ -47,12 +48,12 @@ int main(int argc, char **argv) {
     /* Relocations */
 
     size_t var_relocations_len = inferior_elf.dynamic_data->var_relocations_len;
-    printf("\nVariable Relocations (%d):\n", var_relocations_len);
+    printf("\nVariable Relocations (%zd):\n", var_relocations_len);
     for (size_t i = 0; i < var_relocations_len; i++) {
         struct Relocation *relocation =
             &inferior_elf.dynamic_data->var_relocations[i];
         printf(
-            "0x%zx, %s, 0x%zx, 0x%x, %s, '%s'\n",
+            "0x%zx, %s, 0x%zx, 0x%zx, %s, '%s'\n",
             relocation->offset,
             relocation->type_name,
             relocation->addend,
@@ -64,12 +65,12 @@ int main(int argc, char **argv) {
 
     size_t func_relocations_len =
         inferior_elf.dynamic_data->func_relocations_len;
-    printf("\nFunction Relocations (%d):\n", func_relocations_len);
+    printf("\nFunction Relocations (%zd):\n", func_relocations_len);
     for (size_t i = 0; i < func_relocations_len; i++) {
         struct Relocation *relocation =
             &inferior_elf.dynamic_data->func_relocations[i];
         printf(
-            "0x%zx, %s, 0x%zx, 0x%x, %s, '%s'\n",
+            "0x%zx, %s, 0x%zx, 0x%zx, %s, '%s'\n",
             relocation->offset,
             relocation->type_name,
             relocation->addend,
@@ -81,9 +82,9 @@ int main(int argc, char **argv) {
 
     /* Global Offset Table */
 
-    printf("\nGOT Entries(%d):\n", inferior_elf.dynamic_data->got_entries_len);
+    printf("\nGOT Entries(%zd):\n", inferior_elf.dynamic_data->got_entries_len);
     for (size_t i = 0; i < inferior_elf.dynamic_data->got_entries_len; i++) {
         struct GotEntry *got_entry = &inferior_elf.dynamic_data->got_entries[i];
-        printf("%d: 0x%zx, 0x%zx\n", i, got_entry->index, got_entry->value);
+        printf("%zd: 0x%zx, 0x%zx\n", i, got_entry->index, got_entry->value);
     }
 }

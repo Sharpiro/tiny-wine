@@ -1,5 +1,6 @@
 #include "loader_lib.h"
-#include "../../tinyc/tinyc.h"
+#include "../../dlls/sys_linux.h"
+#include "../../dlls/twlibc.h"
 #include "../log.h"
 #include "../memory_map.h"
 #include <stddef.h>
@@ -213,13 +214,13 @@ bool get_memory_regions(
         }
         if (program_header->p_filesz == 0 && program_header->p_offset != 0) {
             LOGWARNING(
-                "PH %d: zero filesize w/ non-zero offset may not be "
+                "PH %zd: zero filesize w/ non-zero offset may not be "
                 "unsupported\n",
                 i + 1
             );
         }
         if (program_header->p_memsz != program_header->p_filesz) {
-            LOGDEBUG("PH filesize != memsize\n", i + 1);
+            LOGDEBUG("PH filesize != memsize\n");
         }
 
         size_t file_offset = program_header->p_offset /
@@ -233,7 +234,7 @@ bool get_memory_regions(
         size_t max_region_address =
             program_header->p_vaddr + program_header->p_memsz;
         if (max_region_address > end) {
-            LOGTRACE("Memory region %x extended due to offset\n", start);
+            LOGTRACE("Memory region %zx extended due to offset\n", start);
             end += 0x1000;
         }
 

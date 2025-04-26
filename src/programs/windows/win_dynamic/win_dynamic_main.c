@@ -1,4 +1,4 @@
-#include "../../../dlls/msvcrt.h"
+#include "../../../dlls/twlibc.h"
 #include "./win_dynamic_lib.h"
 
 int32_t exe_global_var_bss = 0;

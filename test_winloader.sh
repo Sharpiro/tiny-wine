@@ -8,6 +8,8 @@ assert() {
     fi
 }
 
+pushd build
+
 # Dynamic Test
 
 expected=`cat <<EOF
@@ -69,3 +71,5 @@ assert [ $? == 0 ]
 assert [ "$result" == "$expected" ]
 
 echo All tests passed
+
+popd

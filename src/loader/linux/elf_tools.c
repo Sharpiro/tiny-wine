@@ -1,5 +1,6 @@
 #include "elf_tools.h"
-#include "../../tinyc/tinyc.h"
+#include "../..//dlls/sys_linux.h"
+#include "../..//dlls/twlibc.h"
 #include "../log.h"
 
 #define STRINGIFY(name) #name
@@ -253,7 +254,8 @@ static bool get_dynamic_data(
             got_plt_section_header->size / got_plt_section_header->entry_size;
         if (got_plt_entries_len < 3) {
             BAIL(
-                "unsupported GOT length %x, unknown loader callback location\n",
+                "unsupported GOT length %zx, unknown loader callback "
+                "location\n",
                 got_plt_entries_len
             );
         }

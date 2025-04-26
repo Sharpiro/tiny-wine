@@ -8,6 +8,8 @@ assert() {
     fi
 }
 
+pushd build
+
 # Unit Test
 $PRELOADER ./unit_test
 assert [ $? == 0 ]
@@ -56,3 +58,5 @@ EOF
 assert [ "`$PRELOADER ./loader ./dynamic`" == "$expected" ]
 
 echo All tests passed
+
+popd

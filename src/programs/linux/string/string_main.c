@@ -1,4 +1,4 @@
-#include "../../../tinyc/tinyc.h"
+#include "../../../dlls/twlibc.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>

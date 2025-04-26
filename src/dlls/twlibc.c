@@ -1,17 +1,24 @@
-#include "msvcrt.h"
+#include "twlibc.h"
 #include "./macros.h"
 #include "ntdll.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <sys/types.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
-#pragma clang diagnostic ignored "-Winvalid-noreturn"
-#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
-#pragma clang diagnostic ignored "-Wbuiltin-requires-header"
+#ifdef LINUX
+
+#include "sys_linux.h"
+
+#define BRK brk
+
+#else
+
+#define BRK brk_win
+
+ssize_t write(int32_t fd, const char *data, size_t length);
+
+#endif
 
 EXPORTABLE int32_t errno = 0;
 
@@ -19,16 +26,13 @@ static size_t heap_start = 0;
 static size_t heap_end = 0;
 static size_t heap_index = 0;
 
-EXPORTABLE char *_acmdln = NULL;
-static char *command_line_array[100] = {};
-
-static _WinFileInternal WIN_FILE_INTERNAL_LIST[] = {
+static _FileInternal FILE_INTERNAL_LIST[] = {
     {.fileno_lazy_maybe = 0, .fileno = 0},
     {.fileno_lazy_maybe = 1, .fileno = 1},
     {.fileno_lazy_maybe = 2, .fileno = 2},
 };
 
-void DllMainCRTStartup(void) {
+EXPORTABLE void DllMainCRTStartup(void) {
 }
 
 /**
@@ -64,52 +68,39 @@ EXPORTABLE size_t strlen(const char *data) {
     return len;
 }
 
+EXPORTABLE int32_t strcmp(const char *buffer_a, const char *buffer_b) {
+    for (size_t i = 0; true; i++) {
+        char a = buffer_a[i];
+        char b = buffer_b[i];
+        if (a == 0 && b == 0) {
+            break;
+        }
+        if (a != b) {
+            return a - b;
+        }
+    }
+    return 0;
+}
+
+EXPORTABLE void *__iob_func() {
+    return FILE_INTERNAL_LIST;
+}
+
 EXPORTABLE int32_t _fileno(FILE *stream) {
-    _WinFileInternal *internal_file = (_WinFileInternal *)stream;
+    _FileInternal *internal_file = (_FileInternal *)stream;
     return internal_file->fileno_lazy_maybe;
 }
 
-static bool print_len(FILE *file_handle, const char *data, size_t length) {
-    int32_t file_no = _fileno(file_handle);
-    HANDLE win_handle;
-    if (file_no == STDOUT) {
-        win_handle = (HANDLE)-11;
-    } else if (file_no == STDERR) {
-        win_handle = (HANDLE)-12;
-    } else {
-        return false;
-    }
-
-    if (NtWriteFile(
-            win_handle,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            (PVOID)data,
-            (ULONG)length,
-            NULL,
-            NULL
-        ) == -1) {
-        return false;
-    }
-
-    return true;
-}
-
-EXPORTABLE void fputs(const char *data, FILE *file_handle) {
+EXPORTABLE void fputs(const char *data, FILE *stream) {
+    int32_t file_no = _fileno(stream);
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
-        print_len(file_handle, NULL_STRING, sizeof(NULL_STRING) - 1);
+        write(file_no, NULL_STRING, sizeof(NULL_STRING) - 1);
         return;
     }
 
     size_t str_len = strlen(data);
-    print_len(file_handle, data, str_len);
-}
-
-EXPORTABLE void *__iob_func() {
-    return WIN_FILE_INTERNAL_LIST;
+    write(file_no, data, str_len);
 }
 
 EXPORTABLE int32_t puts(const char *data) {
@@ -126,7 +117,7 @@ EXPORTABLE double pow(double x, double y) {
     return product;
 }
 
-static void print_number_hex(FILE *file_handle, size_t num) {
+static void print_number_hex(FILE *stream, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789abcdef";
 
@@ -146,10 +137,11 @@ static void print_number_hex(FILE *file_handle, size_t num) {
         }
     }
 
-    print_len(file_handle, (char *)num_buffer, buffer_index);
+    int32_t file_no = _fileno(stream);
+    write(file_no, (char *)num_buffer, buffer_index);
 }
 
-static void print_number_decimal(FILE *file_handle, size_t num) {
+static void print_number_decimal(FILE *stream, size_t num) {
     const size_t MAX_DIGITS = sizeof(num) * 2;
     const char *NUMBER_CHARS = "0123456789";
 
@@ -169,8 +161,9 @@ static void print_number_decimal(FILE *file_handle, size_t num) {
     }
 
     size_t print_start = (size_t)num_buffer + num_start;
-    size_t print_length = num_start == 0 ? 1 : MAX_DIGITS - num_start;
-    print_len(file_handle, (char *)print_start, print_length);
+    size_t writegth = num_start == 0 ? 1 : MAX_DIGITS - num_start;
+    int32_t file_no = _fileno(stream);
+    write(file_no, (char *)print_start, writegth);
 }
 
 struct PrintItem {
@@ -181,7 +174,7 @@ struct PrintItem {
 };
 
 static void fprintf_internal(
-    FILE *file_handle, const char *format, va_list var_args
+    FILE *stream, const char *format, va_list var_args
 ) {
     size_t print_items_len = 0;
     struct PrintItem print_items[128] = {0};
@@ -221,22 +214,23 @@ static void fprintf_internal(
     };
     print_items[print_items_len++] = print_item;
 
+    int32_t file_no = _fileno(stream);
     for (size_t i = 0; i < print_items_len; i++) {
         struct PrintItem print_item = print_items[i];
         switch (print_item.formatter) {
         case 0x00: {
             const char *data = format + print_item.start;
-            print_len(file_handle, data, print_item.length);
+            write(file_no, data, print_item.length);
             break;
         }
         case 's': {
             char *data = va_arg(var_args, char *);
-            fputs(data, file_handle);
+            fputs(data, stream);
             break;
         }
         case 'c': {
             char data = va_arg(var_args, char);
-            print_len(file_handle, &data, 1);
+            write(file_no, &data, 1);
             break;
         }
         case 'p':
@@ -244,28 +238,24 @@ static void fprintf_internal(
             size_t data = print_item.is_large_formatter
                 ? va_arg(var_args, uint64_t)
                 : va_arg(var_args, uint32_t);
-            print_number_hex(file_handle, data);
+            print_number_hex(stream, data);
             break;
         }
         case 'd': {
             size_t data = print_item.is_large_formatter
                 ? va_arg(var_args, uint64_t)
                 : va_arg(var_args, uint32_t);
-            print_number_decimal(file_handle, data);
+            print_number_decimal(stream, data);
             break;
         }
         default: {
-            fputs("<unknown>", file_handle);
+            fputs("<unknown>", stream);
             break;
         }
         }
     }
 
     va_end(var_args);
-}
-
-EXPORTABLE void exit(int32_t exit_code) {
-    NtTerminateProcess((HANDLE)-1, exit_code);
 }
 
 EXPORTABLE int32_t printf(const char *format, ...) {
@@ -288,66 +278,18 @@ EXPORTABLE int32_t fprintf(
     return 0;
 }
 
-EXPORTABLE void __C_specific_handler() {
-    fprintf(stderr, "__C_specific_handler unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void __initenv() {
-    fprintf(stderr, "__initenv unimplemented\n");
-    exit(42);
-}
-
-/**
- * Initialize locale-specific information.
- */
-EXPORTABLE int __lconv_init() {
-    return 0;
-}
-
-/**
- * Informs runtime if app is console or gui.
- */
-EXPORTABLE void __set_app_type([[maybe_unused]] int type) {
-}
-
-EXPORTABLE void __setusermatherr() {
-    fprintf(stderr, "__setusermatherr unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void _amsg_exit() {
-    fprintf(stderr, "_amsg_exit unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void _cexit() {
-    fprintf(stderr, "_cexit unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void _commode() {
-    fprintf(stderr, "_commode unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void _fmode() {
-    fprintf(stderr, "_fmode unimplemented\n");
-    exit(42);
-}
-
 // @note: fake malloc that leaks memory
 EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
     if (heap_start == 0) {
-        heap_start = sys_brk(0);
+        heap_start = BRK(0);
         heap_end = heap_start;
         heap_index = heap_start;
     }
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        heap_end = sys_brk(heap_end + extend_size);
+        heap_end = BRK(heap_end + extend_size);
     }
 
     if (heap_end <= heap_start) {
@@ -372,39 +314,6 @@ EXPORTABLE size_t wcslen(const wchar_t *s) {
     return length;
 }
 
-static char *to_char_pointer(wchar_t *data) {
-    size_t length = wcslen(data);
-    char *buffer = malloc(length + 1);
-    size_t i;
-    for (i = 0; i < length; i++) {
-        buffer[i] = (char)data[i];
-    }
-    buffer[i] = 0x00;
-    return buffer;
-}
-
-typedef void (*_PVFV)(void);
-
-/**
- * Initializes app with an array of functions
- */
-EXPORTABLE void _initterm(_PVFV *first, _PVFV *last) {
-    TEB *teb = NULL;
-    __asm__("mov %0, gs:[0x30]\n" : "=r"(teb));
-    UNICODE_STRING *command_line =
-        &teb->ProcessEnvironmentBlock->ProcessParameters->CommandLine;
-    _acmdln = to_char_pointer((wchar_t *)command_line->Buffer);
-
-    size_t len = (size_t)(last - first);
-    for (size_t i = 0; i < len; i++) {
-        _PVFV func = first[i];
-        if (func == NULL) {
-            continue;
-        }
-        func();
-    }
-}
-
 /**
  * Locate character in string.
  * @return pointer to char or pointer to string's null terminator if not found.
@@ -419,55 +328,6 @@ char *strchrnul(const char *string, int c) {
     return (char *)(string + string_len);
 }
 
-/**
- * @param do_wild_card If nonzero, enables wildcard expansion for
- command-line arguments (only relevant in certain CRT implementations).
- * @param start_info Reserved for internal use.
- */
-EXPORTABLE int __getmainargs(
-    int *pargc,
-    char ***pargv,
-    char ***penvp,
-    [[maybe_unused]] int do_wild_card,
-    [[maybe_unused]] void *start_info
-) {
-    char *current_cmd = _acmdln;
-
-    int arg_count = 0;
-    while (true) {
-        const int MAX_ARG_SIZE =
-            sizeof(command_line_array) / sizeof(*command_line_array);
-        if (arg_count == MAX_ARG_SIZE) {
-            return -1;
-        }
-        char *start = current_cmd;
-        current_cmd = strchrnul(current_cmd, ' ');
-        size_t str_len = (size_t)current_cmd - (size_t)start;
-        char *cmd_part = malloc(str_len + 1);
-        memcpy(cmd_part, start, str_len);
-        cmd_part[str_len] = 0x00;
-        command_line_array[arg_count] = cmd_part;
-        arg_count += 1;
-
-        if (*current_cmd == 0x00) {
-            break;
-        }
-        current_cmd += 1;
-    }
-
-    *pargc = arg_count;
-    *pargv = command_line_array;
-    *penvp = NULL;
-    return 0;
-}
-
-EXPORTABLE void _onexit([[maybe_unused]] void (*func)()) {
-}
-
-EXPORTABLE void abort() {
-    NtTerminateProcess((HANDLE)-1, 3);
-}
-
 EXPORTABLE void calloc() {
     fprintf(stderr, "calloc unimplemented\n");
     exit(42);
@@ -475,11 +335,6 @@ EXPORTABLE void calloc() {
 
 EXPORTABLE void free() {
     fprintf(stderr, "free unimplemented\n");
-    exit(42);
-}
-
-EXPORTABLE void signal() {
-    fprintf(stderr, "signal unimplemented\n");
     exit(42);
 }
 
@@ -497,36 +352,10 @@ EXPORTABLE int32_t vfprintf(
     return 0;
 }
 
-/* Returns the code page identifier for the current locale */
-EXPORTABLE int ___lc_codepage_func() {
-    fprintf(stderr, "___lc_codepage_func unimplemented\n");
-    exit(42);
-    // const int CODE_PAGE_WINDOWS = 1252;
-    // const int CODE_PAGE_UTF8 = 65001;
-    // return CODE_PAGE_WINDOWS;
-}
-
-/* Returns the maximum number of bytes in a multibyte character for the
- * current locale */
-EXPORTABLE int ___mb_cur_max_func() {
-    fprintf(stderr, "___mb_cur_max_func unimplemented\n");
-    exit(42);
-    // return 1;
-}
-
-EXPORTABLE int32_t *_errno() {
-    return &errno;
-}
-
-EXPORTABLE void _lock([[maybe_unused]] int32_t locknum) {
-}
-
-EXPORTABLE void _unlock([[maybe_unused]] int32_t locknum) {
-}
-
 EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
     char c_char = (char)c;
-    if (!print_len(stream, &c_char, 1)) {
+    int32_t file_no = _fileno(stream);
+    if (!write(file_no, &c_char, 1)) {
         return -1;
     }
 
@@ -557,7 +386,47 @@ EXPORTABLE void localeconv() {
     exit(42);
 }
 
-EXPORTABLE void strerror() {
-    fprintf(stderr, "strerror unimplemented\n");
-    exit(42);
+EXPORTABLE char *strerror(int32_t errno) {
+    switch (errno) {
+    case EPERM:
+        return "Operation not permitted";
+    case ENOENT:
+        return "No such file or directory";
+    case EAGAIN:
+        return "Resource temporarily unavailable";
+    case EACCES:
+        return "Permission denied";
+    case EEXIST:
+        return "File exists";
+    case EINVAL:
+        return "Invalid argument";
+    case ERANGE:
+        return "Math result not representable";
+    default:
+        return "Unknown";
+    }
 }
+
+#ifdef LINUX
+
+void exit(int32_t code) {
+    struct SysArgs args = {.param_one = (size_t)code};
+    syscall(SYS_exit, &args);
+}
+
+void abort() {
+    struct SysArgs args = {.param_one = 3};
+    syscall(SYS_exit, &args);
+}
+
+#else
+
+void exit(int32_t exit_code) {
+    NtTerminateProcess((HANDLE)-1, exit_code);
+}
+
+void abort() {
+    NtTerminateProcess((HANDLE)-1, 3);
+}
+
+#endif
