@@ -438,7 +438,7 @@ build/readlin: \
 		build/libtinyc.a
 
 dump: all
-	@files=$$(fd -E "*.dump" -It f . build); \
+	@files=$$(find build -type f ! -name "*.dump" -not -path '*/\.*'); \
 	for file in $$files; do \
 	    echo "dumping $$file"; \
 	    objdump -M intel -D "$$file" > "$$file.dump"; \
