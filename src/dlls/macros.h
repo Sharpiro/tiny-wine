@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-// @todo: move this out?
+// @todo: move this?
 
 /**
  * By default variable exports will require relocations.

@@ -2,12 +2,9 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: generate header deps -MMD and -MP
-# @todo: move objdump to script or enable w/ env var?
-# @todo: reduce number of linux test program binaries
 # @todo: dedicated include directory?
-
-OBJDUMP ?= objdump
+# @todo: generate header deps -MMD and -MP
+# @todo: reduce number of linux test program binaries
 
 STANDARD_OPTIONS = \
 	-std=gnu2x \
@@ -59,7 +56,6 @@ build/%.o: src/%.c
 build/libtinyc.a: build/dlls/twlibc.o build/dlls/sys_linux.o
 	@echo "building libtinyc.a..."
 	@ar rcs build/libtinyc.a build/dlls/twlibc.o build/dlls/sys_linux.o
-	@# @$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
 
 build/libtinyc.so: build/dlls/twlibc.o build/dlls/sys_linux.o
 	@echo "building libtinyc.so..."
@@ -73,7 +69,6 @@ build/libtinyc.so: build/dlls/twlibc.o build/dlls/sys_linux.o
 		-o build/libtinyc.so \
 		build/dlls/twlibc.o \
 		build/dlls/sys_linux.o
-	@# @$(OBJDUMP) -M intel -D libtinyc.so > libtinyc.so.dump
 
 build/libdynamic.so:
 	@echo "building libdynamic.so..."
@@ -87,7 +82,6 @@ build/libdynamic.so:
 		-fPIC \
 		-o build/libdynamic.so \
 		src/programs/linux/dynamic/dynamic_lib.c
-	@# @$(OBJDUMP) -M intel -D libdynamic.so > libdynamic.so.dump
 
 build/libntdll.so: \
 		src/dlls/ntdll.h \
@@ -107,7 +101,6 @@ build/libntdll.so: \
 		-o build/libntdll.so \
 		src/dlls/sys_linux.c \
 		src/dlls/ntdll.c
-	@# @$(OBJDUMP) -M intel -D libntdll.so > libntdll.so.dump
 
 build/ntdll.dll: \
 		build/libntdll.so \
@@ -129,7 +122,6 @@ build/ntdll.dll: \
 		-o build/ntdll.dll \
 		src/dlls/sys_linux.c \
 		src/dlls/ntdll.c
-	@# @$(OBJDUMP) -M intel -D ntdll.dll > ntdll.dll.dump
 
 build/msvcrt.dll: \
 		build/ntdll.dll \
@@ -152,7 +144,6 @@ build/msvcrt.dll: \
 		src/dlls/twlibc.c \
 		src/dlls/twlibc_win.c \
 		build/ntdll.dll
-	@# @$(OBJDUMP) -M intel -D msvcrt.dll > msvcrt.dll.dump
 
 build/KERNEL32.dll: \
 		build/ntdll.dll \
@@ -172,7 +163,6 @@ build/KERNEL32.dll: \
 		-o build/KERNEL32.dll \
 		build/ntdll.dll \
 		src/dlls/kernel32.c 
-	@# @$(OBJDUMP) -M intel -D KERNEL32.dll > KERNEL32.dll.dump
 
 build/windynamiclib.dll: \
 		build/ntdll.dll \
@@ -194,7 +184,6 @@ build/windynamiclib.dll: \
 		-o build/windynamiclib.dll \
 		build/ntdll.dll \
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
-	@# @$(OBJDUMP) -M intel -D windynamiclib.dll > windynamiclib.dll.dump
 
 build/windynamiclibfull.dll: \
 		src/programs/windows/win_dynamic/win_dynamic_lib.h \
@@ -213,7 +202,6 @@ build/windynamiclibfull.dll: \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o build/windynamiclibfull.dll \
 		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
-	@# @$(OBJDUMP) -M intel -D windynamiclibfull.dll > windynamiclibfull.dll.dump
 
 loader: build/loader
 build/loader: \
@@ -243,7 +231,6 @@ build/loader: \
 		src/loader/linux/elf_tools.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
-	@# @$(OBJDUMP) -M intel -D loader > loader.dump
 
 winloader:build/winloader
 build/winloader: \
@@ -279,7 +266,6 @@ build/winloader: \
 		src/loader/linux/elf_tools.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
-	@# @$(OBJDUMP) -M intel -D winloader > winloader.dump
 
 build/unit_test: \
 		src/programs/linux/unit_test/unit_test_main.c \
@@ -318,7 +304,6 @@ build/env: \
 		src/programs/linux/env/env_main.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
-	@# @$(OBJDUMP) -M intel -D env > env.dump
 
 build/string: \
 		build/tinyc/linux_runtime.o \
@@ -335,7 +320,6 @@ build/string: \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a \
 		build/programs/linux/string/static_lib.o
-	@# @$(OBJDUMP) -M intel -D string > string.dump
 
 build/tinyfetch: \
 	build/tinyc/linux_runtime.o \
@@ -353,7 +337,6 @@ build/tinyfetch: \
 		-o build/tinyfetch \
 		src/programs/linux/tinyfetch/tinyfetch_main.c \
 		build/tinyc/linux_runtime.o
-	@# @$(OBJDUMP) -M intel -D tinyfetch > tinyfetch.dump
 
 build/static_pie: \
 	build/programs/linux/string/static_lib.o \
@@ -372,7 +355,6 @@ build/static_pie: \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a \
 		build/programs/linux/string/static_lib.o
-	@# @$(OBJDUMP) -M intel -D static_pie > static_pie.dump
 
 
 build/dynamic: \
@@ -392,7 +374,6 @@ build/dynamic: \
 		-o build/dynamic \
 		src/programs/linux/dynamic/dynamic_main.c \
 		build/tinyc/linux_runtime.o
-	@# @$(OBJDUMP) -M intel -D dynamic > dynamic.dump
 
 build/windynamic.exe: \
 		build/msvcrt.dll \
@@ -418,7 +399,6 @@ build/windynamic.exe: \
 		build/windynamiclib.dll \
 		src/programs/windows/win_dynamic/win_dynamic_main.c \
 		src/programs/windows/win_dynamic/win_runtime.c
-	@# @$(OBJDUMP) -M intel -D windynamic.exe > windynamic.exe.dump
 
 build/windynamicfull.exe: \
 		build/winloader \
@@ -439,7 +419,6 @@ build/windynamicfull.exe: \
 		-o build/windynamicfull.exe \
 		build/windynamiclibfull.dll \
 		src/programs/windows/win_dynamic/win_dynamic_full_main.c
-	@# @$(OBJDUMP) -M intel -D windynamicfull.exe > windynamicfull.exe.dump
 
 readwin: build/readwin
 build/readwin: \
@@ -479,6 +458,13 @@ build/readlin: \
 		src/loader/linux/elf_tools.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
+
+dump: all
+	@files=$$(fd -E "*.dump" -It f . build); \
+	for file in $$files; do \
+	    echo "dumping $$file"; \
+	    objdump -M intel -D "$$file" > "$$file.dump"; \
+	done
 
 clean:
 	@rm -rf ./build/*
