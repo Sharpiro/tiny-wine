@@ -1,10 +1,10 @@
 #pragma once
 
 #include "macros.h"
-#include "types_linux.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <types_linux.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-library-redeclaration"
@@ -23,7 +23,6 @@
 #define SEEK_SET 0 /* Seek from beginning of file.  */
 #define O_RDONLY 00
 
-#define MAP_FAILED ((void *)-1)
 #define PROT_READ 0x1                /* Page can be read.  */
 #define PROT_WRITE 0x2               /* Page can be written.  */
 #define PROT_EXEC 0x4                /* Page can be executed.  */

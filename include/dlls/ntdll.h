@@ -1,6 +1,6 @@
 #include "macros.h"
-#include "types_win.h"
 #include <stddef.h>
+#include <types_win.h>
 
 EXPORTABLE int32_t NtWriteFile(
     HANDLE file_handle,

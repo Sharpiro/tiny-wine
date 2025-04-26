@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../dlls/macros.h"
+#include <macros.h>
 #include <stdint.h>
 
 EXPORTABLE extern uint64_t lib_var_bss;

@@ -1,9 +1,9 @@
 #include "./win_loader_lib.h"
-#include "../../dlls/ntdll.h"
-#include "../../dlls/sys_linux.h"
-#include "../../dlls/twlibc.h"
 #include "../log.h"
+#include <dlls/ntdll.h>
+#include <dlls/twlibc.h>
 #include <stddef.h>
+#include <sys_linux.h>
 
 #define ASM_X64_MOV32_IMMEDIATE_INTO_EAX 0xb8
 #define ASM_X64_CALL_EAX 0xff, 0xd0

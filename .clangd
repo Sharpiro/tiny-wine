@@ -15,5 +15,6 @@ CompileFlags:
     - -Wvla
     - -Wno-format-pedantic
     - -DLOG_LEVEL=1
+    - -Iinclude
 Diagnostics:
   Suppress: ["unused-includes"]

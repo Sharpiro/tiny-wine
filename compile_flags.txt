@@ -1,0 +1,2 @@
+workaround so clangd will use this as root dir for includes
+https://github.com/clangd/clangd/issues/1038#issuecomment-2614169354

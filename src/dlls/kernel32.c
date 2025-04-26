@@ -1,4 +1,4 @@
-#include "ntdll.h"
+#include <dlls/ntdll.h>
 #include <stdbool.h>
 #include <stddef.h>
 

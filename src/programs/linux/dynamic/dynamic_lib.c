@@ -1,11 +1,11 @@
-#include "../../../dlls/sys_linux.h"
-#include "../../../dlls/twlibc.h"
+#include <dlls/twlibc.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys_linux.h>
 
 #define READ_SIZE 0x1000
 

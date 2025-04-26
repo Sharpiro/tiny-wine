@@ -1,5 +1,5 @@
-#include "../../../dlls/twlibc.h"
 #include "./win_dynamic_lib.h"
+#include <dlls/twlibc.h>
 
 int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;

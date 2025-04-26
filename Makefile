@@ -15,7 +15,8 @@ STANDARD_OPTIONS = \
 	-Werror=incompatible-pointer-types \
 	-Wno-gnu-empty-initializer \
 	-Wvla \
-	-Wno-format-pedantic
+	-Wno-format-pedantic \
+	-Iinclude
 
 all: \
 	linux \
@@ -84,7 +85,6 @@ build/libdynamic.so:
 		src/programs/linux/dynamic/dynamic_lib.c
 
 build/libntdll.so: \
-		src/dlls/ntdll.h \
 		src/dlls/ntdll.c \
 		src/dlls/sys_linux.c
 	@echo "building libntdll.so..."
@@ -104,7 +104,6 @@ build/libntdll.so: \
 
 build/ntdll.dll: \
 		build/libntdll.so \
-		src/dlls/ntdll.h \
 		src/dlls/ntdll.c \
 		src/dlls/sys_linux.c
 	@echo "building ntdll.dll..."
@@ -125,7 +124,6 @@ build/ntdll.dll: \
 
 build/msvcrt.dll: \
 		build/ntdll.dll \
-		src/dlls/twlibc.h \
 		src/dlls/twlibc.c \
 		src/dlls/twlibc_win.c
 	@echo "building msvcrt.dll..."
@@ -166,7 +164,6 @@ build/KERNEL32.dll: \
 
 build/windynamiclib.dll: \
 		build/ntdll.dll \
-		src/programs/windows/win_dynamic/win_dynamic_lib.h \
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
 	@echo "building windynamiclib.dll..."
 	@$(CC) $(CFLAGS) \
@@ -186,7 +183,6 @@ build/windynamiclib.dll: \
 		src/programs/windows/win_dynamic/win_dynamic_lib.c
 
 build/windynamiclibfull.dll: \
-		src/programs/windows/win_dynamic/win_dynamic_lib.h \
 		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
 	@echo "building windynamiclibfull.dll..."
 	@$(CC) $(CFLAGS) \
@@ -205,13 +201,9 @@ build/windynamiclibfull.dll: \
 
 loader: build/loader
 build/loader: \
-	src/list.h \
-	src/loader/memory_map.h \
 	src/loader/memory_map.c \
 	src/loader/linux/loader_main.c\
-	src/loader/linux/loader_lib.h \
 	src/loader/linux/loader_lib.c \
-	src/loader/linux/elf_tools.h \
 	src/loader/linux/elf_tools.c \
 	build/tinyc/linux_runtime.o \
 	build/libtinyc.a
@@ -234,17 +226,11 @@ build/loader: \
 
 winloader:build/winloader
 build/winloader: \
-		src/list.h \
-		src/loader/memory_map.h \
 		src/loader/memory_map.c \
 		src/loader/windows/win_loader_main.c \
-		src/loader/windows/win_loader_lib.h \
 		src/loader/windows/win_loader_lib.c \
-		src/loader/windows/pe_tools.h \
 		src/loader/windows/pe_tools.c \
-		src/loader/linux/loader_lib.h \
 		src/loader/linux/loader_lib.c \
-		src/loader/linux/elf_tools.h \
 		src/loader/linux/elf_tools.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a 
@@ -269,12 +255,8 @@ build/winloader: \
 
 build/unit_test: \
 		src/programs/linux/unit_test/unit_test_main.c \
-		src/loader/memory_map.h \
 		src/loader/memory_map.c \
-		src/list.h \
-		src/loader/linux/loader_lib.h \
 		src/loader/linux/loader_lib.c \
-		src/loader/windows/win_loader_lib.h \
 		src/loader/windows/win_loader_lib.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
@@ -379,7 +361,6 @@ build/windynamic.exe: \
 		build/msvcrt.dll \
 		build/ntdll.dll \
 		build/windynamiclib.dll \
-		src/dlls/macros.h \
 		src/programs/windows/win_dynamic/win_dynamic_main.c \
 		src/programs/windows/win_dynamic/win_runtime.c
 	@echo "building windynamic.exe..."
@@ -423,8 +404,6 @@ build/windynamicfull.exe: \
 readwin: build/readwin
 build/readwin: \
 		tools/readwin/readwin_main.c \
-		src/list.h \
-		src/loader/windows/pe_tools.h \
 		src/loader/windows/pe_tools.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
@@ -445,7 +424,6 @@ build/readlin: \
 		tools/readlin/readlin_main.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a \
-		src/loader/linux/elf_tools.h \
 		src/loader/linux/elf_tools.c
 	@echo "building readlin..."
 	@$(CC) $(CFLAGS) -g \
