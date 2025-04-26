@@ -1,4 +1,4 @@
-#include "../../../dlls/msvcrt.h"
+#include "../../../dlls/twlibc.h"
 #include "../../../loader/linux/loader_lib.h"
 #include "../../../loader/log.h"
 #include "../../../loader/windows/win_loader_lib.h"

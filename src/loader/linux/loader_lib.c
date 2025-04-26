@@ -1,6 +1,6 @@
 #include "loader_lib.h"
-#include "../../dlls/msvcrt.h"
 #include "../../dlls/sys_linux.h"
+#include "../../dlls/twlibc.h"
 #include "../log.h"
 #include "../memory_map.h"
 #include <stddef.h>

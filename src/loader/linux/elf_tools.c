@@ -1,6 +1,6 @@
 #include "elf_tools.h"
-#include "../..//dlls/msvcrt.h"
 #include "../..//dlls/sys_linux.h"
+#include "../..//dlls/twlibc.h"
 #include "../log.h"
 
 #define STRINGIFY(name) #name

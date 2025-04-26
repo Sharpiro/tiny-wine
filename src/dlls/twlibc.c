@@ -1,4 +1,4 @@
-#include "msvcrt.h"
+#include "twlibc.h"
 #include "./macros.h"
 #include "ntdll.h"
 #include <stdarg.h>

@@ -1,4 +1,4 @@
-#include "../../../dlls/msvcrt.h"
+#include "../../../dlls/twlibc.h"
 #include "stddef.h"
 #include <string.h>
 

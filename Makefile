@@ -2,7 +2,6 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: rename msvcrt
 # @todo: generate header deps -MMD and -MP
 # @todo: move objdump to script or enable w/ env var?
 # @todo: reduce number of linux test program binaries
@@ -57,12 +56,12 @@ build/%.o: src/%.c
 		$< \
 		-o $@
 
-build/libtinyc.a: build/dlls/msvcrt.o build/dlls/sys_linux.o
+build/libtinyc.a: build/dlls/twlibc.o build/dlls/sys_linux.o
 	@echo "building libtinyc.a..."
-	@ar rcs build/libtinyc.a build/dlls/msvcrt.o build/dlls/sys_linux.o
+	@ar rcs build/libtinyc.a build/dlls/twlibc.o build/dlls/sys_linux.o
 	@# @$(OBJDUMP) -M intel -D libtinyc.a > libtinyc.a.dump
 
-build/libtinyc.so: build/dlls/msvcrt.o build/dlls/sys_linux.o
+build/libtinyc.so: build/dlls/twlibc.o build/dlls/sys_linux.o
 	@echo "building libtinyc.so..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -72,7 +71,7 @@ build/libtinyc.so: build/dlls/msvcrt.o build/dlls/sys_linux.o
 		-nostdlib -static \
 		-shared \
 		-o build/libtinyc.so \
-		build/dlls/msvcrt.o \
+		build/dlls/twlibc.o \
 		build/dlls/sys_linux.o
 	@# @$(OBJDUMP) -M intel -D libtinyc.so > libtinyc.so.dump
 
@@ -134,9 +133,9 @@ build/ntdll.dll: \
 
 build/msvcrt.dll: \
 		build/ntdll.dll \
-		src/dlls/msvcrt.h \
-		src/dlls/msvcrt.c \
-		src/dlls/msvcrt_win.c
+		src/dlls/twlibc.h \
+		src/dlls/twlibc.c \
+		src/dlls/twlibc_win.c
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -150,8 +149,8 @@ build/msvcrt.dll: \
 		-shared \
 		-fPIC \
 		-o build/msvcrt.dll \
-		src/dlls/msvcrt.c \
-		src/dlls/msvcrt_win.c \
+		src/dlls/twlibc.c \
+		src/dlls/twlibc_win.c \
 		build/ntdll.dll
 	@# @$(OBJDUMP) -M intel -D msvcrt.dll > msvcrt.dll.dump
 

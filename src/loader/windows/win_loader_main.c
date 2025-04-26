@@ -1,6 +1,6 @@
 #include "../../dlls/macros.h"
-#include "../../dlls/msvcrt.h"
 #include "../../dlls/sys_linux.h"
+#include "../../dlls/twlibc.h"
 #include "../../dlls/types_win.h"
 #include "../linux/loader_lib.h"
 #include "../log.h"

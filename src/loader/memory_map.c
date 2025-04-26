@@ -1,6 +1,6 @@
 #include "memory_map.h"
-#include "../dlls/msvcrt.h"
 #include "../dlls/sys_linux.h"
+#include "../dlls/twlibc.h"
 #include "log.h"
 
 #define LOADER_BUFFER_LEN 0x210'000

@@ -1,7 +1,7 @@
 
 #include "./pe_tools.h"
-#include "../../dlls/msvcrt.h"
 #include "../../dlls/sys_linux.h"
+#include "../../dlls/twlibc.h"
 #include <stddef.h>
 #include <stdint.h>
 
