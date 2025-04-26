@@ -3,8 +3,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// @todo: errno not working properly
-
 size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;
 
@@ -55,10 +53,9 @@ void *mmap(
         .param_five = (size_t)fd,
         .param_six = (size_t)offset,
     };
-    size_t result = syscall(SYS_mmap, &args);
-    ssize_t err = (ssize_t)result;
-    if (err < 1) {
-        errno = (int32_t)-err;
+    ssize_t result = (ssize_t)syscall(SYS_mmap, &args);
+    if (result < 0) {
+        errno = (int32_t)-result;
         return MAP_FAILED;
     }
 
@@ -71,9 +68,8 @@ int32_t open(const char *path, int32_t flags) {
         .param_two = (size_t)flags,
     };
     int32_t result = (int32_t)syscall(SYS_open, &args);
-    int32_t err = (int32_t)result;
-    if (err < 1) {
-        errno = -err;
+    if (result < 0) {
+        errno = -result;
         return -1;
     }
 
@@ -148,9 +144,13 @@ int32_t munmap(void *address, size_t length) {
         .param_one = (size_t)address,
         .param_two = length,
     };
-    size_t result = syscall(SYS_munmap, &args);
+    int32_t result = (int32_t)syscall(SYS_munmap, &args);
+    if (result < 0) {
+        errno = -result;
+        return -1;
+    }
 
-    return (int32_t)result;
+    return 0;
 }
 
 int32_t mprotect(void *address, size_t length, int32_t protection) {
@@ -162,8 +162,9 @@ int32_t mprotect(void *address, size_t length, int32_t protection) {
     int32_t result = (int32_t)syscall(SYS_mprotect, &args);
     if (result < 0) {
         errno = -result;
+        return -1;
     }
-    return result;
+    return 0;
 }
 
 size_t arch_prctl(size_t code, size_t address) {

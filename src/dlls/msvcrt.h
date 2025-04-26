@@ -12,6 +12,7 @@
 #pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 #pragma clang diagnostic ignored "-Wbuiltin-requires-header"
 
+#define EPERM 1   /* Operation not permitted */
 #define ENOENT 2  /* No such file or directory */
 #define EAGAIN 11 /* Try again */
 #define EACCES 13 /* Permission denied */

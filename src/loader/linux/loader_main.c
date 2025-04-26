@@ -499,7 +499,9 @@ int main(int32_t argc, char **argv, char **envv) {
         EXIT("program BRK setup failed");
     }
 
-    log_memory_regions();
+    if (!log_memory_regions()) {
+        EXIT("log_memory_regions failed\n");
+    }
 
     int32_t pid = getpid();
     LOGINFO("pid: %d\n", pid);
@@ -552,7 +554,9 @@ int main(int32_t argc, char **argv, char **envv) {
         EXIT("loader map memory regions failed\n");
     }
 
-    log_memory_regions();
+    if (!log_memory_regions()) {
+        EXIT("log_memory_regions failed\n");
+    }
 
     const struct SectionHeader *bss_section_header = find_section_header(
         inferior_elf.section_headers, inferior_elf.section_headers_len, ".bss"

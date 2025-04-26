@@ -16,7 +16,7 @@
 
 #define BRK brk_win
 
-#include "msvcrt_win.h"
+ssize_t write(int32_t fd, const char *data, size_t length);
 
 #endif
 
@@ -388,6 +388,8 @@ EXPORTABLE void localeconv() {
 
 EXPORTABLE char *strerror(int32_t errno) {
     switch (errno) {
+    case EPERM:
+        return "Operation not permitted";
     case ENOENT:
         return "No such file or directory";
     case EAGAIN:

@@ -821,7 +821,9 @@ int main(int argc, char **argv) {
 
     LOGINFO("Initializing executable IAT\n");
     if (!initialize_import_address_table(&runtime_exe)) {
-        log_memory_regions();
+        if (!log_memory_regions()) {
+            EXIT("log_memory_regions failed\n");
+        }
         EXIT("initialize_import_address_table failed\n");
     }
     for (size_t i = 0; i < shared_libraries.length; i++) {
@@ -829,12 +831,16 @@ int main(int argc, char **argv) {
             &shared_libraries.data[i];
         LOGINFO("Initializing '%s' IAT\n", shared_library->name);
         if (!initialize_import_address_table(shared_library)) {
-            log_memory_regions();
+            if (!log_memory_regions()) {
+                EXIT("log_memory_regions failed\n");
+            }
             EXIT("initialize_import_address_table failed\n");
         }
     }
 
-    log_memory_regions();
+    if (!log_memory_regions()) {
+        EXIT("log_memory_regions failed\n");
+    }
 
     /* Thread Local Storage and process params init */
 

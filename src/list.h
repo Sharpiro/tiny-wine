@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <string.h>
 
+/* @note: old list never freed */
+
 #define CREATE_LIST_STRUCT(type)                                               \
     typedef struct {                                                           \
         type *data;                                                            \
@@ -26,7 +28,6 @@
                 return false;                                                  \
             }                                                                  \
                                                                                \
-            /* @todo: old list never freed */                                  \
             memcpy(list->data, old_list_data, old_list_size);                  \
         }                                                                      \
         list->data[list->length++] = data;                                     \
