@@ -1,7 +1,7 @@
-#include "loader_lib.h"
-#include "../log.h"
-#include "../memory_map.h"
 #include <dlls/twlibc.h>
+#include <loader/linux/loader_lib.h>
+#include <loader/memory_map.h>
+#include <log.h>
 #include <stddef.h>
 #include <sys_linux.h>
 

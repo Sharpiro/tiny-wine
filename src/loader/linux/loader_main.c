@@ -1,6 +1,6 @@
-#include "../log.h"
-#include "loader_lib.h"
 #include <dlls/twlibc.h>
+#include <loader/linux/loader_lib.h>
+#include <log.h>
 #include <macros.h>
 #include <sys_linux.h>
 

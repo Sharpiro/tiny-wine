@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../memory_map.h"
-#include "elf_tools.h"
+#include <loader/linux/elf_tools.h>
+#include <loader/memory_map.h>
 
 typedef struct RuntimeGotEntry {
     size_t index;

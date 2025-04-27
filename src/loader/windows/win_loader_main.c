@@ -1,10 +1,10 @@
-#include "../linux/loader_lib.h"
-#include "../log.h"
-#include "../memory_map.h"
-#include "./pe_tools.h"
-#include "win_loader_lib.h"
 #include <asm/prctl.h>
 #include <dlls/twlibc.h>
+#include <loader/linux/loader_lib.h>
+#include <loader/memory_map.h>
+#include <loader/windows/pe_tools.h>
+#include <loader/windows/win_loader_lib.h>
+#include <log.h>
 #include <macros.h>
 #include <stddef.h>
 #include <stdint.h>

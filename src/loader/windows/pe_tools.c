@@ -1,6 +1,6 @@
 
-#include "./pe_tools.h"
 #include <dlls/twlibc.h>
+#include <loader/windows/pe_tools.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys_linux.h>

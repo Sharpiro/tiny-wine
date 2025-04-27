@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../list.h"
 #include <assert.h>
+#include <list.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

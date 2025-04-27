@@ -1,5 +1,5 @@
-#include "../../src/loader/windows/pe_tools.h"
 #include <dlls/twlibc.h>
+#include <loader/windows/pe_tools.h>
 #include <stddef.h>
 #include <sys_linux.h>
 

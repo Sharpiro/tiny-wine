@@ -1,7 +1,7 @@
-#include "./win_loader_lib.h"
-#include "../log.h"
 #include <dlls/ntdll.h>
 #include <dlls/twlibc.h>
+#include <loader/windows/win_loader_lib.h>
+#include <log.h>
 #include <stddef.h>
 #include <sys_linux.h>
 

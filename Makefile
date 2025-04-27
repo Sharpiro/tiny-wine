@@ -2,7 +2,6 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: dedicated include directory?
 # @todo: generate header deps -MMD and -MP
 # @todo: reduce number of linux test program binaries
 
