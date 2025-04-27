@@ -2,7 +2,7 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: generate header deps -MMD and -MP
+# @todo: object file and deps build doesn't work w/ linux and windows
 # @todo: reduce number of linux test program binaries
 
 STANDARD_OPTIONS = \
@@ -15,14 +15,20 @@ STANDARD_OPTIONS = \
 	-Wno-gnu-empty-initializer \
 	-Wvla \
 	-Wno-format-pedantic \
-	-Iinclude
+	-Iinclude \
+	-MMD -MP
+	
+SRC = $(shell find src -name "*.c")
+DEP = $(SRC:src/%.c=build/%.d)
 
 all: \
 	linux \
 	windows
 
+-include $(DEP)
+
 linux: \
-	build/loader \
+	build/linloader \
 	build/unit_test \
 	build/env \
 	build/string \
@@ -70,7 +76,8 @@ build/libtinyc.so: build/dlls/twlibc.o build/dlls/sys_linux.o
 		build/dlls/twlibc.o \
 		build/dlls/sys_linux.o
 
-build/libdynamic.so:
+build/libdynamic.so: \
+		build/programs/linux/dynamic/dynamic_lib.o
 	@echo "building libdynamic.so..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -81,11 +88,11 @@ build/libdynamic.so:
 		-shared \
 		-fPIC \
 		-o build/libdynamic.so \
-		src/programs/linux/dynamic/dynamic_lib.c
+		build/programs/linux/dynamic/dynamic_lib.o
 
 build/libntdll.so: \
-		src/dlls/ntdll.c \
-		src/dlls/sys_linux.c
+		build/dlls/ntdll.o \
+		build/dlls/sys_linux.o
 	@echo "building libntdll.so..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -98,8 +105,8 @@ build/libntdll.so: \
 		-shared \
 		-fPIC \
 		-o build/libntdll.so \
-		src/dlls/sys_linux.c \
-		src/dlls/ntdll.c
+		build/dlls/sys_linux.o \
+		build/dlls/ntdll.o
 
 build/ntdll.dll: \
 		build/libntdll.so \
@@ -159,7 +166,7 @@ build/KERNEL32.dll: \
 		-fPIC \
 		-o build/KERNEL32.dll \
 		build/ntdll.dll \
-		src/dlls/kernel32.c 
+		src/dlls/kernel32.c
 
 build/windynamiclib.dll: \
 		build/ntdll.dll \
@@ -198,15 +205,15 @@ build/windynamiclibfull.dll: \
 		-o build/windynamiclibfull.dll \
 		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
 
-loader: build/loader
-build/loader: \
-	src/loader/memory_map.c \
-	src/loader/linux/loader_main.c\
-	src/loader/linux/loader_lib.c \
-	src/loader/linux/elf_tools.c \
+linloader: build/linloader
+build/linloader: \
+	build/loader/memory_map.o \
+	build/loader/linux/loader_main.o\
+	build/loader/linux/loader_lib.o \
+	build/loader/linux/elf_tools.o \
 	build/tinyc/linux_runtime.o \
 	build/libtinyc.a
-	@echo "building loader..."
+	@echo "building linloader..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
 		-nostdlib -static \
@@ -215,22 +222,22 @@ build/loader: \
 		-g \
 		-DAMD64 \
 		-masm=intel \
-		-o build/loader \
-		src/loader/memory_map.c \
-		src/loader/linux/loader_main.c \
-		src/loader/linux/loader_lib.c \
-		src/loader/linux/elf_tools.c \
+		-o build/linloader \
+		build/loader/memory_map.o \
+		build/loader/linux/loader_main.o \
+		build/loader/linux/loader_lib.o \
+		build/loader/linux/elf_tools.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 
 winloader:build/winloader
 build/winloader: \
-		src/loader/memory_map.c \
+		build/loader/memory_map.o \
 		src/loader/windows/win_loader_main.c \
-		src/loader/windows/win_loader_lib.c \
-		src/loader/windows/pe_tools.c \
-		src/loader/linux/loader_lib.c \
-		src/loader/linux/elf_tools.c \
+		build/loader/windows/win_loader_lib.o \
+		build/loader/windows/pe_tools.o \
+		build/loader/linux/loader_lib.o \
+		build/loader/linux/elf_tools.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a 
 	@echo "building winloader..."
@@ -243,20 +250,20 @@ build/winloader: \
 		-DAMD64 \
 		-masm=intel \
 		-o build/winloader \
-		src/loader/memory_map.c \
+		build/loader/memory_map.o \
 		src/loader/windows/win_loader_main.c \
-		src/loader/windows/win_loader_lib.c \
-		src/loader/windows/pe_tools.c \
-		src/loader/linux/loader_lib.c \
-		src/loader/linux/elf_tools.c \
+		build/loader/windows/win_loader_lib.o \
+		build/loader/windows/pe_tools.o \
+		build/loader/linux/loader_lib.o \
+		build/loader/linux/elf_tools.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 
 build/unit_test: \
-		src/programs/linux/unit_test/unit_test_main.c \
-		src/loader/memory_map.c \
-		src/loader/linux/loader_lib.c \
-		src/loader/windows/win_loader_lib.c \
+		build/programs/linux/unit_test/unit_test_main.o \
+		build/loader/memory_map.o \
+		build/loader/linux/loader_lib.o \
+		build/loader/windows/win_loader_lib.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 	@echo "building unit_test..."
@@ -265,15 +272,15 @@ build/unit_test: \
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-o build/unit_test \
-		src/programs/linux/unit_test/unit_test_main.c \
-		src/loader/memory_map.c \
-		src/loader/linux/loader_lib.c \
-		src/loader/windows/win_loader_lib.c \
+		build/programs/linux/unit_test/unit_test_main.o \
+		build/loader/memory_map.o \
+		build/loader/linux/loader_lib.o \
+		build/loader/windows/win_loader_lib.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 
 build/env: \
-		src/programs/linux/env/env_main.c \
+		build/programs/linux/env/env_main.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 	@echo "building env..."
@@ -282,7 +289,7 @@ build/env: \
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-o build/env \
-		src/programs/linux/env/env_main.c \
+		build/programs/linux/env/env_main.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 
@@ -290,14 +297,14 @@ build/string: \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a \
 		build/programs/linux/string/static_lib.o \
-		src/programs/linux/string/string_main.c
+		build/programs/linux/string/string_main.o
 	@echo "building string..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
 		-nostdlib -static \
 		$(STANDARD_OPTIONS) \
 		-o build/string \
-		src/programs/linux/string/string_main.c \
+		build/programs/linux/string/string_main.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a \
 		build/programs/linux/string/static_lib.o
@@ -305,7 +312,8 @@ build/string: \
 build/tinyfetch: \
 	build/tinyc/linux_runtime.o \
 	build/libtinyc.so \
-	build/libdynamic.so
+	build/libdynamic.so \
+	build/programs/linux/tinyfetch/tinyfetch_main.o
 	@echo "building tinyfetch..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
@@ -316,14 +324,14 @@ build/tinyfetch: \
  		-ltinyc \
  		-ldynamic \
 		-o build/tinyfetch \
-		src/programs/linux/tinyfetch/tinyfetch_main.c \
+		build/programs/linux/tinyfetch/tinyfetch_main.o \
 		build/tinyc/linux_runtime.o
 
 build/static_pie: \
 	build/programs/linux/string/static_lib.o \
 	build/tinyc/linux_runtime.o \
 	build/libtinyc.a \
-	src/programs/linux/string/string_main.c
+	build/programs/linux/string/string_main.o
 	@echo "building static_pie..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
@@ -332,7 +340,7 @@ build/static_pie: \
 		-fPIE -pie \
 		$(STANDARD_OPTIONS) \
 		-o build/static_pie \
-		src/programs/linux/string/string_main.c \
+		build/programs/linux/string/string_main.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a \
 		build/programs/linux/string/static_lib.o
@@ -342,7 +350,7 @@ build/dynamic: \
 	build/tinyc/linux_runtime.o \
 	build/libtinyc.so \
 	build/libdynamic.so \
-	src/programs/linux/dynamic/dynamic_main.c
+	build/programs/linux/dynamic/dynamic_main.o
 	@echo "building dynamic..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
@@ -353,7 +361,7 @@ build/dynamic: \
  		-ldynamic \
  		-ltinyc \
 		-o build/dynamic \
-		src/programs/linux/dynamic/dynamic_main.c \
+		build/programs/linux/dynamic/dynamic_main.o \
 		build/tinyc/linux_runtime.o
 
 build/windynamic.exe: \
@@ -403,7 +411,7 @@ build/windynamicfull.exe: \
 readwin: build/readwin
 build/readwin: \
 		tools/readwin/readwin_main.c \
-		src/loader/windows/pe_tools.c \
+		build/loader/windows/pe_tools.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 	@echo "building readwin..."
@@ -414,7 +422,7 @@ build/readwin: \
 		$(STANDARD_OPTIONS) \
 		-o build/readwin \
 		tools/readwin/readwin_main.c \
-		src/loader/windows/pe_tools.c \
+		build/loader/windows/pe_tools.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 
@@ -423,7 +431,7 @@ build/readlin: \
 		tools/readlin/readlin_main.c \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a \
-		src/loader/linux/elf_tools.c
+		build/loader/linux/elf_tools.o
 	@echo "building readlin..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
@@ -432,12 +440,12 @@ build/readlin: \
 		$(STANDARD_OPTIONS) \
 		-o build/readlin \
 		tools/readlin/readlin_main.c \
-		src/loader/linux/elf_tools.c \
+		build/loader/linux/elf_tools.o \
 		build/tinyc/linux_runtime.o \
 		build/libtinyc.a
 
 dump: all
-	@files=$$(find build -type f ! -name "*.dump" -not -path '*/\.*'); \
+	@files=$$(find build -type f ! -name "*.dump" -not -path '*/\.*' -not -path '*.d'); \
 	for file in $$files; do \
 	    echo "dumping $$file"; \
 	    objdump -M intel -D "$$file" > "$$file.dump"; \

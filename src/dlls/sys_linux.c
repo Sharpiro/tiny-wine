@@ -1,6 +1,6 @@
-#include "sys_linux.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <sys_linux.h>
 
 size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     size_t result = 0;

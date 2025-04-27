@@ -1,6 +1,6 @@
-#include "macros.h"
 #include <dlls/ntdll.h>
 #include <dlls/twlibc.h>
+#include <macros.h>
 #include <stddef.h>
 
 #define STDOUT 1

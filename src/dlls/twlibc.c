@@ -1,6 +1,5 @@
-#include "./macros.h"
-#include <dlls/ntdll.h>
 #include <dlls/twlibc.h>
+#include <macros.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -8,11 +7,13 @@
 
 #ifdef LINUX
 
-#include "sys_linux.h"
+#include <sys_linux.h>
 
 #define BRK brk
 
 #else
+
+#include <dlls/ntdll.h>
 
 #define BRK brk_win
 
