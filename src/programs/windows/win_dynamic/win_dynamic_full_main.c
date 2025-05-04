@@ -1,7 +1,25 @@
-#include "win_dynamic_lib_full.h"
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+extern uint64_t lib_var_bss;
+extern uint64_t lib_var_data;
+
+uint64_t *get_lib_var_bss();
+
+uint64_t *get_lib_var_data();
+
+int large_params(
+    int one,
+    int two,
+    int three,
+    int four,
+    int five,
+    int six,
+    int seven,
+    int eight
+);
 
 int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;

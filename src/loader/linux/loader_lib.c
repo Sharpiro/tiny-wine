@@ -1,9 +1,9 @@
-#include "loader_lib.h"
-#include "../../dlls/sys_linux.h"
-#include "../../dlls/twlibc.h"
-#include "../log.h"
-#include "../memory_map.h"
+#include <dlls/twlibc.h>
+#include <loader/linux/loader_lib.h>
+#include <loader/memory_map.h>
+#include <log.h>
 #include <stddef.h>
+#include <sys_linux.h>
 
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,

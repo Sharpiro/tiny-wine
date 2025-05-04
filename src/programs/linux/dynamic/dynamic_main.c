@@ -1,5 +1,5 @@
-#include "../../../dlls/twlibc.h"
-#include "stddef.h"
+#include <dlls/twlibc.h>
+#include <stddef.h>
 #include <string.h>
 
 extern int test_number_bss;

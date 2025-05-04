@@ -1,7 +1,7 @@
-#include "elf_tools.h"
-#include "../..//dlls/sys_linux.h"
-#include "../..//dlls/twlibc.h"
-#include "../log.h"
+#include <dlls/twlibc.h>
+#include <loader/linux/elf_tools.h>
+#include <log.h>
+#include <sys_linux.h>
 
 #define STRINGIFY(name) #name
 
@@ -90,6 +90,8 @@ static const char *get_relocation_type_name(size_t type) {
     switch (type) {
     case 5:
         return STRINGIFY(R_X86_64_COPY);
+    case 6:
+        return STRINGIFY(R_X86_64_GLOB_DAT);
     case 7:
         return STRINGIFY(R_X86_64_JUMP_SLOT);
     case 8:

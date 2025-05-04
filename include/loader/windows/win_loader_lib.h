@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../memory_map.h"
-#include "pe_tools.h"
+#include <loader/memory_map.h>
+#include <loader/windows/pe_tools.h>
 #include <stddef.h>
 
 #define MAX_TRAMPOLINE_IAT_SIZE (512 * 8)

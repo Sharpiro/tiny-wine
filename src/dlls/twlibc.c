@@ -1,6 +1,5 @@
-#include "twlibc.h"
-#include "./macros.h"
-#include "ntdll.h"
+#include <dlls/twlibc.h>
+#include <macros.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -8,11 +7,13 @@
 
 #ifdef LINUX
 
-#include "sys_linux.h"
+#include <sys_linux.h>
 
 #define BRK brk
 
 #else
+
+#include <dlls/ntdll.h>
 
 #define BRK brk_win
 
@@ -278,7 +279,7 @@ EXPORTABLE int32_t fprintf(
     return 0;
 }
 
-// @note: fake malloc that leaks memory
+// @note: leaks memory
 EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 

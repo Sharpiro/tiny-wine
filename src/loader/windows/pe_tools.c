@@ -1,9 +1,9 @@
 
-#include "./pe_tools.h"
-#include "../../dlls/sys_linux.h"
-#include "../../dlls/twlibc.h"
+#include <dlls/twlibc.h>
+#include <loader/windows/pe_tools.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys_linux.h>
 
 #define MAX_ARRAY_LENGTH 1000
 

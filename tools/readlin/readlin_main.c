@@ -1,7 +1,6 @@
-#include "../../src/dlls/sys_linux.h"
-#include "../../src/dlls/twlibc.h"
-#include "../../src/loader/linux/elf_tools.h"
-#include <stddef.h>
+#include <dlls/twlibc.h>
+#include <loader/linux/elf_tools.h>
+#include <sys_linux.h>
 
 int main(int argc, char **argv) {
     if (argc < 2) {

@@ -1,5 +1,5 @@
-#include "ntdll.h"
-#include "sys_linux.h"
+#include <dlls/ntdll.h>
+#include <sys_linux.h>
 
 int32_t errno = 0;
 

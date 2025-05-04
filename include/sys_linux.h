@@ -1,8 +1,8 @@
 #pragma once
 
-#include "types_linux.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <types_linux.h>
 
 #define SYS_read 0
 #define SYS_write 1
@@ -19,6 +19,10 @@
 #define SYS_getcwd 79
 #define SYS_getuid 102
 #define SYS_arch_prctl 158
+
+#define MAP_FAILED ((void *)-1)
+
+extern int32_t errno;
 
 struct utsname {
     char sysname[65];

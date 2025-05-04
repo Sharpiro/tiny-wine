@@ -1,7 +1,7 @@
-#include "../../src/dlls/sys_linux.h"
-#include "../../src/dlls/twlibc.h"
-#include "../../src/loader/windows/pe_tools.h"
+#include <dlls/twlibc.h>
+#include <loader/windows/pe_tools.h>
 #include <stddef.h>
+#include <sys_linux.h>
 
 // @todo: get working via winloader?
 
