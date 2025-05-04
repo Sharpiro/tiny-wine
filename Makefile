@@ -2,8 +2,9 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: still things called 'tinyc'
+# @todo: linux executables don't support 'PIE'
 # @todo: default PIE/PIC?
+# @todo: still things called 'tinyc'
 # @todo: reduce number of linux test program binaries
 
 STANDARD_OPTIONS = \
@@ -362,7 +363,6 @@ build/static_pie: \
 	@echo "building static_pie..."
 	@$(CC) $(CFLAGS) -g \
 		-DAMD64 \
-		-DPIE \
 		-nostdlib \
 		-fPIE -pie \
 		$(STANDARD_OPTIONS) \
