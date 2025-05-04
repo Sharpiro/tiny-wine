@@ -2,7 +2,6 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: object file and deps build doesn't work w/ linux and windows
 # @todo: still things called 'tinyc'
 # @todo: default PIE/PIC?
 # @todo: reduce number of linux test program binaries
@@ -20,13 +19,13 @@ STANDARD_OPTIONS = \
 	-Iinclude \
 	-MMD -MP
 	
-DEP = $(shell find build -name "*.d")
-
--include $(DEP)
-
 all: \
 	linux \
 	windows
+
+DEPS = $(shell find build -name "*.d")
+
+-include $(DEPS)
 
 linux: \
 	build/linloader \
@@ -47,16 +46,32 @@ windows: \
 build/linux/%.o: %.c
 	@mkdir -p $(dir $@)
 	@echo "building $@..."
-	@$(CC) $(CFLAGS) \
+	@$(CC) \
+		$(STANDARD_OPTIONS) \
 		-g \
 		-c \
 		-O0 \
-		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
 		-fPIC \
 		-DAMD64 \
 		-DLINUX \
 		-masm=intel \
+ 		$(CFLAGS) \
+		$< \
+		-o $@
+
+build/windows/%.o: %.c
+	@mkdir -p $(dir $@)
+	@echo "building $@..."
+	@$(CC) \
+		$(STANDARD_OPTIONS) \
+		-g \
+		-c \
+		-O0 \
+		-fPIC \
+		-DAMD64 \
+		-masm=intel \
+		--target=x86_64-w64-windows-gnu \
+ 		$(CFLAGS) \
 		$< \
 		-o $@
 
@@ -115,10 +130,11 @@ build/libntdll.so: \
 		build/linux/src/dlls/ntdll.o \
 		build/linux/src/dlls/sys_linux.o
 
+build/windows/src/dlls/ntdll.o: CFLAGS += "-DDLL"
 build/ntdll.dll: \
 		build/libntdll.so \
-		src/dlls/ntdll.c \
-		src/dlls/sys_linux.c
+		build/windows/src/dlls/ntdll.o \
+		build/windows/src/dlls/sys_linux.o
 	@echo "building ntdll.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -132,13 +148,15 @@ build/ntdll.dll: \
 		-shared \
 		-fPIC \
 		-o build/ntdll.dll \
-		src/dlls/sys_linux.c \
-		src/dlls/ntdll.c
+		build/windows/src/dlls/ntdll.o \
+		build/windows/src/dlls/sys_linux.o
 
+build/windows/src/dlls/twlibc.o: CFLAGS += "-DDLL"
+build/windows/src/dlls/twlibc_win.o: CFLAGS += "-DDLL"
 build/msvcrt.dll: \
 		build/ntdll.dll \
-		src/dlls/twlibc.c \
-		src/dlls/twlibc_win.c
+		build/windows/src/dlls/twlibc.o \
+		build/windows/src/dlls/twlibc_win.o
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -152,13 +170,13 @@ build/msvcrt.dll: \
 		-shared \
 		-fPIC \
 		-o build/msvcrt.dll \
-		src/dlls/twlibc.c \
-		src/dlls/twlibc_win.c \
+		build/windows/src/dlls/twlibc.o \
+		build/windows/src/dlls/twlibc_win.o \
 		build/ntdll.dll
 
 build/KERNEL32.dll: \
 		build/ntdll.dll \
-		src/dlls/kernel32.c
+		build/windows/src/dlls/kernel32.o
 	@echo "building KERNEL32.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -173,11 +191,11 @@ build/KERNEL32.dll: \
 		-fPIC \
 		-o build/KERNEL32.dll \
 		build/ntdll.dll \
-		src/dlls/kernel32.c
+		build/windows/src/dlls/kernel32.o
 
 build/windynamiclib.dll: \
 		build/ntdll.dll \
-		src/programs/windows/win_dynamic/win_dynamic_lib.c
+		build/windows/src/programs/windows/win_dynamic/win_dynamic_lib.o
 	@echo "building windynamiclib.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -193,10 +211,10 @@ build/windynamiclib.dll: \
 		-Wl,-e,DllMain \
 		-o build/windynamiclib.dll \
 		build/ntdll.dll \
-		src/programs/windows/win_dynamic/win_dynamic_lib.c
+		build/windows/src/programs/windows/win_dynamic/win_dynamic_lib.o
 
 build/windynamiclibfull.dll: \
-		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
+		build/windows/src/programs/windows/win_dynamic/win_dynamic_lib_full.o
 	@echo "building windynamiclibfull.dll..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -210,7 +228,7 @@ build/windynamiclibfull.dll: \
 		-fPIC \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o build/windynamiclibfull.dll \
-		src/programs/windows/win_dynamic/win_dynamic_lib_full.c
+		build/windows/src/programs/windows/win_dynamic/win_dynamic_lib_full.o
 
 linloader: build/linloader
 build/linloader: \
@@ -237,9 +255,11 @@ build/linloader: \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/libtinyc.a
 
+# @note: '-fno-pic' required b/c winloader asm uses a global variable
+build/linux/src/loader/windows/win_loader_main.o: CFLAGS += -fno-pic
 winloader:build/winloader
 build/winloader: \
-		src/loader/windows/win_loader_main.c \
+		build/linux/src/loader/windows/win_loader_main.o \
 		build/linux/src/loader/memory_map.o \
 		build/linux/src/loader/windows/win_loader_lib.o \
 		build/linux/src/loader/windows/pe_tools.o \
@@ -257,7 +277,7 @@ build/winloader: \
 		-DAMD64 \
 		-masm=intel \
 		-o build/winloader \
-		src/loader/windows/win_loader_main.c \
+		build/linux/src/loader/windows/win_loader_main.o \
 		build/linux/src/loader/memory_map.o \
 		build/linux/src/loader/windows/win_loader_lib.o \
 		build/linux/src/loader/windows/pe_tools.o \
@@ -375,8 +395,8 @@ build/windynamic.exe: \
 		build/msvcrt.dll \
 		build/ntdll.dll \
 		build/windynamiclib.dll \
-		src/programs/windows/win_dynamic/win_dynamic_main.c \
-		src/programs/windows/win_dynamic/win_runtime.c
+		build/windows/src/programs/windows/win_dynamic/win_dynamic_main.o \
+		build/windows/src/programs/windows/win_dynamic/win_runtime.o
 	@echo "building windynamic.exe..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -392,15 +412,14 @@ build/windynamic.exe: \
 		build/ntdll.dll \
 		build/msvcrt.dll \
 		build/windynamiclib.dll \
-		src/programs/windows/win_dynamic/win_dynamic_main.c \
-		src/programs/windows/win_dynamic/win_runtime.c
+		build/windows/src/programs/windows/win_dynamic/win_dynamic_main.o \
+		build/windows/src/programs/windows/win_dynamic/win_runtime.o
 
 build/windynamicfull.exe: \
-		build/winloader \
 		build/msvcrt.dll \
 		build/KERNEL32.dll \
 		build/windynamiclibfull.dll \
-		src/programs/windows/win_dynamic/win_dynamic_full_main.c
+		build/windows/src/programs/windows/win_dynamic/win_dynamic_full_main.o
 	@echo "building windynamicfull.exe..."
 	@$(CC) $(CFLAGS) \
 		-O0 \
@@ -413,7 +432,7 @@ build/windynamicfull.exe: \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o build/windynamicfull.exe \
 		build/windynamiclibfull.dll \
-		src/programs/windows/win_dynamic/win_dynamic_full_main.c
+		build/windows/src/programs/windows/win_dynamic/win_dynamic_full_main.o
 
 readwin: build/readwin
 build/readwin: \

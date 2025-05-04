@@ -279,7 +279,7 @@ EXPORTABLE int32_t fprintf(
     return 0;
 }
 
-// @note: fake malloc that leaks memory
+// @note: leaks memory
 EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
