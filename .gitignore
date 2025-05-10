@@ -17,7 +17,7 @@ tiny_wine
 /dynamic
 a.out
 *.s
-/static_pie
+/string_pie
 /unit_test
 /winloader
 /readwin

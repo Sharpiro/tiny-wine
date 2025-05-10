@@ -37,7 +37,7 @@ lib get_test_number_data: 54321
 EOF
 `
 assert [ "`$PRELOADER ./linloader string`" == "$expected" ]
-assert [ "`$PRELOADER ./linloader static_pie`" == "$expected" ]
+assert [ "`$PRELOADER ./linloader string_pie`" == "$expected" ]
 
 # Dynamic Test
 expected=`cat <<EOF

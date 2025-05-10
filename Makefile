@@ -2,12 +2,9 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: linux executables don't support 'PIE'
-# @todo: default PIE/PIC?
-# @todo: still things called 'tinyc'
-# @todo: reduce number of linux test program binaries
+# @todo: linux executables don't support '-pie'
 
-STANDARD_OPTIONS = \
+STANDARD_COMPILER_OPTIONS = \
 	-std=gnu2x \
 	-Wall -Wextra -Wpedantic -Wno-varargs \
 	-Wno-gnu-zero-variadic-macro-arguments \
@@ -18,8 +15,12 @@ STANDARD_OPTIONS = \
 	-Wvla \
 	-Wno-format-pedantic \
 	-Iinclude \
-	-MMD -MP
-	
+	-MMD -MP \
+	-fPIC \
+	-g \
+	-O0 \
+	-masm=intel
+
 all: \
 	linux \
 	windows
@@ -34,7 +35,7 @@ linux: \
 	build/env \
 	build/string \
 	build/tinyfetch \
-	build/static_pie \
+	build/string_pie \
 	build/dynamic \
 	build/readlin
 
@@ -48,15 +49,10 @@ build/linux/%.o: %.c
 	@mkdir -p $(dir $@)
 	@echo "building $@..."
 	@$(CC) \
-		$(STANDARD_OPTIONS) \
-		-g \
-		-c \
-		-O0 \
-		-fPIC \
-		-DAMD64 \
-		-DLINUX \
-		-masm=intel \
+		$(STANDARD_COMPILER_OPTIONS) \
  		$(CFLAGS) \
+		-c \
+		-DLINUX \
 		$< \
 		-o $@
 
@@ -64,15 +60,10 @@ build/windows/%.o: %.c
 	@mkdir -p $(dir $@)
 	@echo "building $@..."
 	@$(CC) \
-		$(STANDARD_OPTIONS) \
-		-g \
-		-c \
-		-O0 \
-		-fPIC \
-		-DAMD64 \
-		-masm=intel \
-		--target=x86_64-w64-windows-gnu \
+		$(STANDARD_COMPILER_OPTIONS) \
  		$(CFLAGS) \
+		-c \
+		--target=x86_64-w64-windows-gnu \
 		$< \
 		-o $@
 
@@ -89,10 +80,7 @@ build/libtinyc.so: \
 		build/linux/src//dlls/sys_linux.o
 	@echo "building libtinyc.so..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
-		-g \
-		-DAMD64 \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
 		-shared \
 		-o build/libtinyc.so \
@@ -103,13 +91,9 @@ build/libdynamic.so: \
 		build/linux/src/programs/linux/dynamic/dynamic_lib.o
 	@echo "building libdynamic.so..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
-		-g \
-		-DAMD64 \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
 		-shared \
-		-fPIC \
 		-o build/libdynamic.so \
 		build/linux/src/programs/linux/dynamic/dynamic_lib.o
 
@@ -118,15 +102,10 @@ build/libntdll.so: \
 		build/linux/src/dlls/sys_linux.o
 	@echo "building libntdll.so..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
-		-g \
-		-DAMD64 \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-DDLL \
-		-masm=intel \
 		-nostdlib \
 		-shared \
-		-fPIC \
 		-o build/libntdll.so \
 		build/linux/src/dlls/ntdll.o \
 		build/linux/src/dlls/sys_linux.o
@@ -138,16 +117,11 @@ build/ntdll.dll: \
 		build/windows/src/dlls/sys_linux.o
 	@echo "building ntdll.dll..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		--target=x86_64-w64-windows-gnu \
-		-g \
-		-DAMD64 \
 		-DDLL \
-		-masm=intel \
 		-nostdlib \
 		-shared \
-		-fPIC \
 		-o build/ntdll.dll \
 		build/windows/src/dlls/ntdll.o \
 		build/windows/src/dlls/sys_linux.o
@@ -160,16 +134,11 @@ build/msvcrt.dll: \
 		build/windows/src/dlls/twlibc_win.o
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		--target=x86_64-w64-windows-gnu \
-		-g \
-		-DAMD64 \
 		-DDLL \
-		-masm=intel \
 		-nostdlib \
 		-shared \
-		-fPIC \
 		-o build/msvcrt.dll \
 		build/windows/src/dlls/twlibc.o \
 		build/windows/src/dlls/twlibc_win.o \
@@ -180,16 +149,11 @@ build/KERNEL32.dll: \
 		build/windows/src/dlls/kernel32.o
 	@echo "building KERNEL32.dll..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		--target=x86_64-w64-windows-gnu \
-		-g \
-		-DAMD64 \
 		-DDLL \
-		-masm=intel \
 		-nostdlib \
 		-shared \
-		-fPIC \
 		-o build/KERNEL32.dll \
 		build/ntdll.dll \
 		build/windows/src/dlls/kernel32.o
@@ -199,16 +163,11 @@ build/windynamiclib.dll: \
 		build/windows/src/programs/windows/win_dynamic/win_dynamic_lib.o
 	@echo "building windynamiclib.dll..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		--target=x86_64-w64-windows-gnu \
-		-g \
-		-DAMD64 \
 		-DDLL \
-		-masm=intel \
 		-nostdlib \
 		-shared \
-		-fPIC \
 		-Wl,-e,DllMain \
 		-o build/windynamiclib.dll \
 		build/ntdll.dll \
@@ -218,36 +177,27 @@ build/windynamiclibfull.dll: \
 		build/windows/src/programs/windows/win_dynamic/win_dynamic_lib_full.o
 	@echo "building windynamiclibfull.dll..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		--target=x86_64-w64-windows-gnu \
-		-g \
-		-DAMD64 \
 		-DDLL \
-		-masm=intel \
 		-shared \
-		-fPIC \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o build/windynamiclibfull.dll \
 		build/windows/src/programs/windows/win_dynamic/win_dynamic_lib_full.o
 
 linloader: build/linloader
 build/linloader: \
-	build/linux/src/loader/memory_map.o \
-	build/linux/src/loader/linux/loader_main.o\
-	build/linux/src/loader/linux/loader_lib.o \
-	build/linux/src/loader/linux/elf_tools.o \
-	build/linux/src/programs/linux/linux_runtime.o \
-	build/libtinyc.a
+		build/linux/src/loader/memory_map.o \
+		build/linux/src/loader/linux/loader_main.o\
+		build/linux/src/loader/linux/loader_lib.o \
+		build/linux/src/loader/linux/elf_tools.o \
+		build/linux/src/programs/linux/linux_runtime.o \
+		build/libtinyc.a
 	@echo "building linloader..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
 		-Wl,--section-start=.text=7d7d0000 \
-		-g \
-		-DAMD64 \
-		-masm=intel \
 		-o build/linloader \
 		build/linux/src/loader/memory_map.o \
 		build/linux/src/loader/linux/loader_main.o \
@@ -270,13 +220,9 @@ build/winloader: \
 		build/libtinyc.a
 	@echo "building winloader..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
 		-Wl,--section-start=.text=7d7d0000 \
-		-g \
-		-DAMD64 \
-		-masm=intel \
 		-o build/winloader \
 		build/linux/src/loader/windows/win_loader_main.o \
 		build/linux/src/loader/memory_map.o \
@@ -295,10 +241,9 @@ build/unit_test: \
 		build/linux/src//programs/linux/linux_runtime.o \
 		build/libtinyc.a
 	@echo "building unit_test..."
-	@$(CC) $(CFLAGS) -g \
-		-DAMD64 \
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
 		-o build/unit_test \
 		build/linux/src//programs/linux/unit_test/unit_test_main.o \
 		build/linux/src//loader/memory_map.o \
@@ -312,10 +257,9 @@ build/env: \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/libtinyc.a
 	@echo "building env..."
-	@$(CC) $(CFLAGS) -g \
-		-DAMD64 \
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
 		-o build/env \
 		build/linux/src/programs/linux/env/env_main.o \
 		build/linux/src/programs/linux/linux_runtime.o \
@@ -327,13 +271,28 @@ build/string: \
 		build/linux/src/programs/linux/string/string_main.o \
 		build/libtinyc.a
 	@echo "building string..."
-	@$(CC) $(CFLAGS) -g \
-		-DAMD64 \
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
 		-o build/string \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/linux/src/programs/linux/string/static_lib.o \
+		build/linux/src/programs/linux/string/string_main.o \
+		build/libtinyc.a
+
+build/string_pie: \
+		build/linux/src/programs/linux/string/static_lib.o \
+		build/linux/src/programs/linux/linux_runtime.o \
+		build/linux/src/programs/linux/string/string_main.o \
+		build/libtinyc.a
+	@echo "building string_pie..."
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
+		-pie \
+		-nostdlib \
+		-o build/string_pie \
+		build/linux/src/programs/linux/string/static_lib.o \
+		build/linux/src/programs/linux/linux_runtime.o \
 		build/linux/src/programs/linux/string/string_main.o \
 		build/libtinyc.a
 
@@ -343,11 +302,10 @@ build/tinyfetch: \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/linux/src/programs/linux/tinyfetch/tinyfetch_main.o
 	@echo "building tinyfetch..."
-	@$(CC) $(CFLAGS) -g \
-		-DAMD64 \
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib \
 		-no-pie \
-		$(STANDARD_OPTIONS) \
 		-Wl,-rpath,'$$ORIGIN' -L./build \
  		-ltinyc \
  		-ldynamic \
@@ -355,35 +313,16 @@ build/tinyfetch: \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/linux/src/programs/linux/tinyfetch/tinyfetch_main.o
 
-build/static_pie: \
-		build/linux/src/programs/linux/string/static_lib.o \
-		build/linux/src/programs/linux/linux_runtime.o \
-		build/linux/src/programs/linux/string/string_main.o \
-		build/libtinyc.a
-	@echo "building static_pie..."
-	@$(CC) $(CFLAGS) -g \
-		-DAMD64 \
-		-nostdlib \
-		-fPIE -pie \
-		$(STANDARD_OPTIONS) \
-		-o build/static_pie \
-		build/linux/src/programs/linux/string/static_lib.o \
-		build/linux/src/programs/linux/linux_runtime.o \
-		build/linux/src/programs/linux/string/string_main.o \
-		build/libtinyc.a
-
-
 build/dynamic: \
 		build/libtinyc.so \
 		build/libdynamic.so \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/linux/src/programs/linux/dynamic/dynamic_main.o
 	@echo "building dynamic..."
-	@$(CC) $(CFLAGS) -g \
-		-DAMD64 \
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib \
 		-no-pie \
-		$(STANDARD_OPTIONS) \
 		-Wl,-rpath,'$$ORIGIN' -L./build \
  		-ldynamic \
  		-ltinyc \
@@ -399,15 +338,9 @@ build/windynamic.exe: \
 		build/windows/src/programs/windows/win_dynamic/win_runtime.o
 	@echo "building windynamic.exe..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		--target=x86_64-w64-windows-gnu \
-		-g \
-		-DAMD64 \
-		-DNO_STDLIB \
-		-masm=intel \
 		-nostdlib \
-		-fPIC \
 		-o build/windynamic.exe \
 		build/ntdll.dll \
 		build/msvcrt.dll \
@@ -422,13 +355,8 @@ build/windynamicfull.exe: \
 		build/windows/src/programs/windows/win_dynamic/win_dynamic_full_main.o
 	@echo "building windynamicfull.exe..."
 	@$(CC) $(CFLAGS) \
-		-O0 \
-		$(STANDARD_OPTIONS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		--target=x86_64-w64-windows-gnu \
-		-g \
-		-DAMD64 \
-		-masm=intel \
-		-fPIC \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o build/windynamicfull.exe \
 		build/windynamiclibfull.dll \
@@ -441,11 +369,9 @@ build/readwin: \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/libtinyc.a
 	@echo "building readwin..."
-	@$(CC) $(CFLAGS) -g \
-		-DAMD64 \
-		-masm=intel \
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
 		-o build/readwin \
 		build/linux/tools/readwin/readwin_main.o \
 		build/linux/src/loader/windows/pe_tools.o \
@@ -459,11 +385,9 @@ build/readlin: \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/libtinyc.a
 	@echo "building readlin..."
-	@$(CC) $(CFLAGS) -g \
-		-DAMD64 \
-		-masm=intel \
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
-		$(STANDARD_OPTIONS) \
 		-o build/readlin \
 		build/linux/tools/readlin/readlin_main.o \
 		build/linux/src/loader/linux/elf_tools.o \
@@ -481,5 +405,5 @@ clean:
 	@rm -rf ./build/*
 	@rm -f \
 		*.dump *.o *.s *.a *.so *.dll *.exe \
-		loader env string tinyfetch dynamic unit_test static_pie winloader readwin \
+		loader env string tinyfetch dynamic unit_test string_pie winloader readwin \
 		windynamic_linux readlin

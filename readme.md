@@ -14,7 +14,7 @@ A basic dynamic loader for Linux and Windows.
 - No environment variables
 - No AVX
 - No Printing floats
-- dlls must be in same dir as binary
+- dlls must be in current working directory
 
 ## Prerequisites
 
@@ -29,40 +29,37 @@ docker build -t tinywine $PWD
 
 ## Building
 
-> [!WARNING]
-> A large number of files are dumped to the root directory
-
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine make
+docker run --rm -v $PWD:/home/tiny_wine tinywine make
 ```
 
 ## Running Linux loader
 
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine ./loader ./tinyfetch
+docker run --rm -v $PWD:/home/tiny_wine -w /home/tiny_wine/build tinywine ./linloader ./tinyfetch
 ```
 
 ### Example Output
 
 ```txt
-root@3db29f0a588e
+tiny_wine@54510a2c9be4
 --------------
-OS: Ubuntu 22.04.4 LTS armv7l
-Kernel: 6.10.5-100.fc39.x86_64
-Uptime: Uptime: 32 days, 21 hours, 29 minutes
-Shell: /bin/bash
+OS: Ubuntu 22.04.5 LTS x86_64
+Kernel: 6.11.9-100.fc39.x86_64
+Uptime: 46 days, 18 hours, 52 minutes
+Shell: /bin/sh
 ```
 
 ## Running Windows loader
 
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine ./winloader ./windynamic.exe
+docker run --rm -v $PWD:/home/tiny_wine -w /home/tiny_wine/build tinywine ./winloader ./windynamic.exe
 ```
 
 ## Tests
 
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine ./test.sh
+docker run --rm -v $PWD:/home/tiny_wine tinywine ./test.sh
 ```
 
 ## Tools
@@ -74,7 +71,7 @@ Miscellaneous tools that assist with debugging dynamic loaders.
 Tool for reading the Windows PE format.
 
 ```sh
-docker run --rm -v $PWD:/root/tiny_wine tinywine ./readwin ./windynamic.exe
+docker run --rm -v $PWD:/home/tiny_wine -w /home/tiny_wine/build tinywine ./readwin ./windynamic.exe
 ```
 
 ## Contributing
