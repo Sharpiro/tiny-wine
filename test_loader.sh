@@ -56,6 +56,7 @@ add_many_result: 36
 EOF
 `
 assert [ "`$PRELOADER ./linloader ./dynamic`" == "$expected" ]
+assert [ "`$PRELOADER ./linloader ./dynamic_pie`" == "$expected" ]
 
 echo All tests passed
 

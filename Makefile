@@ -2,7 +2,8 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: linux executables don't support '-pie'
+# @todo: linux dynamic executables don't support '-pie'
+# @todo: run/debug flow too awkward w/ build dir
 
 STANDARD_COMPILER_OPTIONS = \
 	-std=gnu2x \
@@ -37,6 +38,7 @@ linux: \
 	build/tinyfetch \
 	build/string_pie \
 	build/dynamic \
+	build/dynamic_pie \
 	build/readlin
 
 windows: \
@@ -327,6 +329,23 @@ build/dynamic: \
  		-ldynamic \
  		-ltinyc \
 		-o build/dynamic \
+		build/linux/src/programs/linux/linux_runtime.o \
+		build/linux/src/programs/linux/dynamic/dynamic_main.o
+
+build/dynamic_pie: \
+		build/libtinyc.so \
+		build/libdynamic.so \
+		build/linux/src/programs/linux/linux_runtime.o \
+		build/linux/src/programs/linux/dynamic/dynamic_main.o
+	@echo "building dynamic..."
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
+		-nostdlib \
+		-pie \
+		-Wl,-rpath,'$$ORIGIN' -L./build \
+ 		-ldynamic \
+ 		-ltinyc \
+		-o build/dynamic_pie \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/linux/src/programs/linux/dynamic/dynamic_main.o
 

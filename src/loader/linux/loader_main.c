@@ -10,6 +10,7 @@ size_t shared_libraries_len = 0;
 RuntimeSymbolList runtime_symbols;
 size_t got_lib_dyn_offset_table[100] = {};
 
+// @todo: changing log levels can affect outcome
 // @note: unclear why some docs consider r10 to be 4th param instead of rcx
 void dynamic_callback_linux(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;
@@ -30,7 +31,7 @@ void dynamic_callback_linux(void) {
         "relocation params: %zx, %zx\n", *lib_dyn_offset, relocation_index
     );
     struct RuntimeRelocation *runtime_relocation;
-    if (*lib_dyn_offset == 0) {
+    if (*lib_dyn_offset == executable_object->dynamic_offset) {
         runtime_relocation =
             &executable_object->runtime_func_relocations[relocation_index];
     } else {
@@ -278,7 +279,7 @@ static bool initialize_dynamic_data(
         struct Relocation *curr_relocation =
             &inferior_dyn_data->var_relocations[i];
         struct RuntimeRelocation runtime_relocation = {
-            .offset = curr_relocation->offset,
+            .offset = inferior_offset + curr_relocation->offset,
             .type = curr_relocation->type,
             .addend = curr_relocation->addend,
             .value = curr_relocation->symbol.value,
@@ -335,6 +336,10 @@ static bool initialize_dynamic_data(
                 run_var_reloc->type
             );
         }
+        // @todo
+        // if (run_var_reloc->addend > 0) {
+        //     BAIL("Unsupported 64 bit variable relocation addend\n");
+        // }
         if (run_var_reloc->type == R_X86_64_RELATIVE) {
             run_var_reloc->offset =
                 run_var_reloc->lib_dyn_offset + run_var_reloc->offset;
@@ -371,7 +376,7 @@ static bool initialize_dynamic_data(
     };
     if (!get_runtime_got(
             inferior_dyn_data,
-            0,
+            inferior_offset,
             (size_t)dynamic_callback_linux,
             got_lib_dyn_offset_table,
             &runtime_got_entries
@@ -517,7 +522,7 @@ int main(int32_t argc, char **argv, char **envv) {
 
     int32_t fd = open(filename, O_RDONLY);
     if (fd < 0) {
-        EXIT("file error, %d, %s\n", errno, strerror(errno));
+        EXIT("file error %d for %s, %s\n", errno, filename, strerror(errno));
     }
 
     struct ElfData inferior_elf;
