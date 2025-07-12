@@ -2,7 +2,6 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: linux dynamic executables don't support '-pie'
 # @todo: run/debug flow too awkward w/ build dir
 
 STANDARD_COMPILER_OPTIONS = \

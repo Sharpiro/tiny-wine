@@ -282,7 +282,7 @@ static bool initialize_dynamic_data(
             .offset = inferior_offset + curr_relocation->offset,
             .type = curr_relocation->type,
             .addend = curr_relocation->addend,
-            .value = curr_relocation->symbol.value,
+            .value = inferior_offset + curr_relocation->symbol.value,
             .name = curr_relocation->symbol.name,
             .lib_dyn_offset = inferior_offset,
         };
@@ -336,19 +336,8 @@ static bool initialize_dynamic_data(
                 run_var_reloc->type
             );
         }
-        // @todo
-        // if (run_var_reloc->addend > 0) {
-        //     BAIL("Unsupported 64 bit variable relocation addend\n");
-        // }
         if (run_var_reloc->type == R_X86_64_RELATIVE) {
-            run_var_reloc->offset =
-                run_var_reloc->lib_dyn_offset + run_var_reloc->offset;
-            if (run_var_reloc->addend <= 0) {
-                BAIL("Unsupported negative relocation addend");
-            }
-
-            run_var_reloc->value =
-                run_var_reloc->lib_dyn_offset + (size_t)run_var_reloc->addend;
+            run_var_reloc->value += (size_t)run_var_reloc->addend;
             continue;
         }
 
