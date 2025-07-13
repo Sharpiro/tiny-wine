@@ -1,7 +1,5 @@
 #include <dlls/twlibc.h>
 #include <loader/windows/pe_tools.h>
-#include <stddef.h>
-#include <sys_linux.h>
 
 // @todo: get working via winloader?
 
@@ -11,18 +9,20 @@ int main(int argc, char **argv) {
     }
 
     char *filename = argv[1];
-    int32_t fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        EXIT("file not found\n");
+    FILE *fp = fopen(filename, "r");
+    if (fp == NULL) {
+        const char *err = strerror(errno);
+        EXIT("file err '%s' for '%s'\n", err, filename);
     }
 
     const bool show_symbols = argc >= 3 && strcmp(argv[2], "-s") == 0;
 
+    int32_t fd = fileno(fp);
     struct PeData pe_data;
     if (!get_pe_data(fd, &pe_data)) {
         EXIT("failed getting PE data\n");
     }
-    close(fd);
+    fclose(fp);
 
     size_t dos_magic = pe_data.dos_header->magic;
     size_t pe_magic = pe_data.winpe_optional_header.magic;

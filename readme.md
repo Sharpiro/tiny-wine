@@ -59,7 +59,7 @@ docker run --rm -v $PWD:/home/tiny_wine -w /home/tiny_wine/build tinywine ./winl
 ## Tests
 
 ```sh
-docker run --rm -v $PWD:/home/tiny_wine tinywine ./test.sh
+docker run --rm -v $PWD:/home/tiny_wine tinywine ./test.sh 1
 ```
 
 ## Tools

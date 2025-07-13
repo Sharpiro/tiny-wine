@@ -14,10 +14,9 @@
 #else
 
 #include <dlls/ntdll.h>
+#include <dlls/twlibc_win_proxy.h>
 
 #define BRK brk_win
-
-ssize_t write(int32_t fd, const char *data, size_t length);
 
 #endif
 
@@ -27,7 +26,9 @@ static size_t heap_start = 0;
 static size_t heap_end = 0;
 static size_t heap_index = 0;
 
-static _FileInternal FILE_INTERNAL_LIST[] = {
+#define FILE_INTERNAL_LIST_SIZE 50
+
+static _FileInternal FILE_INTERNAL_LIST[FILE_INTERNAL_LIST_SIZE] = {
     {.fileno_lazy_maybe = 0, .fileno = 0},
     {.fileno_lazy_maybe = 1, .fileno = 1},
     {.fileno_lazy_maybe = 2, .fileno = 2},
@@ -90,6 +91,31 @@ EXPORTABLE void *__iob_func() {
 EXPORTABLE int32_t _fileno(FILE *stream) {
     _FileInternal *internal_file = (_FileInternal *)stream;
     return internal_file->fileno_lazy_maybe;
+}
+
+EXPORTABLE FILE *fopen(const char *path, const char *mode) {
+    if (strcmp(mode, "r") != 0) {
+        errno = EACCES;
+        return NULL;
+    }
+
+    int32_t fd = open(path, O_RDONLY);
+    if (fd == -1 || fd >= FILE_INTERNAL_LIST_SIZE) {
+        return NULL;
+    }
+
+    FILE_INTERNAL_LIST[fd] = (_FileInternal){
+        .fileno_lazy_maybe = fd,
+        .fileno = fd,
+    };
+
+    FILE *fp = (FILE *)&FILE_INTERNAL_LIST[fd];
+    return fp;
+}
+
+EXPORTABLE int32_t fclose(FILE *file) {
+    int32_t fd = fileno(file);
+    return close(fd);
 }
 
 EXPORTABLE void fputs(const char *data, FILE *stream) {

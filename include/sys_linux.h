@@ -49,8 +49,6 @@ int32_t mprotect(void *address, size_t length, int32_t protection);
 
 size_t brk(size_t brk_address);
 
-ssize_t write(int32_t fd, const char *data, size_t length);
-
 void exit(int32_t exit_code);
 
 ssize_t write(int32_t fd, const char *data, size_t length);

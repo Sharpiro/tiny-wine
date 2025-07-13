@@ -94,3 +94,7 @@ void fputs(const char *data, FILE *file_handle);
 char *getcwd(char *buffer, size_t size);
 
 int32_t strcmp(const char *__s1, const char *__s2);
+
+FILE *fopen(const char *path, const char *mode);
+
+int32_t fclose(FILE *file);

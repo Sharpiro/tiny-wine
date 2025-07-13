@@ -21,3 +21,7 @@ EXPORTABLE size_t brk_win(size_t brk);
 
 EXPORTABLE int32_t
 mprotect_win(void *address, size_t length, int32_t protection);
+
+EXPORTABLE int32_t open_win(const char *path, int32_t flags);
+
+EXPORTABLE int32_t close_win(int32_t fd);

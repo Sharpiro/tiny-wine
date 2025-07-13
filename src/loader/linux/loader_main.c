@@ -10,7 +10,6 @@ size_t shared_libraries_len = 0;
 RuntimeSymbolList runtime_symbols;
 size_t got_lib_dyn_offset_table[100] = {};
 
-// @todo: changing log levels can affect outcome
 // @note: unclear why some docs consider r10 to be 4th param instead of rcx
 void dynamic_callback_linux(void) {
     size_t rbx, rcx, rdx, rdi, rsi, r8, r9, r12, r13, r14, r15, *rbp;

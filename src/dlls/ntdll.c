@@ -59,3 +59,11 @@ size_t brk_win(size_t brk_address) {
 int32_t mprotect_win(void *address, size_t length, int32_t protection) {
     return mprotect(address, length, protection);
 }
+
+int32_t open_win(const char *path, int32_t flags) {
+    return open(path, flags);
+}
+
+int32_t close_win(int32_t fd) {
+    return close(fd);
+}

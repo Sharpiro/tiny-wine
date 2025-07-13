@@ -2,8 +2,6 @@ ifeq ($(CC),cc)
   CC := clang
 endif
 
-# @todo: run/debug flow too awkward w/ build dir
-
 STANDARD_COMPILER_OPTIONS = \
 	-std=gnu2x \
 	-Wall -Wextra -Wpedantic -Wno-varargs \
@@ -132,7 +130,8 @@ build/windows/src/dlls/twlibc_win.o: CFLAGS += "-DDLL"
 build/msvcrt.dll: \
 		build/ntdll.dll \
 		build/windows/src/dlls/twlibc.o \
-		build/windows/src/dlls/twlibc_win.o
+		build/windows/src/dlls/twlibc_win.o \
+		build/windows/src/dlls/twlibc_win_proxy.o
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
@@ -143,6 +142,7 @@ build/msvcrt.dll: \
 		-o build/msvcrt.dll \
 		build/windows/src/dlls/twlibc.o \
 		build/windows/src/dlls/twlibc_win.o \
+		build/windows/src/dlls/twlibc_win_proxy.o \
 		build/ntdll.dll
 
 build/KERNEL32.dll: \
