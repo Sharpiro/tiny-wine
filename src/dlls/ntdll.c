@@ -64,6 +64,10 @@ int32_t open_win(const char *path, int32_t flags) {
     return open(path, flags);
 }
 
+size_t read_win(int32_t fd, void *buf, size_t count) {
+    return read(fd, buf, count);
+}
+
 int32_t close_win(int32_t fd) {
     return close(fd);
 }

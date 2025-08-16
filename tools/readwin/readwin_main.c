@@ -17,9 +17,8 @@ int main(int argc, char **argv) {
 
     const bool show_symbols = argc >= 3 && strcmp(argv[2], "-s") == 0;
 
-    int32_t fd = fileno(fp);
     struct PeData pe_data;
-    if (!get_pe_data(fd, &pe_data)) {
+    if (!get_pe_data(fp, &pe_data)) {
         EXIT("failed getting PE data\n");
     }
     fclose(fp);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <assert.h>
+#include <dlls/twlibc.h>
 #include <list.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -267,7 +268,7 @@ struct PeData {
     RelocationEntryList relocations;
 };
 
-bool get_pe_data(int32_t fd, struct PeData *pe_data);
+bool get_pe_data(FILE *fd, struct PeData *pe_data);
 
 const struct WinSectionHeader *find_win_section_header(
     const struct WinSectionHeader *section_headers,

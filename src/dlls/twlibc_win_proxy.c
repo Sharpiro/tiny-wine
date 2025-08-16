@@ -8,6 +8,10 @@ int32_t open(const char *path, int32_t flags) {
     return open_win(path, flags);
 }
 
+size_t read(int32_t fd, void *buf, size_t count) {
+    return read_win(fd, buf, count);
+}
+
 int32_t close(int32_t fd) {
     return close_win(fd);
 }

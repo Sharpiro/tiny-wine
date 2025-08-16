@@ -2,6 +2,8 @@
 
 #include <types_linux.h>
 
+size_t read(int32_t fd, void *buf, size_t count);
+
 ssize_t write(int32_t fd, const char *data, size_t length);
 
 int32_t open(const char *path, int32_t flags);

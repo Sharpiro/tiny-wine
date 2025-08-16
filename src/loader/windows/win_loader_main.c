@@ -527,13 +527,14 @@ static bool load_dlls(
             &inferior_executable->import_dir_entries[i];
         const char *shared_lib_name = dir_entry->lib_name;
         LOGINFO("mapping shared library '%s'\n", shared_lib_name);
-        int32_t shared_lib_file = open(shared_lib_name, O_RDONLY);
-        if (shared_lib_file == -1) {
+        FILE *shared_lib_fp = fopen(shared_lib_name, "r");
+        int32_t shared_lib_fd = fileno(shared_lib_fp);
+        if (shared_lib_fd == -1) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
         }
 
         struct PeData shared_lib_pe;
-        if (!get_pe_data(shared_lib_file, &shared_lib_pe)) {
+        if (!get_pe_data(shared_lib_fp, &shared_lib_pe)) {
             BAIL("failed getting data for shared lib '%s'\n", shared_lib_name);
         }
 
@@ -552,12 +553,12 @@ static bool load_dlls(
         }
 
         if (!map_memory_regions_win(
-                shared_lib_file, memory_regions.data, memory_regions.length
+                shared_lib_fd, memory_regions.data, memory_regions.length
             )) {
             BAIL("loader lib map memory regions failed\n");
         }
 
-        close(shared_lib_file);
+        close(shared_lib_fd);
         if (!log_memory_regions()) {
             BAIL("print_memory_regions failed\n");
         }
@@ -701,14 +702,15 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    int32_t fd = open(filename, O_RDONLY);
+    FILE *fp = fopen(filename, "r");
+    int32_t fd = fileno(fp);
     if (fd < 0) {
         EXIT("file error, %d, %s\n", errno, strerror(errno));
         return -1;
     }
 
     struct PeData pe_exe;
-    if (!get_pe_data(fd, &pe_exe)) {
+    if (!get_pe_data(fp, &pe_exe)) {
         EXIT("error parsing pe data\n");
     }
 

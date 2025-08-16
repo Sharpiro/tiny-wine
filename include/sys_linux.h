@@ -57,7 +57,7 @@ int32_t open(const char *path, int32_t flags);
 
 int32_t close(int32_t fd);
 
-ssize_t read(int32_t fd, void *buf, size_t count);
+size_t read(int32_t fd, void *buf, size_t count);
 
 off_t lseek(int32_t fd, off_t offset, int whence);
 

@@ -82,13 +82,13 @@ int32_t close(int32_t fd) {
     return (int32_t)syscall(SYS_close, &args);
 }
 
-ssize_t read(int32_t fd, void *buf, size_t count) {
+size_t read(int32_t fd, void *buf, size_t count) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
         .param_two = (size_t)buf,
         .param_three = count,
     };
-    return (ssize_t)syscall(SYS_read, &args);
+    return syscall(SYS_read, &args);
 }
 
 int32_t getpid(void) {

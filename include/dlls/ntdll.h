@@ -24,4 +24,6 @@ mprotect_win(void *address, size_t length, int32_t protection);
 
 EXPORTABLE int32_t open_win(const char *path, int32_t flags);
 
+EXPORTABLE size_t read_win(int32_t fd, void *buf, size_t count);
+
 EXPORTABLE int32_t close_win(int32_t fd);

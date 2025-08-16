@@ -41,7 +41,7 @@ static bool mem_is_empty(const void *buffer, size_t n) {
     return true;
 }
 
-bool get_pe_data(int32_t fd, struct PeData *pe_data) {
+bool get_pe_data(FILE *fp, struct PeData *pe_data) {
     if (pe_data == NULL) {
         BAIL("pe_data was null\n");
     }
@@ -50,7 +50,8 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     if (!pe_header_buffer) {
         BAIL("malloc failed\n");
     }
-    read(fd, pe_header_buffer, 1000);
+
+    fread(pe_header_buffer, 1, 1000, fp);
     struct ImageDosHeader *dos_header =
         (struct ImageDosHeader *)pe_header_buffer;
     if (dos_header->magic != DOS_MAGIC) {
@@ -127,8 +128,9 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
     size_t section_headers_size =
         sizeof(struct WinSectionHeader) * section_headers_len;
     struct WinSectionHeader *section_headers = malloc(section_headers_size);
+    int32_t fd = fileno(fp);
     lseek(fd, (off_t)section_headers_start, SEEK_SET);
-    read(fd, section_headers, section_headers_size);
+    fread(section_headers, 1, section_headers_size, fp);
 
     /* Import Directory */
 
@@ -151,7 +153,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         uint8_t *import_section_buffer = malloc(import_section->file_size);
 
         lseek(fd, import_section->file_offset, SEEK_SET);
-        read(fd, import_section_buffer, import_section->file_size);
+        fread(import_section_buffer, 1, import_section->file_size, fp);
 
         size_t import_dir_section_offset =
             import_dir->virtual_address - import_section->virtual_base_address;
@@ -302,7 +304,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
             BAIL("export_section_buffer malloc failed\n");
         }
         lseek(fd, export_section->file_offset, SEEK_SET);
-        read(fd, export_section_buffer, export_section->file_size);
+        fread(export_section_buffer, 1, export_section->file_size, fp);
 
         size_t export_dir_section_offset =
             export_dir->virtual_address - export_section->virtual_base_address;
@@ -360,15 +362,15 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         size_t string_table_offset = symbol_table_offset + raw_symbols_size;
         lseek(fd, (off_t)string_table_offset, SEEK_SET);
         size_t string_table_size = 0;
-        read(fd, &string_table_size, 4);
+        fread(&string_table_size, 1, 4, fp);
 
         lseek(fd, (off_t)string_table_offset, SEEK_SET);
         uint8_t *string_table = malloc(string_table_size);
-        read(fd, string_table, string_table_size);
+        fread(string_table, 1, string_table_size, fp);
 
         struct RawWinSymbol *raw_symbols = malloc(raw_symbols_size);
         lseek(fd, (off_t)symbol_table_offset, SEEK_SET);
-        read(fd, raw_symbols, raw_symbols_size);
+        fread(raw_symbols, 1, raw_symbols_size, fp);
 
         symbols = malloc(sizeof(struct WinSymbol) * raw_symbols_len);
         for (size_t i = 0; i < raw_symbols_len; i++) {
@@ -407,7 +409,7 @@ bool get_pe_data(int32_t fd, struct PeData *pe_data) {
         uint8_t *relocation_section_buffer =
             malloc(relocation_section->file_size);
         lseek(fd, (off_t)relocation_section->file_offset, SEEK_SET);
-        read(fd, relocation_section_buffer, relocation_section->file_size);
+        fread(relocation_section_buffer, 1, relocation_section->file_size, fp);
 
         const size_t RELOCATION_BLOCK_SIZE = sizeof(struct RelocationBlock);
         size_t block_bytes_parsed = 0;

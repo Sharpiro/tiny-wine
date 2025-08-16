@@ -113,13 +113,19 @@ EXPORTABLE FILE *fopen(const char *path, const char *mode) {
     return fp;
 }
 
+EXPORTABLE size_t fread(void *buffer, size_t size, size_t count, FILE *file) {
+    int32_t fd = fileno(file);
+    size_t read_len = read(fd, buffer, size * count);
+    return read_len;
+}
+
 EXPORTABLE int32_t fclose(FILE *file) {
     int32_t fd = fileno(file);
     return close(fd);
 }
 
 EXPORTABLE void fputs(const char *data, FILE *stream) {
-    int32_t file_no = _fileno(stream);
+    int32_t file_no = fileno(stream);
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
         write(file_no, NULL_STRING, sizeof(NULL_STRING) - 1);
@@ -164,7 +170,7 @@ static void print_number_hex(FILE *stream, size_t num) {
         }
     }
 
-    int32_t file_no = _fileno(stream);
+    int32_t file_no = fileno(stream);
     write(file_no, (char *)num_buffer, buffer_index);
 }
 
@@ -189,7 +195,7 @@ static void print_number_decimal(FILE *stream, size_t num) {
 
     size_t print_start = (size_t)num_buffer + num_start;
     size_t writegth = num_start == 0 ? 1 : MAX_DIGITS - num_start;
-    int32_t file_no = _fileno(stream);
+    int32_t file_no = fileno(stream);
     write(file_no, (char *)print_start, writegth);
 }
 
@@ -241,7 +247,7 @@ static void fprintf_internal(
     };
     print_items[print_items_len++] = print_item;
 
-    int32_t file_no = _fileno(stream);
+    int32_t file_no = fileno(stream);
     for (size_t i = 0; i < print_items_len; i++) {
         struct PrintItem print_item = print_items[i];
         switch (print_item.formatter) {
@@ -381,7 +387,7 @@ EXPORTABLE int32_t vfprintf(
 
 EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
     char c_char = (char)c;
-    int32_t file_no = _fileno(stream);
+    int32_t file_no = fileno(stream);
     if (!write(file_no, &c_char, 1)) {
         return -1;
     }

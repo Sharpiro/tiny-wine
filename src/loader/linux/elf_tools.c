@@ -26,7 +26,7 @@ static bool get_section_headers(
     if (elf_section_headers == NULL) {
         BAIL("malloc failed\n");
     }
-    ssize_t bytes_read = read(fd, elf_section_headers, section_headers_size);
+    size_t bytes_read = read(fd, elf_section_headers, section_headers_size);
     if ((size_t)bytes_read != section_headers_size) {
         BAIL("read failed\n");
     }
@@ -151,7 +151,7 @@ static bool get_dynamic_data(
     if (seeked != (off_t)dyn_sym_section_header->offset) {
         BAIL("seek failed\n");
     }
-    ssize_t bytes_read = read(fd, dyn_elf_symbols, dyn_sym_section_size);
+    size_t bytes_read = read(fd, dyn_elf_symbols, dyn_sym_section_size);
     if ((size_t)bytes_read != dyn_sym_section_size) {
         BAIL("read failed\n");
     }
@@ -444,7 +444,7 @@ static bool get_dynamic_data(
 
 bool get_elf_data(int fd, struct ElfData *elf_data) {
     ELF_HEADER elf_header;
-    ssize_t header_read_len = read(fd, &elf_header, sizeof(ELF_HEADER));
+    size_t header_read_len = read(fd, &elf_header, sizeof(ELF_HEADER));
     if (header_read_len != sizeof(ELF_HEADER)) {
         BAIL("read failed\n");
     }
@@ -461,7 +461,7 @@ bool get_elf_data(int fd, struct ElfData *elf_data) {
         if (program_headers == NULL) {
             BAIL("malloc failed\n");
         }
-        ssize_t ph_read_len = read(fd, program_headers, program_headers_size);
+        size_t ph_read_len = read(fd, program_headers, program_headers_size);
         if ((size_t)ph_read_len != program_headers_size) {
             BAIL("read failed\n");
         }
