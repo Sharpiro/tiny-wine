@@ -98,3 +98,9 @@ int32_t strcmp(const char *__s1, const char *__s2);
 FILE *fopen(const char *path, const char *mode);
 
 int32_t fclose(FILE *file);
+
+size_t strlen(const char *data);
+
+char *strerror(int32_t errno);
+
+void *memset(void *s_buffer, int32_t c_value, size_t n_count);

@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <list.h>
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 
 #define DOS_MAGIC 0x5a4d

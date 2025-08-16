@@ -396,6 +396,22 @@ build/readwin: \
 		build/linux/src/programs/linux/linux_runtime.o \
 		build/libtinyc.a
 
+build/readwin.exe: \
+		build/windows/tools/readwin/readwin_main.o \
+		build/windows/src/loader/windows/pe_tools.o \
+		build/windows/src/dlls/twlibc.o \
+		build/ntdll.dll
+	@echo "building readwin.exe..."
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
+		--target=x86_64-w64-windows-gnu \
+		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
+		-o build/readwin.exe \
+		build/ntdll.dll \
+		build/windows/tools/readwin/readwin_main.o \
+		build/windows/src/loader/windows/pe_tools.o \
+		build/windows/src/dlls/twlibc.o
+
 readlin: build/readlin
 build/readlin: \
 		build/linux/tools/readlin/readlin_main.o \

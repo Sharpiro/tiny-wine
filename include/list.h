@@ -1,7 +1,8 @@
 #pragma once
 
 #include <stddef.h>
-#include <string.h>
+
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
 /* @note: old list never freed */
 
