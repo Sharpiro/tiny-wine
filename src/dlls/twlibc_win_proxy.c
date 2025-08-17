@@ -1,6 +1,8 @@
 #include <dlls/ntdll.h>
 #include <dlls/twlibc_win_proxy.h>
 
+// @todo: rm this proxy somehow?
+
 #define STDOUT 1
 #define STDERR 2
 
@@ -10,6 +12,9 @@ int32_t open(const char *path, int32_t flags) {
 
 size_t read(int32_t fd, void *buf, size_t count) {
     return read_win(fd, buf, count);
+}
+off_t lseek(int32_t fd, off_t offset, int whence) {
+    return lseek_win(fd, offset, whence);
 }
 
 int32_t close(int32_t fd) {

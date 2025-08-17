@@ -41,6 +41,7 @@ linux: \
 windows: \
 	build/winloader \
 	build/readwin \
+ 	build/readwin.exe \
 	build/windynamic.exe \
 	build/windynamicfull.exe
 
@@ -399,18 +400,16 @@ build/readwin: \
 build/readwin.exe: \
 		build/windows/tools/readwin/readwin_main.o \
 		build/windows/src/loader/windows/pe_tools.o \
-		build/windows/src/dlls/twlibc.o \
-		build/ntdll.dll
+		build/msvcrt.dll
 	@echo "building readwin.exe..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
 		--target=x86_64-w64-windows-gnu \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o build/readwin.exe \
-		build/ntdll.dll \
+		build/msvcrt.dll \
 		build/windows/tools/readwin/readwin_main.o \
-		build/windows/src/loader/windows/pe_tools.o \
-		build/windows/src/dlls/twlibc.o
+		build/windows/src/loader/windows/pe_tools.o
 
 readlin: build/readlin
 build/readlin: \

@@ -68,6 +68,10 @@ size_t read_win(int32_t fd, void *buf, size_t count) {
     return read(fd, buf, count);
 }
 
+off_t lseek_win(int32_t fd, off_t offset, int whence) {
+    return lseek(fd, offset, whence);
+}
+
 int32_t close_win(int32_t fd) {
     return close(fd);
 }

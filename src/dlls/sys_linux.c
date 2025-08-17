@@ -135,6 +135,10 @@ off_t lseek(int32_t fd, off_t offset, int32_t whence) {
         .param_three = (size_t)whence,
     };
     off_t result = (off_t)syscall(SYS_lseek, &args);
+    if (result < 0) {
+        errno = -(int32_t)result;
+        return -1;
+    }
     return result;
 }
 

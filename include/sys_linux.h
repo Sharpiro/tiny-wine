@@ -49,8 +49,6 @@ int32_t mprotect(void *address, size_t length, int32_t protection);
 
 size_t brk(size_t brk_address);
 
-void exit(int32_t exit_code);
-
 ssize_t write(int32_t fd, const char *data, size_t length);
 
 int32_t open(const char *path, int32_t flags);
@@ -59,7 +57,7 @@ int32_t close(int32_t fd);
 
 size_t read(int32_t fd, void *buf, size_t count);
 
-off_t lseek(int32_t fd, off_t offset, int whence);
+off_t lseek(int32_t fd, off_t offset, int32_t whence);
 
 void *mmap(
     void *address,

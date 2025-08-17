@@ -3,8 +3,6 @@
 #include <assert.h>
 #include <dlls/twlibc.h>
 #include <list.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 #define DOS_MAGIC 0x5a4d
 #define DYNAMIC_CALLBACK_TRAMPOLINE_SIZE 7

@@ -119,6 +119,15 @@ EXPORTABLE size_t fread(void *buffer, size_t size, size_t count, FILE *file) {
     return read_len;
 }
 
+EXPORTABLE int32_t fseek(FILE *file, int64_t offset, int32_t whence) {
+    int32_t fd = fileno(file);
+    int result = (int32_t)lseek(fd, offset, whence);
+    if (result == -1) {
+        return result;
+    }
+    return 0;
+}
+
 EXPORTABLE int32_t fclose(FILE *file) {
     int32_t fd = fileno(file);
     return close(fd);

@@ -1,9 +1,7 @@
-
 #include <dlls/twlibc.h>
 #include <loader/windows/pe_tools.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <sys_linux.h>
 
 #define MAX_ARRAY_LENGTH 1000
 
@@ -128,8 +126,7 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
     size_t section_headers_size =
         sizeof(struct WinSectionHeader) * section_headers_len;
     struct WinSectionHeader *section_headers = malloc(section_headers_size);
-    int32_t fd = fileno(fp);
-    lseek(fd, (off_t)section_headers_start, SEEK_SET);
+    fseek(fp, (off_t)section_headers_start, SEEK_SET);
     fread(section_headers, 1, section_headers_size, fp);
 
     /* Import Directory */
@@ -152,7 +149,7 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
     if (import_section != NULL) {
         uint8_t *import_section_buffer = malloc(import_section->file_size);
 
-        lseek(fd, import_section->file_offset, SEEK_SET);
+        fseek(fp, import_section->file_offset, SEEK_SET);
         fread(import_section_buffer, 1, import_section->file_size, fp);
 
         size_t import_dir_section_offset =
@@ -303,7 +300,7 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
         if (!export_section_buffer) {
             BAIL("export_section_buffer malloc failed\n");
         }
-        lseek(fd, export_section->file_offset, SEEK_SET);
+        fseek(fp, export_section->file_offset, SEEK_SET);
         fread(export_section_buffer, 1, export_section->file_size, fp);
 
         size_t export_dir_section_offset =
@@ -360,16 +357,16 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
         size_t symbol_table_offset =
             winpe_header->image_file_header.pointer_to_symbol_table;
         size_t string_table_offset = symbol_table_offset + raw_symbols_size;
-        lseek(fd, (off_t)string_table_offset, SEEK_SET);
+        fseek(fp, (off_t)string_table_offset, SEEK_SET);
         size_t string_table_size = 0;
         fread(&string_table_size, 1, 4, fp);
 
-        lseek(fd, (off_t)string_table_offset, SEEK_SET);
+        fseek(fp, (off_t)string_table_offset, SEEK_SET);
         uint8_t *string_table = malloc(string_table_size);
         fread(string_table, 1, string_table_size, fp);
 
         struct RawWinSymbol *raw_symbols = malloc(raw_symbols_size);
-        lseek(fd, (off_t)symbol_table_offset, SEEK_SET);
+        fseek(fp, (off_t)symbol_table_offset, SEEK_SET);
         fread(raw_symbols, 1, raw_symbols_size, fp);
 
         symbols = malloc(sizeof(struct WinSymbol) * raw_symbols_len);
@@ -408,7 +405,7 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
     if (relocation_section) {
         uint8_t *relocation_section_buffer =
             malloc(relocation_section->file_size);
-        lseek(fd, (off_t)relocation_section->file_offset, SEEK_SET);
+        fseek(fp, (off_t)relocation_section->file_offset, SEEK_SET);
         fread(relocation_section_buffer, 1, relocation_section->file_size, fp);
 
         const size_t RELOCATION_BLOCK_SIZE = sizeof(struct RelocationBlock);

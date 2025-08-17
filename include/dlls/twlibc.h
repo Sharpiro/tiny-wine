@@ -99,6 +99,8 @@ FILE *fopen(const char *path, const char *mode);
 
 size_t fread(void *buffer, size_t size, size_t count, FILE *file);
 
+int32_t fseek(FILE *file, int64_t offset, int32_t whence);
+
 int32_t fclose(FILE *file);
 
 size_t strlen(const char *data);
