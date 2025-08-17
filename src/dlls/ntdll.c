@@ -1,7 +1,8 @@
 #include <dlls/ntdll.h>
 #include <sys_linux.h>
 
-int32_t errno = 0;
+// @todo: why declared twice?
+int32_t errno_internal = 0;
 
 void DllMainCRTStartup(void) {
 }

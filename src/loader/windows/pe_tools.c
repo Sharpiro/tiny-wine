@@ -105,7 +105,7 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
     }
     if (image_optional_header.magic != PE32_PLUS_MAGIC &&
         image_optional_header.magic != PE32_MAGIC) {
-        BAIL("Invalid PE header\n");
+        BAIL("Invalid PE header magic '%zx'\n", image_optional_header.magic);
     }
 
     size_t image_base = image_optional_header.image_base;
@@ -180,7 +180,7 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
                 malloc(sizeof(struct ImportEntry) * MAX_ARRAY_LENGTH);
             size_t import_entries_len = 0;
             uint8_t *import_lookup_entries = import_section_buffer +
-                raw_dir_entry->characteristics - import_dir_base;
+                raw_dir_entry->import_lookup_table_offset - import_dir_base;
             uint8_t *import_address_entries = import_section_buffer +
                 raw_dir_entry->import_address_table_offset - import_dir_base;
             for (size_t j = 0; true; j++) {
@@ -228,7 +228,8 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
             }
 
             import_dir_entries[i] = (struct ImportDirectoryEntry){
-                .import_lookup_table_offset = raw_dir_entry->characteristics,
+                .import_lookup_table_offset =
+                    raw_dir_entry->import_lookup_table_offset,
                 .lib_name = lib_name,
                 .import_entries = import_entries,
                 .import_entries_len = import_entries_len,

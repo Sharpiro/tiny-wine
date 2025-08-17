@@ -22,7 +22,7 @@
 
 #define MAP_FAILED ((void *)-1)
 
-extern int32_t errno;
+extern int32_t errno_internal;
 
 struct utsname {
     char sysname[65];

@@ -54,7 +54,7 @@ void *mmap(
     };
     ssize_t result = (ssize_t)syscall(SYS_mmap, &args);
     if (result < 0) {
-        errno = (int32_t)-result;
+        errno_internal = (int32_t)-result;
         return MAP_FAILED;
     }
 
@@ -68,7 +68,7 @@ int32_t open(const char *path, int32_t flags) {
     };
     int32_t result = (int32_t)syscall(SYS_open, &args);
     if (result < 0) {
-        errno = -result;
+        errno_internal = -result;
         return -1;
     }
 
@@ -115,7 +115,7 @@ int32_t uname(struct utsname *name) {
     };
     int32_t result = (int32_t)syscall(SYS_uname, &args);
     if (result < 0) {
-        errno = -result;
+        errno_internal = -result;
         return -1;
     }
 
@@ -136,7 +136,7 @@ off_t lseek(int32_t fd, off_t offset, int32_t whence) {
     };
     off_t result = (off_t)syscall(SYS_lseek, &args);
     if (result < 0) {
-        errno = -(int32_t)result;
+        errno_internal = -(int32_t)result;
         return -1;
     }
     return result;
@@ -149,7 +149,7 @@ int32_t munmap(void *address, size_t length) {
     };
     int32_t result = (int32_t)syscall(SYS_munmap, &args);
     if (result < 0) {
-        errno = -result;
+        errno_internal = -result;
         return -1;
     }
 
@@ -164,7 +164,7 @@ int32_t mprotect(void *address, size_t length, int32_t protection) {
     };
     int32_t result = (int32_t)syscall(SYS_mprotect, &args);
     if (result < 0) {
-        errno = -result;
+        errno_internal = -result;
         return -1;
     }
     return 0;

@@ -20,7 +20,7 @@
 
 #endif
 
-EXPORTABLE int32_t errno = 0;
+EXPORTABLE int32_t errno_internal = 0;
 
 static size_t heap_start = 0;
 static size_t heap_end = 0;
@@ -95,9 +95,11 @@ EXPORTABLE int32_t _fileno(FILE *stream) {
 
 EXPORTABLE FILE *fopen(const char *path, const char *mode) {
     if (strcmp(mode, "r") != 0) {
-        errno = EACCES;
+        errno_internal = EACCES;
         return NULL;
     }
+
+    // fprintf_internal();
 
     int32_t fd = open(path, O_RDONLY);
     if (fd == -1 || fd >= FILE_INTERNAL_LIST_SIZE) {
@@ -428,8 +430,8 @@ EXPORTABLE void localeconv() {
     exit(42);
 }
 
-EXPORTABLE char *strerror(int32_t errno) {
-    switch (errno) {
+EXPORTABLE char *strerror(int32_t err_number) {
+    switch (err_number) {
     case EPERM:
         return "Operation not permitted";
     case ENOENT:

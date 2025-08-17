@@ -59,7 +59,17 @@ typedef struct _FileInternal {
 
 #define MAP_FAILED ((void *)-1)
 
-extern int32_t errno;
+#ifdef LINUX
+
+extern int32_t errno_internal;
+#define errno errno_internal
+
+#else
+
+extern int32_t *_errno();
+#define errno (*_errno())
+
+#endif
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
@@ -105,6 +115,6 @@ int32_t fclose(FILE *file);
 
 size_t strlen(const char *data);
 
-char *strerror(int32_t errno);
+char *strerror(int32_t err_number);
 
 void *memset(void *s_buffer, int32_t c_value, size_t n_count);

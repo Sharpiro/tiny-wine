@@ -12,14 +12,14 @@ int main(int argc, char **argv) {
     FILE *fp = fopen(filename, "r");
     if (fp == NULL) {
         const char *err = strerror(errno);
-        EXIT("file err '%s' for '%s'\n", err, filename);
+        EXIT("File err '%s(%d)' for '%s'\n", err, errno, filename);
     }
 
     const bool show_symbols = argc >= 3 && strcmp(argv[2], "-s") == 0;
 
     struct PeData pe_data;
     if (!get_pe_data(fp, &pe_data)) {
-        EXIT("failed getting PE data\n");
+        EXIT("Failed getting PE data\n");
     }
     fclose(fp);
 

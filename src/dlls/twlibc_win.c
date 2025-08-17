@@ -3,6 +3,8 @@
 #include <macros.h>
 #include <stddef.h>
 
+extern int32_t errno_internal;
+
 EXPORTABLE char *_acmdln = NULL;
 static char *command_line_array[100] = {};
 
@@ -157,5 +159,5 @@ EXPORTABLE void signal() {
 }
 
 EXPORTABLE int32_t *_errno() {
-    return &errno;
+    return &errno_internal;
 }
