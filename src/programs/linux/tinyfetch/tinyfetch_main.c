@@ -1,9 +1,9 @@
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <pwd.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys_linux.h>
 
 bool read_to_string(const char *path, char **content);
 

@@ -1,8 +1,8 @@
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <loader/linux/loader_lib.h>
 #include <log.h>
 #include <macros.h>
-#include <sys_linux.h>
 
 struct RuntimeObject *executable_object;
 struct RuntimeObject *shared_objects;

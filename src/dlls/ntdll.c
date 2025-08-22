@@ -1,9 +1,6 @@
 #include <dlls/ntdll.h>
 #include <sys_linux.h>
 
-// @todo: why declared twice?
-int32_t errno_internal = 0;
-
 void DllMainCRTStartup(void) {
 }
 
@@ -39,7 +36,7 @@ NTSTATUS NtWriteFile(
         return -1;
     }
 
-    int32_t result = (int32_t)write(linux_file_handle, buffer, length);
+    int32_t result = (int32_t)sys_write(linux_file_handle, buffer, length);
     return result;
 }
 
@@ -54,25 +51,25 @@ NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
 }
 
 size_t brk_win(size_t brk_address) {
-    return brk(brk_address);
+    return sys_brk(brk_address);
 }
 
 int32_t mprotect_win(void *address, size_t length, int32_t protection) {
-    return mprotect(address, length, protection);
+    return sys_mprotect(address, length, protection);
 }
 
 int32_t open_win(const char *path, int32_t flags) {
-    return open(path, flags);
+    return sys_open(path, flags);
 }
 
 size_t read_win(int32_t fd, void *buf, size_t count) {
-    return read(fd, buf, count);
+    return sys_read(fd, buf, count);
 }
 
 off_t lseek_win(int32_t fd, off_t offset, int whence) {
-    return lseek(fd, offset, whence);
+    return sys_lseek(fd, offset, whence);
 }
 
 int32_t close_win(int32_t fd) {
-    return close(fd);
+    return sys_close(fd);
 }

@@ -22,8 +22,6 @@
 
 #define MAP_FAILED ((void *)-1)
 
-extern int32_t errno_internal;
-
 struct utsname {
     char sysname[65];
     char nodename[65];
@@ -45,21 +43,21 @@ struct SysArgs {
 
 size_t syscall(size_t sys_no, struct SysArgs *sys_args);
 
-int32_t mprotect(void *address, size_t length, int32_t protection);
+size_t sys_mprotect(void *address, size_t length, int32_t protection);
 
-size_t brk(size_t brk_address);
+size_t sys_brk(size_t brk_address);
 
-ssize_t write(int32_t fd, const char *data, size_t length);
+size_t sys_write(int32_t fd, const char *data, size_t length);
 
-int32_t open(const char *path, int32_t flags);
+size_t sys_open(const char *path, int32_t flags);
 
-int32_t close(int32_t fd);
+size_t sys_close(int32_t fd);
 
-size_t read(int32_t fd, void *buf, size_t count);
+size_t sys_read(int32_t fd, void *buf, size_t count);
 
-off_t lseek(int32_t fd, off_t offset, int32_t whence);
+size_t sys_lseek(int32_t fd, off_t offset, int32_t whence);
 
-void *mmap(
+size_t sys_mmap(
     void *address,
     size_t length,
     int32_t prot,
@@ -68,12 +66,14 @@ void *mmap(
     off_t offset
 );
 
-int32_t munmap(void *address, size_t length);
+size_t sys_munmap(void *address, size_t length);
 
-int32_t getpid(void);
+size_t sys_getpid(void);
 
-uint32_t getuid();
+size_t sys_getcwd(char *buffer, size_t size);
 
-size_t arch_prctl(size_t code, size_t address);
+size_t sys_getuid();
 
-int32_t uname(struct utsname *name);
+size_t sys_arch_prctl(size_t code, size_t address);
+
+size_t sys_uname(struct utsname *name);

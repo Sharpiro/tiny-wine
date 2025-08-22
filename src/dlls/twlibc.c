@@ -7,7 +7,7 @@
 
 #ifdef LINUX
 
-#include <sys_linux.h>
+#include <dlls/twlibc_linux.h>
 
 #define BRK brk
 
@@ -20,7 +20,7 @@
 
 #endif
 
-EXPORTABLE int32_t errno_internal = 0;
+int32_t errno_internal = 0;
 
 static size_t heap_start = 0;
 static size_t heap_end = 0;

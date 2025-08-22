@@ -1,5 +1,6 @@
 #include <asm/prctl.h>
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <loader/linux/loader_lib.h>
 #include <loader/memory_map.h>
 #include <loader/windows/pe_tools.h>
@@ -9,7 +10,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <sys_linux.h>
 #include <types_win.h>
 
 struct WinRuntimeObject runtime_exe;

@@ -18,24 +18,24 @@ size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
-size_t brk(size_t brk) {
+size_t sys_brk(size_t brk) {
     struct SysArgs args = {
         .param_one = brk,
     };
     return syscall(SYS_brk, &args);
 }
 
-ssize_t write(int32_t fd, const char *data, size_t length) {
+size_t sys_write(int32_t fd, const char *data, size_t length) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
         .param_two = (size_t)data,
         .param_three = length,
     };
-    syscall(SYS_write, &args);
-    return (ssize_t)length;
+    size_t result = syscall(SYS_write, &args);
+    return result;
 }
 
-void *mmap(
+size_t sys_mmap(
     void *address,
     size_t length,
     int32_t prot,
@@ -52,37 +52,27 @@ void *mmap(
         .param_five = (size_t)fd,
         .param_six = (size_t)offset,
     };
-    ssize_t result = (ssize_t)syscall(SYS_mmap, &args);
-    if (result < 0) {
-        errno_internal = (int32_t)-result;
-        return MAP_FAILED;
-    }
-
-    return (void *)result;
+    size_t result = syscall(SYS_mmap, &args);
+    return result;
 }
 
-int32_t open(const char *path, int32_t flags) {
+size_t sys_open(const char *path, int32_t flags) {
     struct SysArgs args = {
         .param_one = (size_t)path,
         .param_two = (size_t)flags,
     };
-    int32_t result = (int32_t)syscall(SYS_open, &args);
-    if (result < 0) {
-        errno_internal = -result;
-        return -1;
-    }
-
+    size_t result = syscall(SYS_open, &args);
     return result;
 }
 
-int32_t close(int32_t fd) {
+size_t sys_close(int32_t fd) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
     };
-    return (int32_t)syscall(SYS_close, &args);
+    return syscall(SYS_close, &args);
 }
 
-size_t read(int32_t fd, void *buf, size_t count) {
+size_t sys_read(int32_t fd, void *buf, size_t count) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
         .param_two = (size_t)buf,
@@ -91,86 +81,64 @@ size_t read(int32_t fd, void *buf, size_t count) {
     return syscall(SYS_read, &args);
 }
 
-int32_t getpid(void) {
+size_t sys_getpid(void) {
     struct SysArgs args = {0};
-    return (int32_t)syscall(SYS_getpid, &args);
+    return syscall(SYS_getpid, &args);
 }
 
-char *getcwd(char *buffer, size_t size) {
+size_t sys_getcwd(char *buffer, size_t size) {
     struct SysArgs args = {
         .param_one = (size_t)buffer,
         .param_two = size,
     };
     size_t result = syscall(SYS_getcwd, &args);
-    if (result < 1) {
-        return NULL;
-    }
-
-    return buffer;
+    return result;
 }
 
-int32_t uname(struct utsname *name) {
+size_t sys_uname(struct utsname *name) {
     struct SysArgs args = {
         .param_one = (size_t)name,
     };
-    int32_t result = (int32_t)syscall(SYS_uname, &args);
-    if (result < 0) {
-        errno_internal = -result;
-        return -1;
-    }
-
+    size_t result = syscall(SYS_uname, &args);
     return result;
 }
 
-uid_t getuid() {
+size_t sys_getuid() {
     struct SysArgs args = {};
-    uid_t result = (uid_t)syscall(SYS_getuid, &args);
+    size_t result = syscall(SYS_getuid, &args);
     return result;
 }
 
-off_t lseek(int32_t fd, off_t offset, int32_t whence) {
+size_t sys_lseek(int32_t fd, off_t offset, int32_t whence) {
     struct SysArgs args = {
         .param_one = (size_t)fd,
         .param_two = (size_t)offset,
         .param_three = (size_t)whence,
     };
-    off_t result = (off_t)syscall(SYS_lseek, &args);
-    if (result < 0) {
-        errno_internal = -(int32_t)result;
-        return -1;
-    }
+    size_t result = syscall(SYS_lseek, &args);
     return result;
 }
 
-int32_t munmap(void *address, size_t length) {
+size_t sys_munmap(void *address, size_t length) {
     struct SysArgs args = {
         .param_one = (size_t)address,
         .param_two = length,
     };
-    int32_t result = (int32_t)syscall(SYS_munmap, &args);
-    if (result < 0) {
-        errno_internal = -result;
-        return -1;
-    }
-
-    return 0;
+    size_t result = syscall(SYS_munmap, &args);
+    return result;
 }
 
-int32_t mprotect(void *address, size_t length, int32_t protection) {
+size_t sys_mprotect(void *address, size_t length, int32_t protection) {
     struct SysArgs args = {
         .param_one = (size_t)address,
         .param_two = length,
         .param_three = (size_t)protection,
     };
-    int32_t result = (int32_t)syscall(SYS_mprotect, &args);
-    if (result < 0) {
-        errno_internal = -result;
-        return -1;
-    }
-    return 0;
+    size_t result = syscall(SYS_mprotect, &args);
+    return result;
 }
 
-size_t arch_prctl(size_t code, size_t address) {
+size_t sys_arch_prctl(size_t code, size_t address) {
     struct SysArgs args = {
         .param_one = code,
         .param_two = address,

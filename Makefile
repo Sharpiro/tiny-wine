@@ -68,24 +68,28 @@ build/windows/%.o: %.c
 		-o $@
 
 build/libtinyc.a: \
+		build/linux/src/dlls/sys_linux.o \
 		build/linux/src/dlls/twlibc.o \
-		build/linux/src/dlls/sys_linux.o
+		build/linux/src/dlls/twlibc_linux.o
 	@echo "building libtinyc.a..."
 	@ar rcs build/libtinyc.a \
+		build/linux/src/dlls/sys_linux.o \
 		build/linux/src/dlls/twlibc.o \
-		build/linux/src/dlls/sys_linux.o
+		build/linux/src/dlls/twlibc_linux.o
 
 build/libtinyc.so: \
-		build/linux/src//dlls/twlibc.o \
-		build/linux/src//dlls/sys_linux.o
+		build/linux/src/dlls/sys_linux.o \
+		build/linux/src/dlls/twlibc.o \
+		build/linux/src/dlls/twlibc_linux.o
 	@echo "building libtinyc.so..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
 		-shared \
 		-o build/libtinyc.so \
-		build/linux/src//dlls/twlibc.o \
-		build/linux/src//dlls/sys_linux.o
+		build/linux/src/dlls/sys_linux.o \
+		build/linux/src/dlls/twlibc.o \
+		build/linux/src/dlls/twlibc_linux.o
 
 build/libdynamic.so: \
 		build/linux/src/programs/linux/dynamic/dynamic_lib.o

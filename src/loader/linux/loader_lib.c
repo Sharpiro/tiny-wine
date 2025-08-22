@@ -1,9 +1,9 @@
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <loader/linux/loader_lib.h>
 #include <loader/memory_map.h>
 #include <log.h>
 #include <stddef.h>
-#include <sys_linux.h>
 
 bool find_runtime_relocation(
     const struct RuntimeRelocation *runtime_relocations,
@@ -245,7 +245,9 @@ bool get_memory_regions(
             .file_offset = file_offset,
             .permissions = program_header->p_flags,
         };
-        MemoryRegionList_add(memory_regions, memory_region);
+        if (!MemoryRegionList_add(memory_regions, memory_region)) {
+            return false;
+        }
     }
 
     return true;
