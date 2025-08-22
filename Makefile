@@ -135,8 +135,7 @@ build/windows/src/dlls/twlibc_win.o: CFLAGS += "-DDLL"
 build/msvcrt.dll: \
 		build/ntdll.dll \
 		build/windows/src/dlls/twlibc.o \
-		build/windows/src/dlls/twlibc_win.o \
-		build/windows/src/dlls/twlibc_win_proxy.o
+		build/windows/src/dlls/twlibc_win.o
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
@@ -147,7 +146,6 @@ build/msvcrt.dll: \
 		-o build/msvcrt.dll \
 		build/windows/src/dlls/twlibc.o \
 		build/windows/src/dlls/twlibc_win.o \
-		build/windows/src/dlls/twlibc_win_proxy.o \
 		build/ntdll.dll
 
 build/KERNEL32.dll: \

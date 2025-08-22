@@ -18,6 +18,13 @@ size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
+void sys_exit(int32_t code) {
+    struct SysArgs args = {
+        .param_one = (size_t)code,
+    };
+    syscall(SYS_exit, &args);
+}
+
 size_t sys_brk(size_t brk) {
     struct SysArgs args = {
         .param_one = brk,

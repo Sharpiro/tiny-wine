@@ -2,30 +2,19 @@
 #include <types_linux.h>
 #include <types_win.h>
 
-EXPORTABLE int32_t NtWriteFile(
-    HANDLE file_handle,
-    [[maybe_unused]] HANDLE event,
-    [[maybe_unused]] PVOID apc_routine,
-    [[maybe_unused]] PVOID apc_context,
-    [[maybe_unused]] PIO_STATUS_BLOCK io_status_block,
-    PVOID buffer,
-    ULONG length,
-    [[maybe_unused]] PLARGE_INTEGER byte_offset,
-    [[maybe_unused]] PULONG key
-);
-
 EXPORTABLE NTSTATUS
 NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus);
 
-EXPORTABLE size_t brk_win(size_t brk);
+EXPORTABLE size_t brk(size_t brk);
 
-EXPORTABLE int32_t
-mprotect_win(void *address, size_t length, int32_t protection);
+EXPORTABLE int32_t mprotect(void *address, size_t length, int32_t protection);
 
-EXPORTABLE int32_t open_win(const char *path, int32_t flags);
+EXPORTABLE int32_t open(const char *path, int32_t flags);
 
-EXPORTABLE size_t read_win(int32_t fd, void *buf, size_t count);
+EXPORTABLE size_t read(int32_t fd, void *buf, size_t count);
 
-EXPORTABLE off_t lseek_win(int32_t fd, off_t offset, int whence);
+EXPORTABLE off_t lseek(int32_t fd, off_t offset, int whence);
 
-EXPORTABLE int32_t close_win(int32_t fd);
+EXPORTABLE int32_t close(int32_t fd);
+
+EXPORTABLE ssize_t write(int32_t fd, const char *data, size_t length);

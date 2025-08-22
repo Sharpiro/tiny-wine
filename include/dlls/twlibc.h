@@ -118,3 +118,5 @@ size_t strlen(const char *data);
 char *strerror(int32_t err_number);
 
 void *memset(void *s_buffer, int32_t c_value, size_t n_count);
+
+int32_t fputc(int32_t c, FILE *stream);

@@ -9,14 +9,10 @@
 
 #include <dlls/twlibc_linux.h>
 
-#define BRK brk
-
 #else
 
 #include <dlls/ntdll.h>
 #include <dlls/twlibc_win_proxy.h>
-
-#define BRK brk_win
 
 #endif
 
@@ -98,8 +94,6 @@ EXPORTABLE FILE *fopen(const char *path, const char *mode) {
         errno_internal = EACCES;
         return NULL;
     }
-
-    // fprintf_internal();
 
     int32_t fd = open(path, O_RDONLY);
     if (fd == -1 || fd >= FILE_INTERNAL_LIST_SIZE) {
@@ -327,13 +321,13 @@ EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
     if (heap_start == 0) {
-        heap_start = BRK(0);
+        heap_start = brk(0);
         heap_end = heap_start;
         heap_index = heap_start;
     }
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        heap_end = BRK(heap_end + extend_size);
+        heap_end = brk(heap_end + extend_size);
     }
 
     if (heap_end <= heap_start) {
@@ -396,10 +390,16 @@ EXPORTABLE int32_t vfprintf(
     return 0;
 }
 
+// @todo: i broke the stack?
 EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
-    char c_char = (char)c;
-    int32_t file_no = fileno(stream);
-    if (!write(file_no, &c_char, 1)) {
+    char TEMP_CHAR = 'Z';
+    // char c_char = (char)c;
+    // char c_char = (char)'z';
+    // int32_t file_no = fileno(stream);
+    // if (!write(file_no, &c_char, 1)) {
+    // if (!write(1, &c_char, 1)) {
+    TEMP_CHAR = 'Y';
+    if (!write(1, &TEMP_CHAR, 1)) {
         return -1;
     }
 
@@ -459,6 +459,7 @@ void exit(int32_t code) {
 }
 
 void abort() {
+    // sys_exit(3);
     struct SysArgs args = {.param_one = 3};
     syscall(SYS_exit, &args);
 }

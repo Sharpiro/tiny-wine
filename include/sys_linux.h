@@ -43,6 +43,8 @@ struct SysArgs {
 
 size_t syscall(size_t sys_no, struct SysArgs *sys_args);
 
+void sys_exit(int32_t code);
+
 size_t sys_mprotect(void *address, size_t length, int32_t protection);
 
 size_t sys_brk(size_t brk_address);
