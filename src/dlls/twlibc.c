@@ -390,16 +390,10 @@ EXPORTABLE int32_t vfprintf(
     return 0;
 }
 
-// @todo: i broke the stack?
 EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
-    char TEMP_CHAR = 'Z';
-    // char c_char = (char)c;
-    // char c_char = (char)'z';
-    // int32_t file_no = fileno(stream);
-    // if (!write(file_no, &c_char, 1)) {
-    // if (!write(1, &c_char, 1)) {
-    TEMP_CHAR = 'Y';
-    if (!write(1, &TEMP_CHAR, 1)) {
+    char c_char = (char)c;
+    int32_t file_no = fileno(stream);
+    if (!write(file_no, &c_char, 1)) {
         return -1;
     }
 

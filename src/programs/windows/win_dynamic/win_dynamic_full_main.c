@@ -1,8 +1,8 @@
-// #include <math.h>
-// #include <stdint.h>
-// #include <stdio.h>
-// #include <stdlib.h>
-#include <dlls/twlibc.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+// #include <dlls/twlibc.h>
 
 extern uint64_t lib_var_bss;
 extern uint64_t lib_var_data;
@@ -26,8 +26,7 @@ int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
 int main(int argc, char **argv) {
-    fputc('z', stdin);
-    printf("bruh\n");
+    fputc('F', stdout);
     // printf("bruh\n");
     // for (int i = 0; i < argc; i++) {
     //     if (i + 1 == argc) {
