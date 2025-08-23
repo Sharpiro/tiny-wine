@@ -46,6 +46,9 @@ NTSTATUS NtWriteFile(
 ssize_t write(int32_t fd, const char *data, size_t length) {
     // int32_t result = (int32_t)sys_write(fd, data, length);
     // return 0;
+    // if (*data != 'Z') {
+    //     sys_exit(3);
+    // }
     struct SysArgs args = {
         .param_one = (size_t)fd,
         .param_two = (size_t)data,

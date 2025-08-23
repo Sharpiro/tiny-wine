@@ -15,6 +15,26 @@ size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     __asm__("mov rax, %0" : : "r"(sys_no));
     __asm__("syscall" : "=r"(result) : :);
 
+    // __asm__("mov rdi, %[param_one]\n"
+    //         "mov rsi, %[param_two]\n"
+    //         "mov rdx, %[param_three]\n"
+    //         "mov rcx, %[param_four]\n"
+    //         "mov r8, %[param_five]\n "
+    //         "mov r9, %[param_six]\n "
+    //         "mov r10, %[param_seven]\n"
+    //         "mov rax, %[sys_no]\n"
+    //         "syscall\n"
+    //         : "=a"(result)
+    //         : [param_one] "m"(sys_args->param_one),
+    //           [param_two] "m"(sys_args->param_two),
+    //           [param_three] "m"(sys_args->param_three),
+    //           [param_four] "m"(sys_args->param_four),
+    //           [param_five] "m"(sys_args->param_five),
+    //           [param_six] "m"(sys_args->param_six),
+    //           [param_seven] "m"(sys_args->param_seven),
+    //           [sys_no] "m"(sys_no)
+    //         : "rdi", "rsi", "rdx", "rcx", "r8", "r9", "r10");
+
     return result;
 }
 

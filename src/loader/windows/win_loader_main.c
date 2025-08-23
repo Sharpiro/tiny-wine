@@ -267,10 +267,12 @@ void dynamic_callback_windows(void) {
         EXIT("expected runtime function\n");
     }
 
+    const char *lib_log_name =
+        is_lib_ntdll ? "ntdll.dll --> libntdll.so" : lib_name;
     LOGDEBUG(
         "%zx: %s: %s(%zx, %zx, %zx, %zx, %zx, %zx, %zx, %zx)\n",
         function_export.address,
-        lib_name,
+        lib_log_name,
         import_entry->name,
         rcx,
         rdx,
