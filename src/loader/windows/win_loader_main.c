@@ -269,6 +269,7 @@ void dynamic_callback_windows(void) {
 
     const char *lib_log_name =
         is_lib_ntdll ? "ntdll.dll --> libntdll.so" : lib_name;
+    LOGDEBUG("rbp = %zx\n", (size_t)rbp)
     LOGDEBUG(
         "%zx: %s: %s(%zx, %zx, %zx, %zx, %zx, %zx, %zx, %zx)\n",
         function_export.address,
