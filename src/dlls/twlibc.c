@@ -1,20 +1,10 @@
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <macros.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#ifdef LINUX
-
-#include <dlls/twlibc_linux.h>
-
-#else
-
-#include <dlls/ntdll.h>
-#include <dlls/twlibc_win_proxy.h>
-
-#endif
 
 int32_t errno_internal = 0;
 
@@ -391,16 +381,11 @@ EXPORTABLE int32_t vfprintf(
 }
 
 EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
-    // char c_char = 'B';
-    int64_t c_char = 'B';
-    // write(1, &c_char, 1);
-    write(1, (char *)&c_char, 1);
-    // char c_char = (char)c;
-    // int32_t file_no = fileno(stream);
-    // if (!write(file_no, &c_char, 1)) {
-    //     return -1;
-    // }
-
+    char c_char = (char)c;
+    int32_t file_no = fileno(stream);
+    if (!write(file_no, &c_char, 1)) {
+        return -1;
+    }
     return c;
 }
 
@@ -448,28 +433,3 @@ EXPORTABLE char *strerror(int32_t err_number) {
         return "Unknown";
     }
 }
-
-#ifdef LINUX
-
-void exit(int32_t code) {
-    struct SysArgs args = {.param_one = (size_t)code};
-    syscall(SYS_exit, &args);
-}
-
-void abort() {
-    // sys_exit(3);
-    struct SysArgs args = {.param_one = 3};
-    syscall(SYS_exit, &args);
-}
-
-#else
-
-void exit(int32_t exit_code) {
-    NtTerminateProcess((HANDLE)-1, exit_code);
-}
-
-void abort() {
-    NtTerminateProcess((HANDLE)-1, 3);
-}
-
-#endif

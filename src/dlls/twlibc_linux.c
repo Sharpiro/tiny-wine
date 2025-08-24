@@ -114,3 +114,11 @@ int32_t arch_prctl(size_t code, size_t address) {
     }
     return result;
 }
+
+void exit(int32_t code) {
+    sys_exit(code);
+}
+
+void abort() {
+    sys_exit(3);
+}

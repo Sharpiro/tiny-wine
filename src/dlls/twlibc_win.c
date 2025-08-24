@@ -161,3 +161,26 @@ EXPORTABLE void signal() {
 EXPORTABLE int32_t *_errno() {
     return &errno_internal;
 }
+
+EXPORTABLE int32_t ntdll_large_params_msvcrt(
+    int32_t one,
+    int32_t two,
+    int32_t three,
+    int32_t four,
+    int32_t five,
+    int32_t six,
+    int32_t seven,
+    int32_t eight
+) {
+    return ntdll_large_params_ntdll(
+        one, two, three, four, five, six, seven, eight
+    );
+}
+
+void exit(int32_t exit_code) {
+    NtTerminateProcess((HANDLE)-1, exit_code);
+}
+
+void abort() {
+    NtTerminateProcess((HANDLE)-1, 3);
+}

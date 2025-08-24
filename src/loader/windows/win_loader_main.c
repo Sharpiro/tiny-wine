@@ -314,6 +314,9 @@ void dynamic_callback_windows(void) {
 
             ".loader_dynamic_callback_windows_swap:\n"
 
+            "mov r10, %[p7_win_stack3]\n" // store p7
+            "mov r11, %[p8_win_stack4]\n" // store p8
+
             "mov rsp, rbp\n"
             "pop rbp\n"
             "add rsp, 16\n" // Remove dynamic trampoline data
@@ -322,14 +325,13 @@ void dynamic_callback_windows(void) {
 
             "pop rbx\n"     // Save return address
             "add rsp, 32\n" // Remove frame padding
-            "add rsp, 16\n" // Remove stack params 5 & 6
-            // "add rsp, 8\n"  // Convert padding
+            "push r11\n"    // push p8
+            "push r10\n"    // push p7
             "call %[function_address]\n"
 
             /* Restore windows stack frame and remaining registers */
 
-            // "sub rsp, 8\n"  // Convert padding
-            "sub rsp, 16\n" // Restore stack params 5 & 6 space
+            "add rsp, 16\n" // Remove stack params 7 & 8
             "sub rsp, 32\n" // Restore frame padding
             "push rbx\n"    // Restore return address
             "mov rbx, [%[swap_state_rbx]]\n"
@@ -344,6 +346,8 @@ void dynamic_callback_windows(void) {
               [p4_win_r9] "m"(r9),
               [p5_win_stack1] "m"(p5_win_stack1),
               [p6_win_stack2] "m"(p6_win_stack2),
+              [p7_win_stack3] "m"(p7_win_stack3),
+              [p8_win_stack4] "m"(p8_win_stack4),
               [r12] "m"(r12),
               [r13] "m"(r13),
               [r14] "m"(r14),
@@ -531,10 +535,10 @@ static bool load_dlls(
         const char *shared_lib_name = dir_entry->lib_name;
         LOGINFO("mapping shared library '%s'\n", shared_lib_name);
         FILE *shared_lib_fp = fopen(shared_lib_name, "r");
-        int32_t shared_lib_fd = fileno(shared_lib_fp);
-        if (shared_lib_fd == -1) {
+        if (shared_lib_fp == NULL) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
         }
+        int32_t shared_lib_fd = fileno(shared_lib_fp);
 
         struct PeData shared_lib_pe;
         if (!get_pe_data(shared_lib_fp, &shared_lib_pe)) {
@@ -706,11 +710,11 @@ int main(int argc, char **argv) {
     }
 
     FILE *fp = fopen(filename, "r");
-    int32_t fd = fileno(fp);
-    if (fd < 0) {
+    if (fp == NULL) {
         EXIT("file error, %d, %s\n", errno, strerror(errno));
         return -1;
     }
+    int32_t fd = fileno(fp);
 
     struct PeData pe_exe;
     if (!get_pe_data(fp, &pe_exe)) {
