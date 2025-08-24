@@ -68,24 +68,28 @@ build/windows/%.o: %.c
 		-o $@
 
 build/libtinyc.a: \
+		build/linux/src/dlls/sys_linux.o \
 		build/linux/src/dlls/twlibc.o \
-		build/linux/src/dlls/sys_linux.o
+		build/linux/src/dlls/twlibc_linux.o
 	@echo "building libtinyc.a..."
 	@ar rcs build/libtinyc.a \
+		build/linux/src/dlls/sys_linux.o \
 		build/linux/src/dlls/twlibc.o \
-		build/linux/src/dlls/sys_linux.o
+		build/linux/src/dlls/twlibc_linux.o
 
 build/libtinyc.so: \
-		build/linux/src//dlls/twlibc.o \
-		build/linux/src//dlls/sys_linux.o
+		build/linux/src/dlls/sys_linux.o \
+		build/linux/src/dlls/twlibc.o \
+		build/linux/src/dlls/twlibc_linux.o
 	@echo "building libtinyc.so..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
 		-nostdlib -static \
 		-shared \
 		-o build/libtinyc.so \
-		build/linux/src//dlls/twlibc.o \
-		build/linux/src//dlls/sys_linux.o
+		build/linux/src/dlls/sys_linux.o \
+		build/linux/src/dlls/twlibc.o \
+		build/linux/src/dlls/twlibc_linux.o
 
 build/libdynamic.so: \
 		build/linux/src/programs/linux/dynamic/dynamic_lib.o
@@ -131,8 +135,7 @@ build/windows/src/dlls/twlibc_win.o: CFLAGS += "-DDLL"
 build/msvcrt.dll: \
 		build/ntdll.dll \
 		build/windows/src/dlls/twlibc.o \
-		build/windows/src/dlls/twlibc_win.o \
-		build/windows/src/dlls/twlibc_win_proxy.o
+		build/windows/src/dlls/twlibc_win.o
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
@@ -143,7 +146,6 @@ build/msvcrt.dll: \
 		-o build/msvcrt.dll \
 		build/windows/src/dlls/twlibc.o \
 		build/windows/src/dlls/twlibc_win.o \
-		build/windows/src/dlls/twlibc_win_proxy.o \
 		build/ntdll.dll
 
 build/KERNEL32.dll: \

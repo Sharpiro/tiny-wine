@@ -1,8 +1,8 @@
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <loader/windows/win_loader_lib.h>
 #include <log.h>
 #include <stddef.h>
-#include <sys_linux.h>
 
 #define ASM_X64_MOV32_IMMEDIATE_INTO_EAX 0xb8
 #define ASM_X64_CALL_EAX 0xff, 0xd0

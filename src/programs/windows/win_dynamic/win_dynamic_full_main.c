@@ -3,6 +3,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int32_t ntdll_large_params_msvcrt(
+    int32_t one,
+    int32_t two,
+    int32_t three,
+    int32_t four,
+    int32_t five,
+    int32_t six,
+    int32_t seven,
+    int32_t eight
+);
+
 extern uint64_t lib_var_bss;
 extern uint64_t lib_var_data;
 

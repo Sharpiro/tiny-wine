@@ -1,11 +1,11 @@
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys_linux.h>
 
 #define READ_SIZE 0x1000
 

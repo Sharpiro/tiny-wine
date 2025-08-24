@@ -1,26 +1,12 @@
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <macros.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef LINUX
-
-#include <sys_linux.h>
-
-#define BRK brk
-
-#else
-
-#include <dlls/ntdll.h>
-#include <dlls/twlibc_win_proxy.h>
-
-#define BRK brk_win
-
-#endif
-
-EXPORTABLE int32_t errno_internal = 0;
+int32_t errno_internal = 0;
 
 static size_t heap_start = 0;
 static size_t heap_end = 0;
@@ -98,8 +84,6 @@ EXPORTABLE FILE *fopen(const char *path, const char *mode) {
         errno_internal = EACCES;
         return NULL;
     }
-
-    // fprintf_internal();
 
     int32_t fd = open(path, O_RDONLY);
     if (fd == -1 || fd >= FILE_INTERNAL_LIST_SIZE) {
@@ -327,13 +311,13 @@ EXPORTABLE void *malloc(size_t n) {
     const size_t PAGE_SIZE = 0x1000;
 
     if (heap_start == 0) {
-        heap_start = BRK(0);
+        heap_start = brk(0);
         heap_end = heap_start;
         heap_index = heap_start;
     }
     if (heap_index + n > heap_end) {
         size_t extend_size = PAGE_SIZE * (n / PAGE_SIZE) + PAGE_SIZE;
-        heap_end = BRK(heap_end + extend_size);
+        heap_end = brk(heap_end + extend_size);
     }
 
     if (heap_end <= heap_start) {
@@ -402,7 +386,6 @@ EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
     if (!write(file_no, &c_char, 1)) {
         return -1;
     }
-
     return c;
 }
 
@@ -450,27 +433,3 @@ EXPORTABLE char *strerror(int32_t err_number) {
         return "Unknown";
     }
 }
-
-#ifdef LINUX
-
-void exit(int32_t code) {
-    struct SysArgs args = {.param_one = (size_t)code};
-    syscall(SYS_exit, &args);
-}
-
-void abort() {
-    struct SysArgs args = {.param_one = 3};
-    syscall(SYS_exit, &args);
-}
-
-#else
-
-void exit(int32_t exit_code) {
-    NtTerminateProcess((HANDLE)-1, exit_code);
-}
-
-void abort() {
-    NtTerminateProcess((HANDLE)-1, 3);
-}
-
-#endif

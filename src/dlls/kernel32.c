@@ -73,7 +73,7 @@ bool VirtualProtect(
     }
 
     *lpflOldProtect = 0xff;
-    mprotect_win(lpAddress, dwSize, protection);
+    mprotect(lpAddress, dwSize, protection);
     return true;
 }
 

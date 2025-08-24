@@ -1,7 +1,7 @@
 #include <dlls/twlibc.h>
+#include <dlls/twlibc_linux.h>
 #include <loader/linux/elf_tools.h>
 #include <log.h>
-#include <sys_linux.h>
 
 #define STRINGIFY(name) #name
 

@@ -1,8 +1,8 @@
 #include <dlls/ntdll.h>
 #include <sys_linux.h>
 
-// @todo: why declared twice?
-int32_t errno_internal = 0;
+#define STDOUT 1
+#define STDERR 2
 
 void DllMainCRTStartup(void) {
 }
@@ -39,8 +39,31 @@ NTSTATUS NtWriteFile(
         return -1;
     }
 
-    int32_t result = (int32_t)write(linux_file_handle, buffer, length);
+    int32_t result = (int32_t)sys_write(linux_file_handle, buffer, length);
     return result;
+}
+
+ssize_t write(int32_t fd, const char *data, size_t length) {
+    HANDLE win_handle;
+    if (fd == STDOUT) {
+        win_handle = (HANDLE)-11;
+    } else if (fd == STDERR) {
+        win_handle = (HANDLE)-12;
+    } else {
+        sys_exit(3);
+    }
+
+    return NtWriteFile(
+        win_handle,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        (PVOID)data,
+        (ULONG)length,
+        NULL,
+        NULL
+    );
 }
 
 NTSTATUS
@@ -48,31 +71,45 @@ NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus) {
     if ((int64_t)ProcessHandle != -1) {
         return -1;
     }
-    struct SysArgs args = {.param_one = (size_t)ExitStatus};
-    syscall(SYS_exit, &args);
+    sys_exit((int32_t)ExitStatus);
     return 0;
 }
 
-size_t brk_win(size_t brk_address) {
-    return brk(brk_address);
+size_t brk(size_t brk_address) {
+    return sys_brk(brk_address);
 }
 
-int32_t mprotect_win(void *address, size_t length, int32_t protection) {
-    return mprotect(address, length, protection);
+// @todo
+
+int32_t mprotect(void *address, size_t length, int32_t protection) {
+    return sys_mprotect(address, length, protection);
 }
 
-int32_t open_win(const char *path, int32_t flags) {
-    return open(path, flags);
+int32_t open(const char *path, int32_t flags) {
+    return sys_open(path, flags);
 }
 
-size_t read_win(int32_t fd, void *buf, size_t count) {
-    return read(fd, buf, count);
+size_t read(int32_t fd, void *buf, size_t count) {
+    return sys_read(fd, buf, count);
 }
 
-off_t lseek_win(int32_t fd, off_t offset, int whence) {
-    return lseek(fd, offset, whence);
+off_t lseek(int32_t fd, off_t offset, int whence) {
+    return sys_lseek(fd, offset, whence);
 }
 
-int32_t close_win(int32_t fd) {
-    return close(fd);
+int32_t close(int32_t fd) {
+    return sys_close(fd);
+}
+
+int32_t ntdll_large_params_ntdll(
+    int32_t one,
+    int32_t two,
+    int32_t three,
+    int32_t four,
+    int32_t five,
+    int32_t six,
+    int32_t seven,
+    int32_t eight
+) {
+    return one + two + three + four + five + six + seven + eight;
 }
