@@ -176,11 +176,3 @@ EXPORTABLE int32_t ntdll_large_params_msvcrt(
         one, two, three, four, five, six, seven, eight
     );
 }
-
-void exit(int32_t exit_code) {
-    NtTerminateProcess((HANDLE)-1, exit_code);
-}
-
-void abort() {
-    NtTerminateProcess((HANDLE)-1, 3);
-}

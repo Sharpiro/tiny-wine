@@ -99,7 +99,7 @@ size_t wcslen(const wchar_t *s);
 
 int32_t _fileno(FILE *stream);
 
-void fputs(const char *data, FILE *file_handle);
+int32_t fputs(const char *data, FILE *file_handle);
 
 char *getcwd(char *buffer, size_t size);
 

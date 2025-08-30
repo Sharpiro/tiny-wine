@@ -115,6 +115,7 @@ build/libntdll.so: \
 		build/linux/src/dlls/sys_linux.o
 
 build/windows/src/dlls/ntdll.o: CFLAGS += "-DDLL"
+build/windows/src/dlls/sys_linux.o: CFLAGS += "-DDLL"
 build/ntdll.dll: \
 		build/libntdll.so \
 		build/windows/src/dlls/ntdll.o \
@@ -132,10 +133,12 @@ build/ntdll.dll: \
 
 build/windows/src/dlls/twlibc.o: CFLAGS += "-DDLL"
 build/windows/src/dlls/twlibc_win.o: CFLAGS += "-DDLL"
+build/windows/src/dlls/twlibc_linux.o: CFLAGS += "-DDLL"
 build/msvcrt.dll: \
 		build/ntdll.dll \
 		build/windows/src/dlls/twlibc.o \
-		build/windows/src/dlls/twlibc_win.o
+		build/windows/src/dlls/twlibc_win.o \
+		build/windows/src/dlls/twlibc_linux.o
 	@echo "building msvcrt.dll..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
@@ -146,6 +149,7 @@ build/msvcrt.dll: \
 		-o build/msvcrt.dll \
 		build/windows/src/dlls/twlibc.o \
 		build/windows/src/dlls/twlibc_win.o \
+		build/windows/src/dlls/twlibc_linux.o \
 		build/ntdll.dll
 
 build/KERNEL32.dll: \

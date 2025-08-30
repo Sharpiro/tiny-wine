@@ -1,3 +1,4 @@
+#include "sys_linux.h"
 #include <dlls/ntdll.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -16,12 +17,12 @@ void DllMainCRTStartup(void) {
 
 void DeleteCriticalSection() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 void EnterCriticalSection() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 int32_t GetLastError() {
@@ -30,17 +31,17 @@ int32_t GetLastError() {
 
 void GetStartupInfoA() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 void InitializeCriticalSection() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 void LeaveCriticalSection() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 void SetUnhandledExceptionFilter() {
@@ -48,12 +49,12 @@ void SetUnhandledExceptionFilter() {
 
 void Sleep() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 void TlsGetValue() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 /*
@@ -73,7 +74,7 @@ bool VirtualProtect(
     }
 
     *lpflOldProtect = 0xff;
-    mprotect(lpAddress, dwSize, protection);
+    sys_mprotect(lpAddress, dwSize, protection);
     return true;
 }
 
@@ -110,15 +111,15 @@ size_t VirtualQuery(
 
 void IsDBCSLeadByteEx() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 void MultiByteToWideChar() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }
 
 void WideCharToMultiByte() {
     __asm__("int 3\n");
-    NtTerminateProcess((HANDLE)-1, 42);
+    sys_exit(42);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "macros.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <types_linux.h>
@@ -41,25 +42,26 @@ struct SysArgs {
     size_t param_seven;
 };
 
-size_t syscall(size_t sys_no, struct SysArgs *sys_args);
+EXPORTABLE size_t syscall(size_t sys_no, struct SysArgs *sys_args);
 
-__attribute__((noreturn)) void sys_exit(int32_t code);
+EXPORTABLE __attribute__((noreturn)) void sys_exit(int32_t code);
 
-size_t sys_mprotect(void *address, size_t length, int32_t protection);
+EXPORTABLE size_t
+sys_mprotect(void *address, size_t length, int32_t protection);
 
-size_t sys_brk(size_t brk_address);
+EXPORTABLE size_t sys_brk(size_t brk_address);
 
-size_t sys_write(int32_t fd, const char *data, size_t length);
+EXPORTABLE size_t sys_write(int32_t fd, const char *data, size_t length);
 
-size_t sys_open(const char *path, int32_t flags);
+EXPORTABLE size_t sys_open(const char *path, int32_t flags);
 
-size_t sys_close(int32_t fd);
+EXPORTABLE size_t sys_close(int32_t fd);
 
-size_t sys_read(int32_t fd, void *buf, size_t count);
+EXPORTABLE size_t sys_read(int32_t fd, void *buf, size_t count);
 
-size_t sys_lseek(int32_t fd, off_t offset, int32_t whence);
+EXPORTABLE size_t sys_lseek(int32_t fd, off_t offset, int32_t whence);
 
-size_t sys_mmap(
+EXPORTABLE size_t sys_mmap(
     void *address,
     size_t length,
     int32_t prot,
@@ -68,14 +70,14 @@ size_t sys_mmap(
     off_t offset
 );
 
-size_t sys_munmap(void *address, size_t length);
+EXPORTABLE size_t sys_munmap(void *address, size_t length);
 
-size_t sys_getpid(void);
+EXPORTABLE size_t sys_getpid(void);
 
-size_t sys_getcwd(char *buffer, size_t size);
+EXPORTABLE size_t sys_getcwd(char *buffer, size_t size);
 
-size_t sys_getuid();
+EXPORTABLE size_t sys_getuid();
 
-size_t sys_arch_prctl(size_t code, size_t address);
+EXPORTABLE size_t sys_arch_prctl(size_t code, size_t address);
 
-size_t sys_uname(struct utsname *name);
+EXPORTABLE size_t sys_uname(struct utsname *name);

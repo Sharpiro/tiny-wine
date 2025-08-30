@@ -24,7 +24,7 @@ uint64_t *get_lib_var_data() {
     return &lib_var_data;
 }
 
-int large_params(
+int large_params_dll(
     int one,
     int two,
     int three,

@@ -114,21 +114,42 @@ EXPORTABLE int32_t fseek(FILE *file, int64_t offset, int32_t whence) {
     return 0;
 }
 
+EXPORTABLE size_t fwrite(
+    const char *__restrict ptr, size_t size, size_t n, FILE *__restrict stream
+) {
+    int32_t file_no = fileno(stream);
+    ssize_t result = write(file_no, ptr, size * n);
+    if (result < 0) {
+        return 0;
+    }
+    return (size_t)result / size;
+}
+
+EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
+    char c_char = (char)c;
+    if (fwrite(&c_char, 1, 1, stream) != 1) {
+        return -1;
+    }
+    return c;
+}
+
 EXPORTABLE int32_t fclose(FILE *file) {
     int32_t fd = fileno(file);
     return close(fd);
 }
 
-EXPORTABLE void fputs(const char *data, FILE *stream) {
-    int32_t file_no = fileno(stream);
+EXPORTABLE int32_t fputs(const char *data, FILE *stream) {
     if (data == NULL) {
         const char NULL_STRING[] = "(null)";
-        write(file_no, NULL_STRING, sizeof(NULL_STRING) - 1);
-        return;
+        fwrite(NULL_STRING, 1, sizeof(NULL_STRING) - 1, stream);
+        return -1;
     }
 
     size_t str_len = strlen(data);
-    write(file_no, data, str_len);
+    if (fwrite(data, 1, str_len, stream) != str_len) {
+        return -1;
+    }
+    return 0;
 }
 
 EXPORTABLE int32_t puts(const char *data) {
@@ -165,8 +186,7 @@ static void print_number_hex(FILE *stream, size_t num) {
         }
     }
 
-    int32_t file_no = fileno(stream);
-    write(file_no, (char *)num_buffer, buffer_index);
+    fwrite((char *)num_buffer, 1, buffer_index, stream);
 }
 
 static void print_number_decimal(FILE *stream, size_t num) {
@@ -189,9 +209,8 @@ static void print_number_decimal(FILE *stream, size_t num) {
     }
 
     size_t print_start = (size_t)num_buffer + num_start;
-    size_t writegth = num_start == 0 ? 1 : MAX_DIGITS - num_start;
-    int32_t file_no = fileno(stream);
-    write(file_no, (char *)print_start, writegth);
+    size_t write_len = num_start == 0 ? 1 : MAX_DIGITS - num_start;
+    fwrite((char *)print_start, 1, write_len, stream);
 }
 
 struct PrintItem {
@@ -242,13 +261,12 @@ static void fprintf_internal(
     };
     print_items[print_items_len++] = print_item;
 
-    int32_t file_no = fileno(stream);
     for (size_t i = 0; i < print_items_len; i++) {
         struct PrintItem print_item = print_items[i];
         switch (print_item.formatter) {
         case 0x00: {
             const char *data = format + print_item.start;
-            write(file_no, data, print_item.length);
+            fwrite(data, 1, print_item.length, stream);
             break;
         }
         case 's': {
@@ -258,7 +276,7 @@ static void fprintf_internal(
         }
         case 'c': {
             char data = va_arg(var_args, char);
-            write(file_no, &data, 1);
+            fwrite(&data, 1, 1, stream);
             break;
         }
         case 'p':
@@ -294,11 +312,8 @@ EXPORTABLE int32_t printf(const char *format, ...) {
     return 0;
 }
 
-EXPORTABLE int32_t fprintf(
-    [[maybe_unused]] FILE *__restrict stream,
-    [[maybe_unused]] const char *__restrict format,
-    ...
-) {
+EXPORTABLE int32_t
+fprintf(FILE *__restrict stream, const char *__restrict format, ...) {
     va_list var_args;
     va_start(var_args, format);
     fprintf_internal(stream, format, var_args);
@@ -372,40 +387,10 @@ EXPORTABLE void strncmp() {
 }
 
 EXPORTABLE int32_t vfprintf(
-    [[maybe_unused]] FILE *__restrict stream,
-    [[maybe_unused]] const char *__restrict format,
-    [[maybe_unused]] __gnuc_va_list arg
+    FILE *__restrict stream, const char *__restrict format, __gnuc_va_list arg
 ) {
     fprintf_internal(stream, format, arg);
     return 0;
-}
-
-EXPORTABLE int32_t fputc(int32_t c, FILE *stream) {
-    char c_char = (char)c;
-    int32_t file_no = fileno(stream);
-    if (!write(file_no, &c_char, 1)) {
-        return -1;
-    }
-    return c;
-}
-
-EXPORTABLE size_t fwrite(
-    [[maybe_unused]] const char *__restrict ptr,
-    [[maybe_unused]] size_t size,
-    [[maybe_unused]] size_t n,
-    [[maybe_unused]] FILE *__restrict stream
-) {
-    if (size != 1) {
-        fprintf(stderr, "unsupported fwrite size\n");
-        exit(42);
-    }
-
-    for (size_t i = 0; i < n; i++) {
-        char c = ptr[i];
-        fputc(c, stream);
-    }
-
-    return size * n;
 }
 
 EXPORTABLE void localeconv() {
@@ -432,4 +417,12 @@ EXPORTABLE char *strerror(int32_t err_number) {
     default:
         return "Unknown";
     }
+}
+
+EXPORTABLE void exit(int32_t code) {
+    sys_exit(code);
+}
+
+EXPORTABLE void abort() {
+    sys_exit(3);
 }

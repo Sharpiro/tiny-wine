@@ -7,7 +7,7 @@ EXPORTABLE uint64_t *get_lib_var_bss();
 
 EXPORTABLE uint64_t *get_lib_var_data();
 
-EXPORTABLE int large_params(
+EXPORTABLE int large_params_dll(
     int one,
     int two,
     int three,
@@ -33,6 +33,7 @@ int32_t exe_global_var_bss = 0;
 int32_t exe_global_var_data = 42;
 
 // @todo: add 'WINE' env var to have better testing and compatibility
+// @todo: unify w/ 'full' version?
 
 int main(int argc, char **argv) {
     for (int i = 0; i < argc; i++) {
@@ -94,7 +95,7 @@ int main(int argc, char **argv) {
     double xmm0, xmm1;
     GET_REGISTERS_SNAPSHOT();
     size_t rbp_saved = rbp;
-    large_params(1, 2, 3, 4, 5, 6, 7, 8);
+    large_params_dll(1, 2, 3, 4, 5, 6, 7, 8);
     GET_REGISTERS_SNAPSHOT();
     printf(
         "preserved registers: %zx, %zx, %zx, %zx, %zx, %zx, %zx, %x\n",

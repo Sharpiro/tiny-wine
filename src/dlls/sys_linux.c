@@ -15,6 +15,8 @@ size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     __asm__("mov rax, %0" : : "r"(sys_no));
     __asm__("syscall" : "=r"(result) : :);
 
+    // @todo: use?
+
     // __asm__("mov rdi, %[param_one]\n"
     //         "mov rsi, %[param_two]\n"
     //         "mov rdx, %[param_three]\n"
@@ -38,12 +40,17 @@ size_t syscall(size_t sys_no, struct SysArgs *sys_args) {
     return result;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winvalid-noreturn"
+
 void sys_exit(int32_t code) {
     struct SysArgs args = {
         .param_one = (size_t)code,
     };
     syscall(SYS_exit, &args);
 }
+
+#pragma clang diagnostic pop
 
 size_t sys_brk(size_t brk) {
     struct SysArgs args = {

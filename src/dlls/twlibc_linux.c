@@ -10,7 +10,11 @@ size_t brk(size_t brk) {
 }
 
 ssize_t write(int32_t fd, const char *data, size_t length) {
-    sys_write(fd, data, length);
+    ssize_t result = (ssize_t)sys_write(fd, data, length);
+    if (result < 0) {
+        errno_internal = -(int32_t)result;
+        return -1;
+    }
     return (ssize_t)length;
 }
 
@@ -113,12 +117,4 @@ int32_t arch_prctl(size_t code, size_t address) {
         return -1;
     }
     return result;
-}
-
-void exit(int32_t code) {
-    sys_exit(code);
-}
-
-void abort() {
-    sys_exit(3);
 }
