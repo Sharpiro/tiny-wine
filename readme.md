@@ -8,13 +8,15 @@ A basic dynamic loader for Linux and Windows.
 - x64 only
 - No recursive dependencies
 - `malloc` leaks memory
-- loaders use a lot of memory
+- Loaders use a lot of memory
 - Import Address Table limit is 512 entries
 - Windows header size limit is 4 KiB
 - No environment variables
 - No AVX
 - No Printing floats
-- dlls must be in current working directory
+- Dlls must be in current working directory
+- `ntdll.dll` doesn't adhere to real Windows API
+- Calling into `libntdll.so` only supports at most 8 parameters
 
 ## Prerequisites
 

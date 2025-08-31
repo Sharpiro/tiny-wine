@@ -3,6 +3,9 @@
 EXPORTABLE extern uint64_t lib_var_bss;
 EXPORTABLE extern uint64_t lib_var_data;
 
+int32_t exe_global_var_bss = 0;
+int32_t exe_global_var_data = 42;
+
 EXPORTABLE uint64_t *get_lib_var_bss();
 
 EXPORTABLE uint64_t *get_lib_var_data();
@@ -28,12 +31,6 @@ int32_t ntdll_large_params_msvcrt(
     int32_t seven,
     int32_t eight
 );
-
-int32_t exe_global_var_bss = 0;
-int32_t exe_global_var_data = 42;
-
-// @todo: add 'WINE' env var to have better testing and compatibility
-// @todo: unify w/ 'full' version?
 
 int main(int argc, char **argv) {
     for (int i = 0; i < argc; i++) {
@@ -109,7 +106,11 @@ int main(int argc, char **argv) {
         rbp == rbp_saved ? 8 : 0
     );
 
+#ifndef WINE
+
     int32_t large_params_swap =
         ntdll_large_params_msvcrt(1, 2, 3, 4, 5, 6, 7, 8);
     printf("large_params_swap %d\n", large_params_swap);
+
+#endif
 }
