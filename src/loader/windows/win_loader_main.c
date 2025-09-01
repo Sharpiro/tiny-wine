@@ -433,7 +433,7 @@ static bool initialize_lib_ntdll(struct RuntimeObject *lib_ntdll_object) {
         BAIL("get_reserved_region_space failed\n");
     }
 
-    LOGINFO("Mapping shared library 'lib_ntdll.so'\n");
+    LOGINFO("Mapping shared library 'libntdll.so'\n");
     if (!map_memory_regions(
             ntdll_file, memory_regions.data, memory_regions.length
         )) {
@@ -612,14 +612,21 @@ static bool load_dlls(
 
         /* Get IAT offsets */
 
-        size_t runtime_iat_region_base = 0;
         size_t runtime_iat_section_base = 0;
         if (shared_lib_pe.import_address_table_len) {
-            runtime_iat_region_base = curr_global_runtime_iat_base;
-            runtime_iat_section_base = runtime_iat_region_base +
+            size_t curr_runtime_iat_base = curr_global_runtime_iat_base;
+            runtime_iat_section_base = curr_global_runtime_iat_base +
                 shared_lib_pe.import_section->virtual_base_address;
 
             curr_global_runtime_iat_base += MAX_TRAMPOLINE_IAT_SIZE;
+            LOGTRACE("curr_runtime_iat_base : %zx\n", curr_runtime_iat_base);
+            LOGTRACE(
+                "virtual_base_address: %x\n",
+                shared_lib_pe.import_section->virtual_base_address
+            );
+            LOGTRACE(
+                "runtime_iat_section_base: %zx\n", runtime_iat_section_base
+            );
         }
 
         struct WinRuntimeObject shared_lib = {
@@ -652,8 +659,7 @@ static bool initialize_import_address_table(
             runtime_obj->pe_data.import_address_table_len,
             &shared_libraries,
             &runtime_import_table,
-            runtime_obj->pe_data.winpe_header->image_optional_header_64
-                .image_base,
+            runtime_obj->pe_data.winpe_optional_header.image_base,
             runtime_iat_region_base
         )) {
         BAIL("get_runtime_import_address_table failed\n");
@@ -722,9 +728,7 @@ int main(int argc, char **argv) {
         EXIT("error parsing pe data\n");
     }
 
-    size_t image_base =
-        pe_exe.winpe_header->image_optional_header_64.image_base;
-
+    size_t image_base = pe_exe.winpe_optional_header.image_base;
     MemoryRegionList memory_regions = (MemoryRegionList){
         .allocator = loader_malloc_arena,
     };
@@ -794,9 +798,9 @@ int main(int argc, char **argv) {
         EXIT("initial_global_runtime_iat_base memory regions failed\n");
     }
 
-    size_t runtime_iat_section_base = 0;
+    size_t exe_runtime_iat_section_base = 0;
     if (pe_exe.import_address_table_len) {
-        runtime_iat_section_base = initial_global_runtime_iat_region_base +
+        exe_runtime_iat_section_base = initial_global_runtime_iat_region_base +
             pe_exe.import_section->virtual_base_address;
     }
 
@@ -808,7 +812,7 @@ int main(int argc, char **argv) {
     if (!load_dlls(
             &pe_exe,
             &shared_libraries,
-            initial_global_runtime_iat_region_base + MAX_TRAMPOLINE_IAT_SIZE
+            exe_runtime_iat_section_base + MAX_TRAMPOLINE_IAT_SIZE
         )) {
         EXIT("initialize_dynamic_data failed\n");
     }
@@ -818,7 +822,7 @@ int main(int argc, char **argv) {
         .pe_data = pe_exe,
         .memory_regions = memory_regions,
         .function_exports = {},
-        .runtime_iat_section_base = runtime_iat_section_base,
+        .runtime_iat_section_base = exe_runtime_iat_section_base,
     };
 
     /* Map Import Address Tables */
@@ -840,6 +844,10 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < shared_libraries.length; i++) {
         const struct WinRuntimeObject *shared_library =
             &shared_libraries.data[i];
+        if (strcmp(shared_library->name, "ntdll.dll") == 0) {
+            EXIT("ntdll.dll direct calls unsupported");
+        }
+
         LOGINFO("Initializing '%s' IAT\n", shared_library->name);
         if (!initialize_import_address_table(shared_library)) {
             if (!log_memory_regions()) {

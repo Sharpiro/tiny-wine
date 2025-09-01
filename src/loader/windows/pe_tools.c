@@ -39,15 +39,6 @@ static bool mem_is_empty(const void *buffer, size_t n) {
     return true;
 }
 
-static void debug_buffer(uint8_t *buffer, size_t offset, size_t len) {
-    printf("---\n");
-    for (size_t i = 0; i < len; i++) {
-        size_t index = offset + i;
-        printf("[%zd]: [%zx]: %x\n", i, index, buffer[index]);
-    }
-    printf("---\n");
-}
-
 bool get_pe_data(FILE *fp, struct PeData *pe_data) {
     if (pe_data == NULL) {
         BAIL("pe_data was null\n");
@@ -73,6 +64,10 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
     size_t image_header_start = (size_t)dos_header->image_file_header_start;
     struct WinPEHeader *winpe_header =
         (struct WinPEHeader *)(pe_header_buffer + image_header_start);
+    if (winpe_header->image_optional_header_64.magic != PE32_PLUS_MAGIC &&
+        winpe_header->image_optional_header_32.magic != PE32_MAGIC) {
+        BAIL("Invalid PE header magic\n");
+    }
 
     bool is_64_bit =
         winpe_header->image_optional_header_64.magic == PE32_PLUS_MAGIC;
@@ -118,10 +113,6 @@ bool get_pe_data(FILE *fp, struct PeData *pe_data) {
             sizeof(struct ImageDataDirectory) *
                 optional_header->data_directory_len
         );
-    }
-    if (image_optional_header.magic != PE32_PLUS_MAGIC &&
-        image_optional_header.magic != PE32_MAGIC) {
-        BAIL("Invalid PE header magic '%zx'\n", image_optional_header.magic);
     }
 
     size_t image_base = image_optional_header.image_base;
