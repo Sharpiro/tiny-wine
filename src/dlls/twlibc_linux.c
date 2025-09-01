@@ -50,8 +50,13 @@ int32_t close(int32_t fd) {
     return (int32_t)sys_close(fd);
 }
 
-size_t read(int32_t fd, void *buf, size_t count) {
-    return sys_read(fd, buf, count);
+ssize_t read(int32_t fd, void *buf, size_t count) {
+    ssize_t result = (ssize_t)sys_read(fd, buf, count);
+    if ((int32_t)result < 0) {
+        errno_internal = -(int32_t)result;
+        return -1;
+    }
+    return result;
 }
 
 int32_t getpid(void) {

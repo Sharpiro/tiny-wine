@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
     }
 
     char *filename = argv[1];
-    FILE *fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "rb");
     if (fp == NULL) {
         const char *err = strerror(errno);
         EXIT("File err '%s(%d)' for '%s'\n", err, errno, filename);

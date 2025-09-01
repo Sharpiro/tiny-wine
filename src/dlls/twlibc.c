@@ -80,7 +80,7 @@ EXPORTABLE int32_t _fileno(FILE *stream) {
 }
 
 EXPORTABLE FILE *fopen(const char *path, const char *mode) {
-    if (strcmp(mode, "r") != 0) {
+    if (strcmp(mode, "rb") != 0) {
         errno_internal = EACCES;
         return NULL;
     }
@@ -101,7 +101,7 @@ EXPORTABLE FILE *fopen(const char *path, const char *mode) {
 
 EXPORTABLE size_t fread(void *buffer, size_t size, size_t count, FILE *file) {
     int32_t fd = fileno(file);
-    size_t read_len = read(fd, buffer, size * count);
+    size_t read_len = (size_t)read(fd, buffer, size * count);
     return read_len;
 }
 

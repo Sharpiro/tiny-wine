@@ -71,8 +71,8 @@ bool get_runtime_import_address_table(
         }
 
         if (import_runtime_obj != NULL) {
-            import_image_base = import_runtime_obj->pe_data.winpe_header
-                                    ->image_optional_header.image_base;
+            import_image_base =
+                import_runtime_obj->pe_data.winpe_optional_header.image_base;
             symbol = find_win_symbol(
                 import_runtime_obj->pe_data.symbols,
                 import_runtime_obj->pe_data.symbols_len,

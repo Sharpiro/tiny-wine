@@ -534,7 +534,7 @@ static bool load_dlls(
             &inferior_executable->import_dir_entries[i];
         const char *shared_lib_name = dir_entry->lib_name;
         LOGINFO("mapping shared library '%s'\n", shared_lib_name);
-        FILE *shared_lib_fp = fopen(shared_lib_name, "r");
+        FILE *shared_lib_fp = fopen(shared_lib_name, "rb");
         if (shared_lib_fp == NULL) {
             BAIL("failed opening shared lib '%s'\n", shared_lib_name);
         }
@@ -546,7 +546,7 @@ static bool load_dlls(
         }
 
         size_t shared_lib_image_base =
-            shared_lib_pe.winpe_header->image_optional_header.image_base;
+            shared_lib_pe.winpe_optional_header.image_base;
         MemoryRegionList memory_regions = (MemoryRegionList){
             .allocator = loader_malloc_arena,
         };
@@ -652,7 +652,8 @@ static bool initialize_import_address_table(
             runtime_obj->pe_data.import_address_table_len,
             &shared_libraries,
             &runtime_import_table,
-            runtime_obj->pe_data.winpe_header->image_optional_header.image_base,
+            runtime_obj->pe_data.winpe_header->image_optional_header_64
+                .image_base,
             runtime_iat_region_base
         )) {
         BAIL("get_runtime_import_address_table failed\n");
@@ -709,7 +710,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    FILE *fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "rb");
     if (fp == NULL) {
         EXIT("file error, %d, %s\n", errno, strerror(errno));
         return -1;
@@ -721,7 +722,8 @@ int main(int argc, char **argv) {
         EXIT("error parsing pe data\n");
     }
 
-    size_t image_base = pe_exe.winpe_header->image_optional_header.image_base;
+    size_t image_base =
+        pe_exe.winpe_header->image_optional_header_64.image_base;
 
     MemoryRegionList memory_regions = (MemoryRegionList){
         .allocator = loader_malloc_arena,

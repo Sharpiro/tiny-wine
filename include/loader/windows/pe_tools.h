@@ -142,7 +142,7 @@ struct WinPEHeader {
     uint32_t signature;
     struct ImageFileHeader image_file_header;
     union {
-        struct ImageOptionalHeader64 image_optional_header;
+        struct ImageOptionalHeader64 image_optional_header_64;
         struct ImageOptionalHeader32 image_optional_header_32;
     };
 };
