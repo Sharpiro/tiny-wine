@@ -22,18 +22,6 @@ void set_test_number_data_internal_ref(int32_t val) {
     test_number_data_internal_ref = val;
 }
 
-size_t strlen(const char *s) {
-    size_t len = 0;
-    for (ssize_t i = 0; true; i++) {
-        if (s[i] == 0) {
-            break;
-        }
-        len++;
-    }
-
-    return len;
-}
-
 long atol_len(const char *data, size_t data_len) {
     if (data == NULL) {
         return 0;
