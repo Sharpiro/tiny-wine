@@ -614,12 +614,13 @@ static bool load_dlls(
 
         size_t runtime_iat_section_base = 0;
         if (shared_lib_pe.import_address_table_len) {
-            size_t curr_runtime_iat_base = curr_global_runtime_iat_base;
             runtime_iat_section_base = curr_global_runtime_iat_base +
                 shared_lib_pe.import_section->virtual_base_address;
 
-            curr_global_runtime_iat_base += MAX_TRAMPOLINE_IAT_SIZE;
-            LOGTRACE("curr_runtime_iat_base : %zx\n", curr_runtime_iat_base);
+            LOGTRACE(
+                "curr_global_runtime_iat_base : %zx\n",
+                curr_global_runtime_iat_base
+            );
             LOGTRACE(
                 "virtual_base_address: %x\n",
                 shared_lib_pe.import_section->virtual_base_address
@@ -627,6 +628,10 @@ static bool load_dlls(
             LOGTRACE(
                 "runtime_iat_section_base: %zx\n", runtime_iat_section_base
             );
+
+            while (curr_global_runtime_iat_base <= runtime_iat_section_base) {
+                curr_global_runtime_iat_base += MAX_TRAMPOLINE_IAT_SIZE;
+            }
         }
 
         struct WinRuntimeObject shared_lib = {

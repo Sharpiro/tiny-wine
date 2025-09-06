@@ -448,3 +448,25 @@ EXPORTABLE void exit(int32_t code) {
 EXPORTABLE void abort() {
     sys_exit(3);
 }
+
+EXPORTABLE char *strstr(const char *haystack, const char *needle) {
+    size_t needle_index = 0;
+    for (ssize_t i = 0; true; i++) {
+        char haystack_char = haystack[i];
+        char needle_char = needle[needle_index];
+        if (haystack_char == 0) {
+            break;
+        }
+        if (needle_char == 0) {
+            return (char *)haystack + i - needle_index;
+        }
+        if (haystack_char != needle_char) {
+            needle_index = 0;
+            continue;
+        }
+
+        needle_index++;
+    }
+
+    return NULL;
+}
