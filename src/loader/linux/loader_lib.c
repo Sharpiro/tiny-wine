@@ -109,6 +109,8 @@ bool log_memory_regions(void) {
     }
 
     LOGTRACE("Mapped address regions:\n%s\n", maps_buffer);
+    free(maps_buffer);
+
     return true;
 }
 

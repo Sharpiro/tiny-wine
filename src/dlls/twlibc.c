@@ -23,6 +23,19 @@ static _FileInternal FILE_INTERNAL_LIST[FILE_INTERNAL_LIST_SIZE] = {
 EXPORTABLE void DllMainCRTStartup(void) {
 }
 
+EXPORTABLE int32_t
+memcmp(const void *buffer_a, const void *buffer_b, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        uint8_t a = ((uint8_t *)buffer_a)[i];
+        uint8_t b = ((uint8_t *)buffer_b)[i];
+        if (a != b) {
+            return a - b;
+        }
+    }
+
+    return 0;
+}
+
 /**
  * Set n bytes of s to c.
  */
@@ -376,14 +389,23 @@ EXPORTABLE void calloc() {
     exit(42);
 }
 
-EXPORTABLE void free() {
-    fprintf(stderr, "free unimplemented\n");
-    exit(42);
+EXPORTABLE void free([[maybe_unused]] void *ptr) {
 }
 
-EXPORTABLE void strncmp() {
-    fprintf(stderr, "strncmp unimplemented\n");
-    exit(42);
+EXPORTABLE int32_t
+strncmp(const char *buffer_a, const char *buffer_b, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        char a = buffer_a[i];
+        char b = buffer_b[i];
+        if (a == 0 && b == 0) {
+            break;
+        }
+        if (a != b) {
+            return a - b;
+        }
+    }
+
+    return 0;
 }
 
 EXPORTABLE int32_t vfprintf(

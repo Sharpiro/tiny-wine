@@ -58,6 +58,9 @@ EOF
 assert [ "`$PRELOADER ./linloader ./dynamic`" == "$expected" ]
 assert [ "`$PRELOADER ./linloader ./dynamic_pie`" == "$expected" ]
 
+result=`./linloader ./tinyfetch`
+assert [ $? == 0 ]
+
 echo All tests passed
 
 popd

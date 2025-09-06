@@ -95,6 +95,8 @@ int32_t puts(const char *data);
 
 void *malloc(size_t n);
 
+void free(void *ptr);
+
 size_t wcslen(const wchar_t *s);
 
 int32_t _fileno(FILE *stream);

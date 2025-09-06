@@ -1,8 +1,6 @@
 #include <dlls/twlibc.h>
 #include <loader/windows/pe_tools.h>
 
-// @todo: get working via winloader?
-
 int main(int argc, char **argv) {
     if (argc < 2 || memcmp(argv[1], "--", 2) == 0) {
         EXIT("Usage: readwin <file> [-s]\n");

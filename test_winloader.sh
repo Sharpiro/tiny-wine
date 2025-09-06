@@ -71,6 +71,9 @@ result=`./winloader ./windynamicfull.exe a b c`
 assert [ $? == 0 ]
 assert [ "$result" == "$expected" ]
 
+result=`./winloader ./readwin.exe ./readwin.exe`
+assert [ $? == 0 ]
+
 echo All tests passed
 
 popd

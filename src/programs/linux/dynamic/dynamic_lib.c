@@ -1,6 +1,5 @@
 #include <dlls/twlibc.h>
 #include <dlls/twlibc_linux.h>
-#include <pwd.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -93,21 +92,6 @@ char *strstr(const char *haystack, const char *needle) {
     }
 
     return NULL;
-}
-
-int strncmp(const char *buffer_a, const char *buffer_b, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        char a = buffer_a[i];
-        char b = buffer_b[i];
-        if (a == 0 && b == 0) {
-            break;
-        }
-        if (a != b) {
-            return a - b;
-        }
-    }
-
-    return 0;
 }
 
 char *getenv(const char *name) {
@@ -236,7 +220,11 @@ struct passwd *getpwuid(uid_t uid) {
             };
             return passwd;
         }
+        free(user_details_split);
     }
+
+    free(user_lines);
+    free(passwd_file);
 
     return NULL;
 }

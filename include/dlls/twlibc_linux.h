@@ -55,3 +55,10 @@ uint32_t getuid();
 int32_t arch_prctl(size_t code, size_t address);
 
 int32_t uname(struct utsname *name);
+
+struct passwd {
+    const char *pw_name;
+    const char *pw_shell;
+};
+
+struct passwd *getpwuid(uid_t uid);

@@ -1,6 +1,5 @@
 #include <dlls/twlibc.h>
 #include <dlls/twlibc_linux.h>
-#include <pwd.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,8 +17,9 @@ int main(int argc, char **argv) {
         if (cwd_buffer == NULL) {
             EXIT("malloc failed");
         }
-        const char *cwd = getcwd(cwd_buffer, 100);
+        const char *cwd = getcwd(cwd_buffer, 0x100);
         printf("CWD: %s\n", cwd);
+        free(cwd_buffer);
 
         /* Memory regions */
         char *maps_buffer = malloc(0x1000);
@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
             EXIT("read failed");
         }
         printf("Mapped address regions:\n%s\n", maps_buffer);
+        free(maps_buffer);
     }
 
     /* Unix name */
@@ -37,11 +38,11 @@ int main(int argc, char **argv) {
 
     /* User */
     uid_t uid = getuid();
-    struct passwd *user_info = getpwuid(uid);
-    if (user_info == NULL) {
+    struct passwd *pw_info = getpwuid(uid);
+    if (pw_info == NULL) {
         EXIT("getpwuid failed: %d\n", errno);
     }
-    printf("%s@%s\n", user_info->pw_name, system_name.nodename);
+    printf("%s@%s\n", pw_info->pw_name, system_name.nodename);
     printf("--------------\n");
 
     /* OS */
@@ -67,6 +68,8 @@ int main(int argc, char **argv) {
         (size_t)(pretty_name_end - pretty_name_start)
     );
     printf("OS: %s %s\n", pretty_name, system_name.machine);
+    free(os_release_buffer);
+    free(pretty_name);
 
     /* Kernel */
     printf("Kernel: %s\n", system_name.release);
@@ -89,7 +92,8 @@ int main(int argc, char **argv) {
         (size_t)uptime_hours,
         (size_t)uptime_minutes
     );
+    free(uptime);
 
     /* Shell */
-    printf("Shell: %s\n", user_info->pw_shell);
+    printf("Shell: %s\n", pw_info->pw_shell);
 }
