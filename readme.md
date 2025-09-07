@@ -68,6 +68,15 @@ docker run --rm -v $PWD:/home/tiny_wine tinywine ./test.sh 1
 
 Miscellaneous tools that assist with debugging dynamic loaders.
 
+### Readlin
+
+Tool for reading the Linux ELF format.
+Shows more detail on things like GOT entries.
+
+```sh
+docker run --rm -v $PWD:/home/tiny_wine -w /home/tiny_wine/build tinywine ./readlin ./dynamic
+```
+
 ### Readwin
 
 Tool for reading the Windows PE format.
@@ -76,7 +85,7 @@ Tool for reading the Windows PE format.
 docker run --rm -v $PWD:/home/tiny_wine -w /home/tiny_wine/build tinywine ./readwin ./windynamic.exe
 ```
 
-### Bonus
+## Bonus
 
 Read `readwin.exe` using `readwin.exe` using `winloader`
 
