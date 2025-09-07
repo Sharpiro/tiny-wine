@@ -1,6 +1,6 @@
 # Tiny Wine
 
-A basic dynamic loader for Linux and Windows.
+A simple and educational dynamic loader for Windows that runs on Linux
 
 ## Limitations
 
