@@ -76,6 +76,14 @@ Tool for reading the Windows PE format.
 docker run --rm -v $PWD:/home/tiny_wine -w /home/tiny_wine/build tinywine ./readwin ./windynamic.exe
 ```
 
+### Bonus
+
+Read `readwin.exe` using `readwin.exe` using `winloader`
+
+```sh
+docker run --rm -v $PWD:/home/tiny_wine -w /home/tiny_wine/build tinywine ./winloader ./readwin.exe ./readwin.exe
+```
+
 ## Contributing
 
 This repo is currently experimental and thus not taking contributions at this time.
