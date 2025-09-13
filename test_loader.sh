@@ -11,12 +11,12 @@ assert() {
 pushd build
 
 # Unit Test
-$PRELOADER ./unit_test
+./unit_test
 assert [ $? == 0 ]
 
 # Env Test
-assert [ "`$PRELOADER ./linloader ./env | wc -c`" == "8" ]
-assert [ "`$PRELOADER ./linloader ./env x`" == $'2\n./env\nx' ]
+assert [ "`./linloader ./env | wc -c`" == "8" ]
+assert [ "`./linloader ./env x`" == $'2\n./env\nx' ]
 
 # String Test
 expected=`cat <<EOF
@@ -36,8 +36,8 @@ lib test_number_bss: 1
 lib get_test_number_data: 54321
 EOF
 `
-assert [ "`$PRELOADER ./linloader string`" == "$expected" ]
-assert [ "`$PRELOADER ./linloader string_pie`" == "$expected" ]
+assert [ "`./linloader string`" == "$expected" ]
+assert [ "`./linloader string_pie`" == "$expected" ]
 
 # Dynamic Test
 expected=`cat <<EOF
@@ -55,11 +55,17 @@ malloc: ok
 add_many_result: 36
 EOF
 `
-assert [ "`$PRELOADER ./linloader ./dynamic`" == "$expected" ]
-assert [ "`$PRELOADER ./linloader ./dynamic_pie`" == "$expected" ]
+assert [ "`./linloader ./dynamic`" == "$expected" ]
+assert [ "`./linloader ./dynamic_pie`" == "$expected" ]
 
 result=`./linloader ./tinyfetch`
 assert [ $? == 0 ]
+
+expected="Hello Linux statically linked Tiny Wine!"
+assert [ "`./linloader ./linux_static_hello_printf`" == "$expected" ]
+
+expected="Hello Linux dynamically linked Tiny Wine!"
+assert [ "`./linloader ./linux_dyn_hello_printf`" == "$expected" ]
 
 echo All tests passed
 

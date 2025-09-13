@@ -39,6 +39,10 @@ int main(int argc, char **argv) {
     printf("Section headers start: 0x%zx\n", inferior_elf.header.e_shoff);
     printf("Section header size: %d\n", inferior_elf.header.e_shentsize);
     printf("Section headers length: %d\n", inferior_elf.header.e_shnum);
+    const char *requires_loader =
+        strcmp(inferior_elf.section_headers[1].name, ".interp") == 0 ? "true"
+                                                                     : "false";
+    printf("Requires dynamic loader: %s\n", requires_loader);
 
     if (!inferior_elf.dynamic_data) {
         return 0;

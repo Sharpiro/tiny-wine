@@ -67,7 +67,7 @@ void dynamic_callback_linux(void) {
     }
 
     *got_entry = runtime_symbol->value;
-    LOGTRACE(
+    LOGDEBUG(
         "%zx: %s(%zx, %zx, %zx, %zx, %zx, %zx, %zx, %zx)\n",
         runtime_symbol->value,
         runtime_relocation->name,

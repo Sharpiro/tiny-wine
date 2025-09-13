@@ -30,6 +30,8 @@ DEPS = $(shell find build -name "*.d")
 linux: \
 	build/linloader \
 	build/unit_test \
+	build/linux_dyn_hello_printf \
+	build/linux_static_hello_printf \
 	build/env \
 	build/string \
 	build/tinyfetch \
@@ -42,6 +44,7 @@ windows: \
 	build/winloader \
 	build/readwin \
  	build/readwin.exe \
+	build/windows_hello_printf \
 	build/windynamic.exe \
 	build/windynamicfull.exe
 
@@ -260,6 +263,35 @@ build/unit_test: \
 		build/linux/src//programs/linux/linux_runtime.o \
 		build/libtinyc.a
 
+build/linux_static_hello_printf: \
+		src/programs/hello_printf.c \
+		build/linux/src/programs/linux/linux_runtime.o \
+		build/libtinyc.a
+	@echo "building linux_static_hello_printf..."
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
+		-nostdlib -static \
+		-o build/linux_static_hello_printf\
+		src/programs/hello_printf.c \
+		build/linux/src/programs/linux/linux_runtime.o \
+		build/libtinyc.a
+
+build/linux_dyn_hello_printf: \
+		build/libtinyc.so \
+		build/linux/src/programs/linux/linux_runtime.o \
+		src/programs/hello_printf.c
+	@echo "building linux_dyn_hello_printf..."
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
+		-DDYNAMIC \
+		-nostdlib \
+		-no-pie \
+		-Wl,-rpath,'$$ORIGIN' -L./build \
+ 		-ltinyc \
+		-o build/linux_dyn_hello_printf \
+		build/linux/src/programs/linux/linux_runtime.o \
+		src/programs/hello_printf.c
+
 build/env: \
 		build/linux/src/programs/linux/env/env_main.o \
 		build/linux/src/programs/linux/linux_runtime.o \
@@ -372,6 +404,19 @@ build/windynamic.exe: \
 		build/windynamiclib.dll \
 		build/windows/src/programs/windows/win_dynamic/win_dynamic_main.o \
 		build/windows/src/programs/windows/win_dynamic/win_runtime.o
+
+build/windows_hello_printf: \
+		build/msvcrt.dll \
+		build/KERNEL32.dll \
+		src/programs/hello_printf.c
+	@echo "building windows_hello_printf.exe..."
+	@$(CC) $(CFLAGS) \
+		$(STANDARD_COMPILER_OPTIONS) \
+		-DWINDOWS -DDYNAMIC \
+		--target=x86_64-w64-windows-gnu \
+		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
+		-o build/windows_hello_printf.exe \
+		src/programs/hello_printf.c
 
 build/windynamicfull.exe: \
 		build/msvcrt.dll \
