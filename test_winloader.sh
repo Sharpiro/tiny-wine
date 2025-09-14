@@ -74,7 +74,7 @@ assert [ "$result" == "$expected" ]
 result=`./winloader ./readwin.exe ./readwin.exe`
 assert [ $? == 0 ]
 
-expected="Hello Windows dynamically linked Tiny Wine!"
+expected="Hello Tiny Wine!"
 assert [ "`./winloader ./windows_hello_printf.exe`" == "$expected" ]
 
 echo All tests passed

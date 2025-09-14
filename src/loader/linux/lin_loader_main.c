@@ -66,7 +66,10 @@ void dynamic_callback_linux(void) {
         EXIT("couldn't find runtime symbol '%s'\n", runtime_relocation->name);
     }
 
+#ifdef CACHE_DYNAMIC_LINKING
     *got_entry = runtime_symbol->value;
+#endif
+
     LOGDEBUG(
         "%zx: %s(%zx, %zx, %zx, %zx, %zx, %zx, %zx, %zx)\n",
         runtime_symbol->value,
@@ -180,7 +183,7 @@ static bool initialize_dynamic_data(
 
         size_t reserved_address;
         if (!reserve_region_space(&memory_regions, &reserved_address)) {
-            BAIL("get_reserved_region_space failed\n");
+            BAIL("reserve_region_space failed\n");
         }
 
         LOGINFO(
@@ -485,9 +488,9 @@ int main(int32_t argc, char **argv, char **envv) {
     /* Init heap */
 
     size_t brk_start = brk(0);
-    LOGDEBUG("BRK:, %zx\n", brk_start);
+    LOGDEBUG("BRK: %zx\n", brk_start);
     size_t brk_end = brk(brk_start + 0x1000);
-    LOGDEBUG("BRK:, %zx\n", brk_end);
+    LOGDEBUG("BRK: %zx\n", brk_end);
     if (brk_end <= brk_start) {
         EXIT("program BRK setup failed");
     }
@@ -534,14 +537,15 @@ int main(int32_t argc, char **argv, char **envv) {
         EXIT("failed getting memory regions\n");
     }
 
-    size_t reserved_address = 0;
+    size_t exe_dyn_offset = 0;
     if (inferior_elf.is_pie) {
-        if (!reserve_region_space(&memory_regions, &reserved_address)) {
-            EXIT("get_reserved_region_space failed\n");
+        if (!reserve_region_space(&memory_regions, &exe_dyn_offset)) {
+            EXIT("reserve_region_space failed\n");
         }
+        LOGINFO(
+            "Mapping '%s' memory regions at %zx\n", filename, exe_dyn_offset
+        );
     }
-
-    LOGINFO("Mapping '%s' memory regions at %zx\n", filename, reserved_address);
 
     if (!map_memory_regions(fd, memory_regions.data, memory_regions.length)) {
         EXIT("loader map memory regions failed\n");
@@ -558,7 +562,7 @@ int main(int32_t argc, char **argv, char **envv) {
     size_t bss_len = 0;
     if (bss_section_header != NULL) {
         LOGINFO("initializing .bss\n");
-        bss = (uint8_t *)(reserved_address + bss_section_header->addr);
+        bss = (uint8_t *)(exe_dyn_offset + bss_section_header->addr);
         bss_len = bss_section_header->size;
         memset(bss, 0, bss_len);
     }
@@ -574,7 +578,7 @@ int main(int32_t argc, char **argv, char **envv) {
     if (inferior_elf.dynamic_data != NULL) {
         if (!get_function_relocations(
                 inferior_elf.dynamic_data,
-                reserved_address,
+                exe_dyn_offset,
                 &runtime_func_relocations,
                 &runtime_func_relocations_len
             )) {
@@ -588,7 +592,7 @@ int main(int32_t argc, char **argv, char **envv) {
 
         if (!initialize_dynamic_data(
                 inferior_elf.dynamic_data,
-                reserved_address,
+                exe_dyn_offset,
                 &shared_objects,
                 &shared_libraries_len
             )) {
@@ -629,7 +633,7 @@ int main(int32_t argc, char **argv, char **envv) {
     executable_object = loader_malloc_arena(sizeof(struct RuntimeObject));
     *executable_object = (struct RuntimeObject){
         .name = filename,
-        .dynamic_offset = reserved_address,
+        .dynamic_offset = exe_dyn_offset,
         .elf_data = inferior_elf,
         .memory_regions = memory_regions,
         .runtime_func_relocations = runtime_func_relocations,
@@ -641,7 +645,7 @@ int main(int32_t argc, char **argv, char **envv) {
 
     /* Jump to program */
 
-    size_t entry = reserved_address + inferior_elf.header.e_entry;
+    size_t entry = exe_dyn_offset + inferior_elf.header.e_entry;
     LOGINFO("inferior_entry: %zx\n", entry);
     LOGINFO("inferior_stack: %p\n", inferior_stack);
     LOGINFO("------------running program------------\n");
@@ -652,8 +656,6 @@ int main(int32_t argc, char **argv, char **envv) {
         "mov rsp, %[inferior_stack]\n"
         "jmp %[inferior_entry]\n"
         :
-        :
-
-        [inferior_stack] "m"(inferior_stack), [inferior_entry] "m"(entry)
+        : [inferior_stack] "m"(inferior_stack), [inferior_entry] "m"(entry)
     );
 }

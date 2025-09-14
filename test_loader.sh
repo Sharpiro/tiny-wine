@@ -61,10 +61,8 @@ assert [ "`./linloader ./dynamic_pie`" == "$expected" ]
 result=`./linloader ./tinyfetch`
 assert [ $? == 0 ]
 
-expected="Hello Linux statically linked Tiny Wine!"
+expected="Hello Tiny Wine!"
 assert [ "`./linloader ./linux_static_hello_printf`" == "$expected" ]
-
-expected="Hello Linux dynamically linked Tiny Wine!"
 assert [ "`./linloader ./linux_dyn_hello_printf`" == "$expected" ]
 
 echo All tests passed

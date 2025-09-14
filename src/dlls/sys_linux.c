@@ -59,8 +59,8 @@ size_t sys_mmap(
         .param_one = (size_t)address,
         .param_two = length,
         .param_three = (size_t)prot,
-        .param_seven =
-            (size_t)flags, // @note: disrespects x64 calling convention
+        // @note: disrespects x64 calling convention
+        .param_seven = (size_t)flags,
         .param_five = (size_t)fd,
         .param_six = (size_t)offset,
     };

@@ -222,7 +222,7 @@ bool get_memory_regions(
             );
         }
         if (program_header->p_memsz != program_header->p_filesz) {
-            LOGDEBUG("PH filesize != memsize\n");
+            LOGTRACE("PH filesize != memsize\n");
         }
 
         size_t file_offset = program_header->p_offset /

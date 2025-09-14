@@ -199,7 +199,7 @@ build/windynamiclibfull.dll: \
 linloader: build/linloader
 build/linloader: \
 		build/linux/src/loader/memory_map.o \
-		build/linux/src/loader/linux/loader_main.o\
+		build/linux/src/loader/linux/lin_loader_main.o\
 		build/linux/src/loader/linux/loader_lib.o \
 		build/linux/src/loader/linux/elf_tools.o \
 		build/linux/src/programs/linux/linux_runtime.o \
@@ -211,7 +211,7 @@ build/linloader: \
 		-Wl,--section-start=.text=7d7d0000 \
 		-o build/linloader \
 		build/linux/src/loader/memory_map.o \
-		build/linux/src/loader/linux/loader_main.o \
+		build/linux/src/loader/linux/lin_loader_main.o \
 		build/linux/src/loader/linux/loader_lib.o \
 		build/linux/src/loader/linux/elf_tools.o \
 		build/linux/src/programs/linux/linux_runtime.o \
@@ -283,7 +283,6 @@ build/linux_dyn_hello_printf: \
 	@echo "building linux_dyn_hello_printf..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
-		-DDYNAMIC \
 		-nostdlib \
 		-no-pie \
 		-Wl,-rpath,'$$ORIGIN' -L./build \
@@ -412,7 +411,6 @@ build/windows_hello_printf: \
 	@echo "building windows_hello_printf.exe..."
 	@$(CC) $(CFLAGS) \
 		$(STANDARD_COMPILER_OPTIONS) \
-		-DWINDOWS -DDYNAMIC \
 		--target=x86_64-w64-windows-gnu \
 		-L/usr/lib/gcc/x86_64-w64-mingw32/10-win32 \
 		-o build/windows_hello_printf.exe \
